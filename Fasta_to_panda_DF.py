@@ -13,23 +13,30 @@ def fasta_to_dataframe(fasta_file):
         return pd.DataFrame(data, columns=['id', 'sequence'])
 
 def count_instances_at_positions(array):
-    array.shape = rows, cols
-    count_dict = {}
-    for row in range(rows):
-        for col in range(cols):
+    print(array.shape)
+    for col in range(cols) < 20:
+        count_dict = {}
+        dictlist = []
+        for row in range(rows):
             value = array[row, col]
             if (col, value) in count_dict:
                 count_dict[(col, value)] += 1
-    return count_dict
+            else:
+                count_dict[(col, value)] = 1
+        dictlist.append[count_dict]
+    return dictlist
 
 
 position = np.array(["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"])
 amino_acid = np.array(["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "T", "C", "P", "G", "V"])
 
-proteomes = fasta_to_dataframe('P53_HUMAN.fasta')
-proteome = proteomes['sequence']
-print(proteome)
-
+panda_df = fasta_to_dataframe('P53_HUMAN.fasta')
+for i in range(len(panda_df)):
+    proteomes = ['']*len(panda_df)
+    proteomes[i] = [panda_df.iat[i,1]]
+#print(proteomes)
+counted_instances = count_instances_at_positions(proteomes)
+proteome_array = np.array(counted_instances)
 
 print(proteome_array)
 fig, ax = plt.subplots()
