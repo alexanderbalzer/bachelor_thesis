@@ -14,15 +14,16 @@ def fasta_to_dataframe(fasta_file):
 
 def count_instances_at_positions(array):
     rows, cols = array.shape
+    print(rows, cols)
     dictlist = []
-    for col in range(cols):
+    for col in range(0,19):
         count_dict = {}
         for row in range(rows):
             value = array[row, col]
-            if (col, value) in count_dict:
-                count_dict[(value)] += 1
+            if (value) in count_dict:
+                count_dict[value] += 1
             else:
-                count_dict[(value)] = 1
+                count_dict[value] = 1
         dictlist.append(count_dict)
     print(dictlist)
     return dictlist
