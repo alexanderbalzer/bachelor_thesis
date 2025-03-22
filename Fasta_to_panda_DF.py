@@ -42,15 +42,23 @@ print(proteome_array)
 counted_instances = count_instances_at_positions(proteome_array)
 print(counted_instances)
 
+cols = len(amino_acid)
+rows = 19
+visual_array = np.zeros((rows, cols))
+for i in range(rows):
+    for j in range(cols):
+        if amino_acid[j] in counted_instances[i]:
+            visual_array[j, i] = counted_instances[i][amino_acid[j]]
+print(visual_array)
 
-#fig, ax = plt.subplots()
-#im = ax.imshow(counted_instances, cmap="viridis")
-#ax.set_xticks(range(len(position)), labels=position, rotation=45, ha="right", rotation_mode="anchor")
-#ax.set_yticks(range(len(amino_acid)), labels=amino_acid)
+fig, ax = plt.subplots()
+im = ax.imshow(visual_array, cmap="viridis")
+ax.set_xticks(range(len(position)), labels=position, rotation=45, ha="right", rotation_mode="anchor")
+ax.set_yticks(range(len(amino_acid)), labels=amino_acid)
 
-#for i in range(len(position)):
-#    for j in range(len(amino_acid)):
-#        text = ax.text(j, i, proteome[i, j], ha="center", va="center", color="w")
-#ax.set_title("Mitochondrial Proteins with MTS")
-#fig.tight_layout()
-#plt.show()
+for i in range(len(position)):
+    for j in range(len(amino_acid)):
+        text = ax.text(j, i, visual_array[i, j], ha="center", va="center", color="black")
+ax.set_title("Mitochondrial Proteins with MTS")
+fig.tight_layout()
+plt.show()
