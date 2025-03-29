@@ -86,7 +86,7 @@ mts_cleavable = parse_mts_cleavable_annotations(mts_cleavable_file)
 
 # Specify the MTS-cleavable status to filter by
 # Options: "Yes" for cleavable, "No" for non-cleavable
-cleavable = "Yes"
+cleavable = "No"
 
 # Add MTS-cleavable information to the DataFrame
 proteome = add_mts_cleavable_to_dataframe(proteome, mts_cleavable)
@@ -97,8 +97,8 @@ filtered_proteins = filter_proteins_by_mts(proteome, cleavable)
 output_dir = "output files"
 os.makedirs(output_dir, exist_ok=True)  # Create the directory if it doesn't exist
 
-output_file = os.path.join(output_dir, "filtered_proteins_mts_cleavable.fasta")
-output_file = "output files/filtered_proteins_mts_cleavable.fasta"
+output_file = os.path.join(output_dir, "filtered_proteins_cleavable_mts.fasta")
+output_file = "output files/filtered_proteins_no_cleavable_mts.fasta"
 with open(output_file, "w") as f:
     for header, sequence in filtered_proteins:
         f.write(f">{header}\n{sequence}\n")
