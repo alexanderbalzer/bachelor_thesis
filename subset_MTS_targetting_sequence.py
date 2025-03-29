@@ -1,5 +1,16 @@
 import pandas as pd
 from Bio import SeqIO
+import os
+import logging
+
+
+
+logging.basicConfig(level=logging.INFO)
+
+def check_file_exists(file_path):
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"File not found: {file_path}")
+
 
 def fasta_to_dataframe(fasta_file):
     headers = []
@@ -27,10 +38,11 @@ def parse_mts_cleavable_annotations(mts_file):
         file_without_header = file.readlines()[2:]  # Skip the header line
         for line in file_without_header:
             fields = line.strip().split("\t")
-            protein_id = fields[0] # Protein ID (column 1 in the file)
-            print(fields[2])
-            cleavable[protein_id] = fields[3]   # MTS-cleavable status (column 3 in the file)
-    print(cleavable)
+            if len(fields) < 3:
+                continue
+            protein_id = fields[0]
+            cleavable[protein_id] = fields[2]
+    logging.info(f"Parsed {len(cleavable)} MTS-cleavable annotations.")
     return cleavable
 
 
@@ -40,7 +52,7 @@ def add_mts_cleavable_to_dataframe(df, mts_cleavable):
     """
     for index, row in df.iterrows():
         protein_id = row["Header"]  # Extract protein ID from header
-        # Check if the protein ID has a cleavable MTS
+        mts_status = mts_cleavable.get(protein_id, "Unknown")  # Safely get the MTS status
         if mts_cleavable[protein_id] == "Possessing mitochondrial presequence":
             df.at[index, "MTS-cleavable?"] = "Yes"
         elif mts_cleavable[protein_id] == "No mitochondrial presequence":
@@ -56,12 +68,18 @@ def filter_proteins_by_mts(dataframe, cleavable):
             cleavable_MTS.append((row["Header"], row["Sequence"]))
     return cleavable_MTS
 
+
+
 # Load the FASTA file
 fasta_file = "output files/filtered_proteins.fasta"
 proteome = fasta_to_dataframe(fasta_file)
 
 # Load the MTS-cleavable information
 mts_cleavable_file = "mts_cleavable_for_elegans.cgi"
+
+# Check if files exist
+check_file_exists(fasta_file)
+check_file_exists(mts_cleavable_file)
 
 # Parse the MTS-cleavable annotations
 mts_cleavable = parse_mts_cleavable_annotations(mts_cleavable_file)
@@ -76,6 +94,10 @@ proteome = add_mts_cleavable_to_dataframe(proteome, mts_cleavable)
 # Filter the proteins based on MTS-cleavable status
 filtered_proteins = filter_proteins_by_mts(proteome, cleavable)
 # Save the filtered proteins to a new FASTA file
+output_dir = "output files"
+os.makedirs(output_dir, exist_ok=True)  # Create the directory if it doesn't exist
+
+output_file = os.path.join(output_dir, "filtered_proteins_mts_cleavable.fasta")
 output_file = "output files/filtered_proteins_mts_cleavable.fasta"
 with open(output_file, "w") as f:
     for header, sequence in filtered_proteins:
