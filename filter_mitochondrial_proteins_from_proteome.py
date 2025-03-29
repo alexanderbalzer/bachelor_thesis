@@ -1,7 +1,5 @@
 from Bio import SeqIO
 import pandas as pd
-from goatools.obo_parser import GODag
-import re
 
 
 def parse_go_annotations(annotation_file):
@@ -75,16 +73,16 @@ go_annotation = parse_go_annotations(annotation_file)
 fasta_file = "input files/uniprotkb_proteome_UP000001940_AND_prot_2025_03_28.fasta"
 
 # Convert FASTA to DataFrame
-df = fasta_to_dataframe(fasta_file)
+proteome = fasta_to_dataframe(fasta_file)
 
 # Add GO terms to the DataFrame
-df = add_go_terms_to_dataframe(df, go_annotation)
+proteome_with_go_terms = add_go_terms_to_dataframe(proteome, go_annotation)
 
 # Define the target GO term (e.g., mitochondrion)
 target_go_term = "GO:0005739"
 
 # Filter proteins based on GO terms
-filtered_proteins = filter_proteins_by_go(df, target_go_term)
+filtered_proteins = filter_proteins_by_go(proteome_with_go_terms, target_go_term)
 
 
 # Save the filtered proteins to a new FASTA file
