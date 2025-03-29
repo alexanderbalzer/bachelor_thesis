@@ -25,7 +25,7 @@ def count_instances_at_positions(array):
             else:
                 count_dict[value] = 1
         dictlist.append(count_dict)
-    print(dictlist)
+    #print(dictlist)
     return dictlist
 
 
@@ -34,13 +34,20 @@ amino_acid = np.array(["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I
 
 panda_df = fasta_to_dataframe('output files/filtered_proteins.fasta')
 proteomes = list(panda_df['sequence'])
-print(proteomes)
+#print(proteomes)
 
-proteome_array = np.array([list(seq[:20]) for seq in proteomes])
-print(proteome_array)
+proteome_array = np.zeros((len(proteomes), 19), dtype=object)
+for i, proteome in enumerate(proteomes):
+    proteome = proteome[1:20]  # Extract amino acids from 2 to 20
+    for j in range(19):
+        if j < len(proteome):
+            proteome_array[i, j] = proteome[j]
+        else:
+            proteome_array[i, j] = 'X'
+#print(proteome_array)
 
 counted_instances = count_instances_at_positions(proteome_array)
-print(counted_instances)
+#print(counted_instances)
 
 cols = len(amino_acid)
 rows = 19
@@ -49,7 +56,7 @@ for i in range(rows):
     for j in range(cols):
         if amino_acid[j] in counted_instances[i]:
             visual_array[j, i] = counted_instances[i][amino_acid[j]]
-print(visual_array)
+#print(visual_array)
 
 fig, ax = plt.subplots()
 im = ax.imshow(visual_array, cmap="viridis")
