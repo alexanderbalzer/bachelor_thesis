@@ -32,13 +32,13 @@ def count_instances_at_positions(array):
 position = np.array(["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"])
 amino_acid = np.array(["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "T", "C", "P", "G", "V"])
 
-panda_df = fasta_to_dataframe('output files/filtered_proteins_no_cleavable_mts.fasta')
+panda_df = fasta_to_dataframe('output files/filtered_proteins_cleavable_mts.fasta')
 proteomes = list(panda_df['sequence'])
 #print(proteomes)
 
 proteome_array = np.zeros((len(proteomes), 19), dtype=object)
 for i, proteome in enumerate(proteomes):
-    proteome = proteome[1:20]  # Extract amino acids from 2 to 20
+    proteome = proteome[1:20]  
     for j in range(19):
         if j < len(proteome):
             proteome_array[i, j] = proteome[j]
@@ -66,6 +66,6 @@ ax.set_yticks(range(len(amino_acid)), labels=amino_acid)
 for i in range(len(position)):
     for j in range(len(amino_acid)):
         text = ax.text(j, i, visual_array[i, j], ha="center", va="center", color="black")
-ax.set_title("Mitochondrial Proteins without MTS")
+ax.set_title("Mitochondrial Proteins with MTS")
 fig.tight_layout()
 plt.show()

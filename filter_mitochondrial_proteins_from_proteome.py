@@ -10,14 +10,14 @@ def parse_go_annotations(annotation_file):
     go_annotation = {}
     with open(annotation_file, "r") as file:
         for line in file:
-            if line.startswith("!"):  # Skip comment lines
+            if line.startswith("!"):  
                 continue
             fields = line.strip().split("\t")
-            protein_id = fields[1]  # Protein ID (column 2 in GAF)
-            function = fields[8]  # Function (column 9 in GAF)
-            if function != "C":  # Skip non-location information
+            protein_id = fields[1]  #protein ID (column 2 in GAF)
+            function = fields[8]  #function type (column 9 in GAF)
+            if function != "C":  #filter for location information
                 continue
-            go_term = fields[4]     # GO term (column 5 in GAF)
+            go_term = fields[4]     #GO term (column 5 in GAF)
             if protein_id not in go_annotation:
                 go_annotation[protein_id] = []
             go_annotation[protein_id].append(go_term)
@@ -35,7 +35,7 @@ def fasta_to_dataframe(fasta_file):
     
     df = pd.DataFrame({
         "Header": headers,
-        "GO_Term": [""] * len(headers),    # Placeholder for GO terms
+        "GO_Term": [""] * len(headers),    
         "Sequence": sequences
     })
     
@@ -46,11 +46,9 @@ def add_go_terms_to_dataframe(df, go_annotation):
     Add GO terms to the DataFrame based on the protein IDs.
     """
     for index, row in df.iterrows():
-        protein_id = row["Header"].strip().split("|")[1]  # Extract protein ID from header
-        # Check if the protein ID is in the GO annotation dictionary
+        protein_id = row["Header"].strip().split("|")[1]  
         if protein_id in go_annotation:
             go_terms = go_annotation[protein_id]
-            # Join GO terms into a single string
             df.at[index, "GO_Term"] = ", ".join(go_terms)
         else:
             df.at[index, "GO_Term"] = "No GO term found"
@@ -65,27 +63,20 @@ def filter_proteins_by_go(dataframe, target_go_term):
 
     return filtered_proteins
 
-# Load the GO annotations
-annotation_file = "input files/9.C_elegans.goa"  # Replace with your GO annotation file
+annotation_file = "input files/9.C_elegans.goa"  
 go_annotation = parse_go_annotations(annotation_file)
 
-# Load the FASTA file
 fasta_file = "input files/uniprotkb_proteome_UP000001940_AND_prot_2025_03_28.fasta"
 
-# Convert FASTA to DataFrame
 proteome = fasta_to_dataframe(fasta_file)
 
-# Add GO terms to the DataFrame
 proteome_with_go_terms = add_go_terms_to_dataframe(proteome, go_annotation)
 
-# Define the target GO term (e.g., mitochondrion)
 target_go_term = "GO:0005739"
 
-# Filter proteins based on GO terms
 filtered_proteins = filter_proteins_by_go(proteome_with_go_terms, target_go_term)
 
 
-# Save the filtered proteins to a new FASTA file
 with open("filtered_proteins.fasta", "w") as output_handle:
     for protein_id, protein_seq in filtered_proteins:
         output_handle.write(f">{protein_id}\n{protein_seq}\n")

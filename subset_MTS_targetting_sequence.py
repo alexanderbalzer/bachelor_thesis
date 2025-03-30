@@ -22,7 +22,7 @@ def fasta_to_dataframe(fasta_file):
     
     df = pd.DataFrame({
         "Header": headers,
-        "MTS-cleavable?": [""] * len(headers),    # Placeholder for GO terms
+        "MTS-cleavable?": [""] * len(headers),
         "Sequence": sequences
     })
     
@@ -35,7 +35,7 @@ def parse_mts_cleavable_annotations(mts_file):
     """
     cleavable = {}
     with open(mts_file, "r") as file:
-        file_without_header = file.readlines()[2:]  # Skip the header line
+        file_without_header = file.readlines()[2:]  
         for line in file_without_header:
             fields = line.strip().split("\t")
             if len(fields) < 3:
@@ -51,9 +51,9 @@ def add_mts_cleavable_to_dataframe(df, mts_cleavable):
     Add MTS-cleavable information to the DataFrame based on the protein IDs.
     """
     for index, row in df.iterrows():
-        protein_id = row["Header"]  # Extract protein ID from header
-        mts_status = mts_cleavable.get(protein_id, "Unknown")  # Safely get the MTS status
-        if mts_cleavable[protein_id] == "Possessing mitochondrial presequence":
+        protein_id = row["Header"]  
+        mts_status = mts_cleavable.get(protein_id, "Unknown")  
+        if mts_status[protein_id] == "Possessing mitochondrial presequence":
             df.at[index, "MTS-cleavable?"] = "Yes"
         elif mts_cleavable[protein_id] == "No mitochondrial presequence":
             df.at[index, "MTS-cleavable?"] = "No"
@@ -70,32 +70,23 @@ def filter_proteins_by_mts(dataframe, cleavable):
 
 
 
-# Load the FASTA file
 fasta_file = "output files/filtered_proteins.fasta"
 proteome = fasta_to_dataframe(fasta_file)
 
-# Load the MTS-cleavable information
 mts_cleavable_file = "mts_cleavable_for_elegans.cgi"
 
-# Check if files exist
 check_file_exists(fasta_file)
 check_file_exists(mts_cleavable_file)
 
-# Parse the MTS-cleavable annotations
 mts_cleavable = parse_mts_cleavable_annotations(mts_cleavable_file)
 
-# Specify the MTS-cleavable status to filter by
-# Options: "Yes" for cleavable, "No" for non-cleavable
 cleavable = "No"
 
-# Add MTS-cleavable information to the DataFrame
 proteome = add_mts_cleavable_to_dataframe(proteome, mts_cleavable)
 
-# Filter the proteins based on MTS-cleavable status
 filtered_proteins = filter_proteins_by_mts(proteome, cleavable)
-# Save the filtered proteins to a new FASTA file
 output_dir = "output files"
-os.makedirs(output_dir, exist_ok=True)  # Create the directory if it doesn't exist
+os.makedirs(output_dir, exist_ok=True) 
 
 output_file = os.path.join(output_dir, "filtered_proteins_cleavable_mts.fasta")
 output_file = "output files/filtered_proteins_no_cleavable_mts.fasta"
