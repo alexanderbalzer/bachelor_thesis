@@ -32,40 +32,65 @@ def count_instances_at_positions(array):
 position = np.array(["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"])
 amino_acid = np.array(["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "T", "C", "P", "G", "V"])
 
-panda_df = fasta_to_dataframe('output files/filtered_proteins_cleavable_mts.fasta')
-proteomes = list(panda_df['sequence'])
-#print(proteomes)
+input= ['output files/filtered_proteins_cleavable_mts.fasta', 'output files/filtered_proteins_no_cleavable_mts.fasta']
 
-proteome_array = np.zeros((len(proteomes), 19), dtype=object)
-for i, proteome in enumerate(proteomes):
-    proteome = proteome[1:20]  
-    for j in range(19):
-        if j < len(proteome):
-            proteome_array[i, j] = proteome[j]
-        else:
-            proteome_array[i, j] = 'X'
-#print(proteome_array)
+both_arrays = [0, 0]
+for file in range(len(input)):
+    panda_df = fasta_to_dataframe(input[file])
+    proteomes = list(panda_df['sequence'])
+    #print(proteomes)
 
-counted_instances = count_instances_at_positions(proteome_array)
-#print(counted_instances)
+    proteome_array = np.zeros((len(proteomes), 19), dtype=object)
+    for i, proteome in enumerate(proteomes):
+        proteome = proteome[1:20]  
+        for j in range(19):
+            if j < len(proteome):
+                proteome_array[i, j] = proteome[j]
+            else:
+                proteome_array[i, j] = 'X'
+    #print(proteome_array)
 
-cols = len(amino_acid)
-rows = 19
-visual_array = np.zeros((rows, cols))
-for i in range(rows):
-    for j in range(cols):
-        if amino_acid[j] in counted_instances[i]:
-            visual_array[j, i] = counted_instances[i][amino_acid[j]]
-#print(visual_array)
+    counted_instances = count_instances_at_positions(proteome_array)
+    #print(counted_instances)
 
-fig, ax = plt.subplots()
-im = ax.imshow(visual_array, cmap="viridis")
-ax.set_xticks(range(len(position)), labels=position, rotation=45, ha="right", rotation_mode="anchor")
-ax.set_yticks(range(len(amino_acid)), labels=amino_acid)
+    cols = len(amino_acid)
+    rows = 19
+    visual_array = np.zeros((rows, cols))
+    for i in range(rows):
+        for j in range(cols):
+            if amino_acid[j] in counted_instances[i]:
+                visual_array[j, i] = counted_instances[i][amino_acid[j]]
+    both_arrays[file]= visual_array
+    #print(visual_array)
 
+
+
+
+fig, ax = plt.subplots(ncols= 2)
+pcm= ax[0].pcolor(both_arrays[0], cmap="RdBu_r")
+pcm = ax[1].pcolor(both_arrays[1], cmap="RdBu_r")
+
+
+ax[0].set_xticks(range(len(position)), labels=position, rotation=0, ha="right", rotation_mode="anchor")
+ax[0].set_yticks(range(len(amino_acid)), labels=amino_acid)
+ax[0].set_yticklabels(amino_acid)
+ax[0].set_xticklabels(position)
+ax[0].set_xlabel("Position")
+ax[0].set_ylabel("Amino acids")
+ax[0].set_title("Mitochondrial Proteins with MTS")
+
+ax[1].set_xticks(range(len(position)), labels=position, rotation=0, ha="right", rotation_mode="anchor")
+ax[1].set_yticks(range(len(amino_acid)), labels=amino_acid)
+ax[1].set_xlabel("Position")
+ax[1].set_ylabel("Amino acids")
+ax[1].set_title("Mitochondrial Proteins without MTS")
+
+
+''''
 for i in range(len(position)):
     for j in range(len(amino_acid)):
         text = ax.text(j, i, visual_array[i, j], ha="center", va="center", color="black")
-ax.set_title("Mitochondrial Proteins with MTS")
+'''
 fig.tight_layout()
+fig.colorbar(pcm, ax=ax, shrink=0.8)
 plt.show()

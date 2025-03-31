@@ -71,12 +71,15 @@ fasta_file = "input files/uniprotkb_proteome_UP000001940_AND_prot_2025_03_28.fas
 proteome = fasta_to_dataframe(fasta_file)
 
 proteome_with_go_terms = add_go_terms_to_dataframe(proteome, go_annotation)
+print(proteome_with_go_terms)
 
 target_go_term = "GO:0005739"
 
 filtered_proteins = filter_proteins_by_go(proteome_with_go_terms, target_go_term)
+print(filtered_proteins)
 
-
+'''
 with open("filtered_proteins.fasta", "w") as output_handle:
     for protein_id, protein_seq in filtered_proteins:
-        output_handle.write(f">{protein_id}\n{protein_seq}\n")
+        output_handle.write(f">{protein_id}\n{protein_seq}\n")'
+'''
