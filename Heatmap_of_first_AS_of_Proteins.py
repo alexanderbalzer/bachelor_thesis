@@ -67,8 +67,8 @@ for file in range(len(input)):
 
 
 fig, ax = plt.subplots(ncols= 2)
-pcm= ax[0].pcolor(both_arrays[0], cmap="RdBu_r")
-pcm = ax[1].pcolor(both_arrays[1], cmap="RdBu_r")
+pcm= ax[0].imshow(both_arrays[0], cmap="Blues")
+pcm = ax[1].imshow(both_arrays[1], cmap="Blues")
 
 
 ax[0].set_xticks(range(len(position)), labels=position, rotation=0, ha="right", rotation_mode="anchor")
