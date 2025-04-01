@@ -30,7 +30,7 @@ def count_instances_at_positions(array):
 
 
 position = np.array(["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"])
-amino_acid = np.array(["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "T", "C", "P", "G", "V"])
+amino_acid = np.array(["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "A", "T", "C", "P", "G", "V"])
 
 input= ['output files/filtered_proteins_cleavable_mts.fasta', 'output files/filtered_proteins_no_cleavable_mts.fasta']
 
@@ -53,7 +53,7 @@ for file in range(len(input)):
     counted_instances = count_instances_at_positions(proteome_array)
     #print(counted_instances)
 
-    cols = len(amino_acid)
+    cols = len(position)
     rows = 19
     visual_array = np.zeros((rows, cols))
     for i in range(rows):
@@ -72,7 +72,7 @@ pcm = ax[1].pcolor(both_arrays[1], cmap="RdBu_r")
 
 
 ax[0].set_xticks(range(len(position)), labels=position, rotation=0, ha="right", rotation_mode="anchor")
-ax[0].set_yticks(range(len(amino_acid)), labels=amino_acid)
+ax[0].set_yticks(range(len(amino_acid)), labels=amino_acid, rotation=0, rotation_mode="anchor")
 ax[0].set_yticklabels(amino_acid)
 ax[0].set_xticklabels(position)
 ax[0].set_xlabel("Position")
