@@ -36,7 +36,7 @@ input= ['output files/filtered_proteins_cleavable_mts.fasta',
         'output files/filtered_proteins.fasta']
 
 #wanted_result either "absolute" or "hgt"
-wanted_result = "hgt"
+wanted_result = "absolute"
 
 all_arrays = [0, 0, 0]
 all_counted_instances = [0, 0, 0]
@@ -48,7 +48,7 @@ for file in range(len(input)):
 
     proteome_array = np.zeros((len(proteomes), 20), dtype=object)
     for i, proteome in enumerate(proteomes):
-        proteome = proteome[1:21] 
+        proteome = proteome[1:20] 
         for j in range(20):
             if j < len(proteome):
                 proteome_array[i, j] = proteome[j]
@@ -65,8 +65,8 @@ for file in range(len(input)):
 if wanted_result == "absolute":
     for file in range(2):
         counted_instances = all_counted_instances[file]
-        cols = len(position)
-        rows = 19
+        cols = len(amino_acid)
+        rows = len(position)
         visual_array = np.zeros((cols, rows))
         for i in range(rows):
             for j in range(cols):
@@ -80,8 +80,8 @@ if wanted_result == "hgt":
     for file in range(2):
         counted_instances = all_counted_instances[file]
    #     print(counted_instances)
-        cols = len(position)
-        rows = len(amino_acid)
+        cols = len(amino_acid)
+        rows = len(position)
         visual_array = np.zeros((cols, rows))
     #    print(visual_array)
         for i in range(rows):
@@ -109,8 +109,9 @@ if wanted_result == "hgt":
 
 
 fig, ax = plt.subplots(ncols= 2)
+fig.subplots_adjust(bottom=0.5)
 
-ax[0].set_xticks(range(len(position)), labels=position, rotation=0, ha="right", rotation_mode="anchor")
+ax[0].set_xticks(range(len(position)), labels=position, rotation=0, rotation_mode="anchor")
 ax[0].set_yticks(range(len(amino_acid)), labels=amino_acid, rotation=0, rotation_mode="anchor")
 ax[0].set_yticklabels(amino_acid)
 ax[0].set_xticklabels(position)
@@ -118,7 +119,7 @@ ax[0].set_xticklabels(position)
 # Normalize the colormap across both graphs
 vmin = min(np.min(all_arrays[0]), np.min(all_arrays[1]))
 vmax = max(np.max(all_arrays[0]), np.max(all_arrays[1]))
-cmap = "coolwarm"
+cmap = "GnBu"
 pcm = ax[0].imshow(all_arrays[0], cmap=cmap, vmin=vmin, vmax=vmax)
 pcm = ax[1].imshow(all_arrays[1], cmap=cmap, vmin=vmin, vmax=vmax)
 
@@ -126,17 +127,14 @@ ax[0].set_xlabel("Position")
 ax[0].set_ylabel("Amino acids")
 ax[0].set_title("Mitochondrial Proteins with MTS")
 
-ax[1].set_xticks(range(len(position)), labels=position, rotation=0, ha="right", rotation_mode="anchor")
-ax[1].set_yticks(range(len(amino_acid)), labels=amino_acid)
+ax[1].set_xticks(range(len(position)), labels=position, rotation=0, rotation_mode="anchor")
+ax[1].set_yticks(range(len(amino_acid)), labels=amino_acid, rotation=0, rotation_mode="anchor")
+ax[1].set_title("Mitochondrial Proteins without MTS")
 ax[1].set_xlabel("Position")
 ax[1].set_ylabel("Amino acids")
-ax[1].set_title("Mitochondrial Proteins without MTS")
 
-'''
-for i in range(len(position)):
-    for j in range(len(amino_acid)):
-        text = ax.text(j, i, visual_array[i, j], ha="center", va="center", color="black")'
-'''
-fig.tight_layout()
-fig.colorbar(pcm, ax=ax, shrink=0.6)
+
+
+fig.tight_layout(pad=3.0)
+fig.colorbar(pcm, ax = ax, shrink = 0.6)
 plt.show()
