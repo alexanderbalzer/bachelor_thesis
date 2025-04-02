@@ -119,7 +119,7 @@ ax[0].set_xticklabels(position)
 # Normalize the colormap across both graphs
 vmin = min(np.min(all_arrays[0]), np.min(all_arrays[1]))
 vmax = max(np.max(all_arrays[0]), np.max(all_arrays[1]))
-cmap = "GnBu"
+cmap = "Blues" #
 pcm = ax[0].imshow(all_arrays[0], cmap=cmap, vmin=vmin, vmax=vmax)
 pcm = ax[1].imshow(all_arrays[1], cmap=cmap, vmin=vmin, vmax=vmax)
 

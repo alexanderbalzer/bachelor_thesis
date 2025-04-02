@@ -63,10 +63,10 @@ def filter_proteins_by_go(dataframe, target_go_term):
 
     return filtered_proteins
 
-annotation_file = "input files/9.C_elegans.goa"  
+annotation_file = "input files/" + str(name) + ".goa"  
 go_annotation = parse_go_annotations(annotation_file)
 
-fasta_file = "input files/uniprotkb_proteome_UP000001940_AND_prot_2025_03_28.fasta"
+fasta_file = "input files/" + str(name) + ".fasta"
 
 proteome = fasta_to_dataframe(fasta_file)
 
@@ -78,8 +78,8 @@ target_go_term = "GO:0005739"
 filtered_proteins = filter_proteins_by_go(proteome_with_go_terms, target_go_term)
 print(filtered_proteins)
 
-'''
-with open("filtered_proteins.fasta", "w") as output_handle:
+
+output_dir = "output files"
+with open("filtered_proteins_by_GO_for_" + str(name) + ".fasta", "w") as output_handle:
     for protein_id, protein_seq in filtered_proteins:
-        output_handle.write(f">{protein_id}\n{protein_seq}\n")'
-'''
+        output_handle.write(f">{protein_id}\n{protein_seq}\n")

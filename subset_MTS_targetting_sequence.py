@@ -70,10 +70,10 @@ def filter_proteins_by_mts(dataframe, cleavable):
 
 
 
-fasta_file = "output files/filtered_proteins.fasta"
+fasta_file = "output files/filtered_proteins_by_GO_for_" + str(name) + ".fasta"
 proteome = fasta_to_dataframe(fasta_file)
 
-mts_cleavable_file = "mts_cleavable_for_elegans.cgi"
+mts_cleavable_file = "mito_fates_for_" + str(name) + ".cgi"
 
 check_file_exists(fasta_file)
 check_file_exists(mts_cleavable_file)
@@ -86,10 +86,13 @@ proteome = add_mts_cleavable_to_dataframe(proteome, mts_cleavable)
 
 filtered_proteins = filter_proteins_by_mts(proteome, cleavable)
 output_dir = "output files"
-os.makedirs(output_dir, exist_ok=True) 
 
-output_file = os.path.join(output_dir, "filtered_proteins_cleavable_mts.fasta")
-output_file = "output files/filtered_proteins_no_cleavable_mts.fasta"
+
+if cleavable == "No":
+    output_file = "output files/filtered_proteins_no_cleavable_mts" + str(name) + ".fasta"
+if cleavable == "Yes":
+    output_file = "output files/filtered_proteins_cleavable_mts" + str(name) + ".fasta"
+
 with open(output_file, "w") as f:
     for header, sequence in filtered_proteins:
         f.write(f">{header}\n{sequence}\n")
