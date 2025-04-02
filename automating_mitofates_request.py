@@ -1,30 +1,50 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import time
 
-# Set up Selenium WebDriver (make sure you have the appropriate driver for your browser)
-driver = webdriver.Chrome(executable_path='/path/to/chromedriver')  # Adjust to your path
 
-# Open the MitoFates page
-driver.get("https://mitf.cbrc.pj.aist.go.jp/MitoFates/cgi-bin/top.cgi")
+names = ["human"]
+name = names[0]
 
-# Find the protein sequence input field (you can inspect the HTML for the correct ID or name)
-sequence_input = driver.find_element(By.NAME, "sequence")  # Adjust according to the form's name attribute
+# Initialize the Firefox driver
+driver = webdriver.Firefox()
 
-# Enter the sequence
-sequence_input.send_keys("YOUR_PROTEIN_SEQUENCE")  # Replace with your sequence
+try:
+    # The file you want to upload
+    file_to_upload = f"/home/abalzer/Documents/github_clone/bachelor_thesis/output files/filtered_proteins_by_GO_for_{name}.fasta"
 
-# Submit the form
-sequence_input.send_keys(Keys.RETURN)  # This simulates pressing the "Enter" key
+    # Open the MitoFates website
+    driver.get("https://mitf.cbrc.pj.aist.go.jp/MitoFates/cgi-bin/top.cgi")
 
-# Wait for the results to load (adjust the time as needed)
-time.sleep(5)
+    # Wait for the file input element to be present
+    file_input = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.NAME, "queryFile"))
+    )
+    file_input.send_keys(file_to_upload)  # Upload the file
 
-# Extract the results (inspect the HTML for where the results are displayed)
-results = driver.find_elements(By.CLASS_NAME, "result_class")  # Example, adjust as needed
-for result in results:
-    print(result.text)
+    # Select "metazoa" from the dropdown
+    select_element = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.NAME, "organism"))
+    )
+    select = Select(select_element)
+    select.select_by_visible_text("metazoa")
 
-# Close the browser
-driver.quit()
+    # Find the submit button and click it
+    submit_button = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.NAME, "submit"))
+    )
+    submit_button.click()
+
+    # Wait for the results to load
+    results_element = WebDriverWait(driver, 30).until(
+        EC.presence_of_element_located((By.ID, "results"))  # Replace "results" with the actual ID or locator
+    )
+    print(results_element.text)  # Print the results
+
+finally:
+    # Close the browser
+    driver.quit()
