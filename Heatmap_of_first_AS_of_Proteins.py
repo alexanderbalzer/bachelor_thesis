@@ -27,16 +27,18 @@ def count_instances_at_positions(array):
     #print(dictlist)
     return dictlist
 
+Name = ["human"]
+name = Name[0]
 
 position = np.array(["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"])
 amino_acid = np.array(["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "A", "T", "C", "P", "G", "V"])
 
-input= ['output files/filtered_proteins_cleavable_mts.fasta', 
-        'output files/filtered_proteins_no_cleavable_mts.fasta',
-        'output files/filtered_proteins.fasta']
+input= ["output files/filtered_proteins_cleavable_mts_for_" + str(name) + "_2.fasta", 
+        "output files/filtered_proteins_no_cleavable_mts_for_" + str(name) + "_2.fasta",
+        "output files/filtered_proteins_by_GO_for_" + str(name) +".fasta"]
 
 #wanted_result either "absolute" or "hgt"
-wanted_result = "absolute"
+wanted_result = "hgt"
 
 all_arrays = [0, 0, 0]
 all_counted_instances = [0, 0, 0]
@@ -92,6 +94,8 @@ if wanted_result == "hgt":
                     M = amount_of_proteins[2] #amount of all amino acids in the whole set
                     N = amount_of_proteins[file] #amount of all amino acids in the subset
                     p_value = hypergeom.pmf(x, M, n, N)
+                    if i == 11 and j == 0:
+                        print(p_value)
                     abs_log_val = abs(np.log10(p_value))
                     f_obs = x / N
                     f_exp = n / M
@@ -104,7 +108,7 @@ if wanted_result == "hgt":
                     visual_array[j, i] = result
  #       print(visual_array)
         all_arrays[file]= visual_array
-        print(visual_array)
+ #       print(visual_array)
  #       print(visual_array.shape)
 
 
@@ -119,7 +123,7 @@ ax[0].set_xticklabels(position)
 # Normalize the colormap across both graphs
 vmin = min(np.min(all_arrays[0]), np.min(all_arrays[1]))
 vmax = max(np.max(all_arrays[0]), np.max(all_arrays[1]))
-cmap = "Blues" #
+cmap = "coolwarm" #Blues or coolwarm
 pcm = ax[0].imshow(all_arrays[0], cmap=cmap, vmin=vmin, vmax=vmax)
 pcm = ax[1].imshow(all_arrays[1], cmap=cmap, vmin=vmin, vmax=vmax)
 

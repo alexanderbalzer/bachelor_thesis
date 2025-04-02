@@ -57,11 +57,14 @@ def add_go_terms_to_dataframe(df, go_annotation):
 def filter_proteins_by_go(dataframe, target_go_term):
     filtered_proteins = []
     for index, row in dataframe.iterrows():
-        go_terms = row["GO_Term"]
-        if target_go_term in go_terms:
-            filtered_proteins.append((row["Header"], row["Sequence"]))
-
+            go_terms = row["GO_Term"]
+            if target_go_term in go_terms:
+                filtered_proteins.append((row["Header"], row["Sequence"]))
     return filtered_proteins
+
+
+name = ["human"]
+name = name[0]
 
 annotation_file = "input files/" + str(name) + ".goa"  
 go_annotation = parse_go_annotations(annotation_file)
@@ -71,15 +74,25 @@ fasta_file = "input files/" + str(name) + ".fasta"
 proteome = fasta_to_dataframe(fasta_file)
 
 proteome_with_go_terms = add_go_terms_to_dataframe(proteome, go_annotation)
-print(proteome_with_go_terms)
+#print(proteome_with_go_terms)
 
-target_go_term = "GO:0005739"
+target_go_term = "GO:0005739" #go term for mitochondrion
 
 filtered_proteins = filter_proteins_by_go(proteome_with_go_terms, target_go_term)
-print(filtered_proteins)
+#print(filtered_proteins)
+filtered_proteins = filtered_proteins[:2000]  # Limit to the first 2000 proteins
+
+valid_amino_acids = set("A C D E F G H I K L M N P Q R S T V W Y") #ARNDCEQGHILKMFPSTWYV
 
 
-output_dir = "output files"
-with open("filtered_proteins_by_GO_for_" + str(name) + ".fasta", "w") as output_handle:
+
+# Filter out proteins with invalid amino acids
+filtered_proteins = [
+    (protein_id, protein_seq)
+    for protein_id, protein_seq in filtered_proteins
+    if set(protein_seq).issubset(valid_amino_acids)
+]
+
+with open("output files/filtered_proteins_by_GO_for_" + str(name) + ".fasta", "w") as output_handle:
     for protein_id, protein_seq in filtered_proteins:
         output_handle.write(f">{protein_id}\n{protein_seq}\n")
