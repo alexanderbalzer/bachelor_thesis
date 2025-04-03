@@ -162,46 +162,59 @@ def run_perl_script(perl_script_path, input_file, flag, output_file):
     )
 
 
+
+# Set up logging
 logging.basicConfig(level=logging.INFO)
-
-
 logging.info("Starting the pipeline...")
 
-# Define the organisms to process
+# Define the paramters for the pipeline
 organisms = ["human"]
 cleavable = "Yes" #Yes or No
 threshold = 0.9 #threshold for probability of MTS-cleavable
-flag = "metazoa"
+delete_temp_files = True #delete temporary files
 
+# Define the parameters for MitoFates
+flag = "metazoa" #flag for MitoFates, either meatazoa or fungi or plant
+target_go_term = "GO:0005739" #go term for mitochondrion
+
+# Define the path to the Perl script
 perl_script_path = "/home/abalzer/Downloads/MitoFates_1.2/MitoFates/MitoFates.pl"
 
 
 
 for i, name in enumerate(organisms, start=1):
-    # Log the current organism being processed
+    # Log the current organism being processed and the iteration
     logging.info(f"Processing organism: {name}")
-    # Log the current iteration
     logging.info(f"Durchlauf[{i}/{len(organisms)}]")
-    # Define the input files
-    
+
+    # Define the input and output files
     annotation_file = "pipeline/input/" + str(name) + ".goa"  
-    go_annotation = parse_go_annotations(annotation_file)
-
     fasta_file = "pipeline/input/" + str(name) + ".fasta"
-        
-    # Define the output file
-    output_file = f"output files/filtered_proteins_by_GO_and_mts_subset_for_{name}.fasta"
+    output_filtered_by_GO_file = "pipeline/cache/filtered_proteins_by_GO_for_" + str(name) + ".fasta"
 
+    # Check if the input files exist
+    check_file_exists(annotation_file)
+    check_file_exists(fasta_file)
+    # Check if the output directory exists, if not create it
+    output_dir = "pipeline/output"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    # Check if the output file already exists
+    if os.path.exists(output_filtered_by_GO_file):
+        logging.info(f"Output file {output_filtered_by_GO_file} already exists. Skipping this iteration.")
+        continue
 
+    # Parse the GO annotations and the FASTA file
+    logging.info(f"Parsing GO annotations from {annotation_file}...")
+    go_annotation = parse_go_annotations(annotation_file)
     proteome = fasta_to_dataframe(fasta_file)
 
     proteome_with_go_terms = add_go_terms_to_dataframe(proteome, go_annotation)
-    #print(proteome_with_go_terms)
 
-    target_go_term = "GO:0005739" #go term for mitochondrion
 
     filtered_proteins = filter_proteins_by_go(proteome_with_go_terms, target_go_term)
-    #print(filtered_proteins)
+
+    # Option to limit the number of filtered proteins to 2000
     #filtered_proteins = filtered_proteins[:2000]  # Limit to the first 2000 proteins
 
     valid_amino_acids = set("ACDEFGHIKLMNPQRSTVWY") #ARNDCEQGHILKMFPSTWYV
@@ -214,26 +227,23 @@ for i, name in enumerate(organisms, start=1):
         if set(protein_seq).issubset(valid_amino_acids)
     ]
 
-
-    with open("pipeline/cache/filtered_proteins_by_GO_for_" + str(name) + ".fasta", "w") as output_handle:
+    # Write the filtered proteins to the cache
+    with open(output_filtered_by_GO_file, "w") as output_handle:
         for protein_id, protein_seq in filtered_proteins:
             output_handle.write(f">{protein_id}\n{protein_seq}\n")
-    logging.info(f"Filtered proteins by GO terms and saved to {output_file}")
+    logging.info(f"Filtered proteins by GO term and saved to {output_filtered_by_GO_file}")
 
-    input_file = "pipeline/cache/filtered_proteins_by_GO_for_" + str(name) + ".fasta"
-    output_file = "pipeline/cache/mito_fates_for_" + str(name) + ".cgi"
+    input_MitoFates_file = "pipeline/cache/filtered_proteins_by_GO_for_" + str(name) + ".fasta"
+    output_MitoFates_file = "pipeline/cache/mito_fates_for_" + str(name) + ".cgi"
 
     logging.info(f"Running MitoFates Perl script for {name}...")
-    run_perl_script(perl_script_path, input_file, flag, output_file)
-
+    run_perl_script(perl_script_path, input_MitoFates_file, flag, output_MitoFates_file)
+    logging.info(f"Finished running MitoFates Perl script for {name}")
 
     fasta_file = "pipeline/cache/filtered_proteins_by_GO_for_" + str(name) + ".fasta"
     proteome = fasta_to_dataframe(fasta_file)
 
     mts_cleavable_file = "pipeline/cache/mito_fates_for_" + str(name) + ".cgi"
-
-    check_file_exists(fasta_file)
-    check_file_exists(mts_cleavable_file)
 
     mts_cleavable = parse_mts_cleavable_annotations(mts_cleavable_file)
     logging.info(f"Parsed {len(mts_cleavable)} MTS-cleavable annotations.")
@@ -254,9 +264,13 @@ for i, name in enumerate(organisms, start=1):
             f.write(f">{header}\n{sequence}\n")
     logging.info(f"Filtered proteins by MTS-cleavable status and saved to {output_file}")
 
-    os.remove("pipeline/cache/filtered_proteins_by_GO_for_" + str(name) + ".fasta")
-    os.remove("pipeline/cache/mito_fates_for_" + str(name) + ".cgi")
-    logging.info(f"Removed temporary files for {name}")
+    if delete_temp_files:
+        # Remove temporary files
+        os.remove("pipeline/cache/filtered_proteins_by_GO_for_" + str(name) + ".fasta")
+        os.remove("pipeline/cache/mito_fates_for_" + str(name) + ".cgi")
+        logging.info(f"Removed temporary files for {name}")
+    else:
+        logging.info(f"Temporary files for {name} are kept for further analysis.")
 logging.info("Pipeline completed successfully.")
 
 
