@@ -13,7 +13,7 @@ def fasta_to_dataframe(fasta_file):
 
 def count_instances_at_positions(array):
     rows, cols = array.shape
-    print(rows, cols)
+    print("amount of proteins: ", rows)
     dictlist = []
     for col in range(0,20): ######
         count_dict = {}
@@ -38,7 +38,7 @@ input= ["output files/filtered_proteins_cleavable_mts_for_" + str(name) + "_2.fa
         "output files/filtered_proteins_by_GO_for_" + str(name) +".fasta"]
 
 #wanted_result either "absolute" or "hgt"
-wanted_result = "hgt"
+wanted_result = "absolute"
 
 all_arrays = [0, 0, 0]
 all_counted_instances = [0, 0, 0]
@@ -64,6 +64,7 @@ for file in range(len(input)):
     all_counted_instances[file] = counted_instances
     #print(counted_instances)
 
+    percentage = np.zeros((len(amino_acid)), dtype=object)
 if wanted_result == "absolute":
     for file in range(2):
         counted_instances = all_counted_instances[file]
@@ -75,6 +76,7 @@ if wanted_result == "absolute":
                 if amino_acid[j] in counted_instances[i]:
                     visual_array[j, i] = counted_instances[i][amino_acid[j]]
         all_arrays[file]= visual_array
+        
         #print(visual_array)
 
 if wanted_result == "hgt":
@@ -94,7 +96,7 @@ if wanted_result == "hgt":
                     M = amount_of_proteins[2] #amount of all amino acids in the whole set
                     N = amount_of_proteins[file] #amount of all amino acids in the subset
                     p_value = hypergeom.pmf(x, M, n, N)
-                    if i == 11 and j == 0:
+                    if i ==10 and j == 1:
                         print(p_value)
                     abs_log_val = abs(np.log10(p_value))
                     f_obs = x / N

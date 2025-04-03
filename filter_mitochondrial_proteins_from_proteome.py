@@ -80,7 +80,7 @@ target_go_term = "GO:0005739" #go term for mitochondrion
 
 filtered_proteins = filter_proteins_by_go(proteome_with_go_terms, target_go_term)
 #print(filtered_proteins)
-filtered_proteins = filtered_proteins[:2000]  # Limit to the first 2000 proteins
+#filtered_proteins = filtered_proteins[:2000]  # Limit to the first 2000 proteins
 
 valid_amino_acids = set("A C D E F G H I K L M N P Q R S T V W Y") #ARNDCEQGHILKMFPSTWYV
 
