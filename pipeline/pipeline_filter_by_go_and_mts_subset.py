@@ -100,7 +100,6 @@ def parse_mts_cleavable_annotations(mts_file):
                 continue
             protein_id = fields[0]
             cleavable[protein_id] = fields[2]
-    logging.info(f"Parsed {len(cleavable)} MTS-cleavable annotations.")
     return cleavable
 
 def parse_probability_of_mts (mts_file):
@@ -116,7 +115,6 @@ def parse_probability_of_mts (mts_file):
                 continue
             protein_id = fields[0]
             probability[protein_id] = float(fields[1])
-    logging.info(f"Parsed {len(probability)} probability of MTS-cleavable annotations.")
     return probability
 
 
@@ -167,11 +165,13 @@ def run_perl_script(perl_script_path, input_file, flag, output_file):
 logging.basicConfig(level=logging.INFO)
 logging.info("Starting the pipeline...")
 
+
 # Define the paramters for the pipeline
-organisms = ["human"]
+organisms = ["human", "elegans"]
 cleavable = "Yes" #Yes or No
 threshold = 0.9 #threshold for probability of MTS-cleavable
 delete_temp_files = True #delete temporary files
+
 
 # Define the parameters for MitoFates
 flag = "metazoa" #flag for MitoFates, either meatazoa or fungi or plant
@@ -245,11 +245,11 @@ for i, name in enumerate(organisms, start=1):
 
     mts_cleavable_file = "pipeline/cache/mito_fates_for_" + str(name) + ".cgi"
 
+
     mts_cleavable = parse_mts_cleavable_annotations(mts_cleavable_file)
-    logging.info(f"Parsed {len(mts_cleavable)} MTS-cleavable annotations.")
     probability_of_mts = parse_probability_of_mts(mts_cleavable_file)
-    logging.info(f"Parsed {len(probability_of_mts)} probability of MTS-cleavable annotations.")
     proteome = add_mts_cleavable_to_dataframe(proteome, probability_of_mts)
+
 
     filtered_proteins = filter_proteins_by_mts(proteome, cleavable)
 
