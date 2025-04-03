@@ -33,9 +33,14 @@ name = Name[0]
 position = np.array(["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"])
 amino_acid = np.array(["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "A", "T", "C", "P", "G", "V"])
 
-input= ["output files/filtered_proteins_cleavable_mts_for_" + str(name) + "_2.fasta", 
-        "output files/filtered_proteins_no_cleavable_mts_for_" + str(name) + "_2.fasta",
-        "output files/filtered_proteins_by_GO_for_" + str(name) +".fasta"]
+#input= ["output files/filtered_proteins_cleavable_mts_for_" + str(name) + "_2.fasta", 
+ #       "output files/filtered_proteins_no_cleavable_mts_for_" + str(name) + "_2.fasta",
+  #      "output files/filtered_proteins_by_GO_for_" + str(name) +".fasta"]
+input = [
+    "pipeline/output/filtered_by_GO_cleavable_mts_for_human.fasta",
+    "pipeline/output/filtered_by_GO_no_cleavable_mts_for_human.fasta",
+    "pipeline/cache/filtered_proteins_by_GO_for_human.fasta"
+]
 
 #wanted_result either "absolute" or "hgt"
 wanted_result = "absolute"
@@ -125,7 +130,12 @@ ax[0].set_xticklabels(position)
 # Normalize the colormap across both graphs
 vmin = min(np.min(all_arrays[0]), np.min(all_arrays[1]))
 vmax = max(np.max(all_arrays[0]), np.max(all_arrays[1]))
-cmap = "coolwarm" #Blues or coolwarm
+
+if wanted_result == "absolute":
+    cmap = "Blues" #Blues or coolwarm
+
+if wanted_result == "hgt":
+    cmap = "coolwarm" #Blues or coolwarm
 pcm = ax[0].imshow(all_arrays[0], cmap=cmap, vmin=vmin, vmax=vmax)
 pcm = ax[1].imshow(all_arrays[1], cmap=cmap, vmin=vmin, vmax=vmax)
 

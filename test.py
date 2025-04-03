@@ -14,7 +14,8 @@ def run_perl_script(perl_script_path, input_file, flag, output_file):
         subprocess.run(
             ["perl", perl_script_path, input_file, flag],
             stdout=output_file,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
+            check=True
     )
 
 def check_file_exists(file_path):

@@ -157,7 +157,8 @@ def run_perl_script(perl_script_path, input_file, flag, output_file):
         subprocess.run(
             ["perl", perl_script_path, input_file, flag],
             stdout=output_file,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
+            check=True
     )
 
 
@@ -170,12 +171,17 @@ logging.info("Starting the pipeline...")
 organisms = ["human"]
 cleavable = "Yes" #Yes or No
 threshold = 0.9 #threshold for probability of MTS-cleavable
+flag = "metazoa"
 
 perl_script_path = "/home/abalzer/Downloads/MitoFates_1.2/MitoFates/MitoFates.pl"
 
 
 
-for name in organisms:
+for i, name in enumerate(organisms, start=1):
+    # Log the current organism being processed
+    logging.info(f"Processing organism: {name}")
+    # Log the current iteration
+    logging.info(f"Durchlauf[{i}/{len(organisms)}]")
     # Define the input files
     
     annotation_file = "pipeline/input/" + str(name) + ".goa"  
@@ -217,7 +223,8 @@ for name in organisms:
     input_file = "pipeline/cache/filtered_proteins_by_GO_for_" + str(name) + ".fasta"
     output_file = "pipeline/cache/mito_fates_for_" + str(name) + ".cgi"
 
-    run_perl_script(perl_script_path, input_file, "metazoa", output_file)
+    logging.info(f"Running MitoFates Perl script for {name}...")
+    run_perl_script(perl_script_path, input_file, flag, output_file)
 
 
     fasta_file = "pipeline/cache/filtered_proteins_by_GO_for_" + str(name) + ".fasta"
@@ -246,6 +253,11 @@ for name in organisms:
         for header, sequence in filtered_proteins:
             f.write(f">{header}\n{sequence}\n")
     logging.info(f"Filtered proteins by MTS-cleavable status and saved to {output_file}")
+
+    os.remove("pipeline/cache/filtered_proteins_by_GO_for_" + str(name) + ".fasta")
+    os.remove("pipeline/cache/mito_fates_for_" + str(name) + ".cgi")
+    logging.info(f"Removed temporary files for {name}")
+logging.info("Pipeline completed successfully.")
 
 
 
