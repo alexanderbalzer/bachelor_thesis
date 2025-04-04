@@ -167,10 +167,10 @@ logging.info("Starting the pipeline...")
 
 
 # Define the paramters for the pipeline
-organisms = ["human", "elegans"]
-cleavable = "Yes" #Yes or No
+organisms = ["human", "elegans","s_cerevisiae"]
+cleavable = "No" #Yes or No
 threshold = 0.9 #threshold for probability of MTS-cleavable
-delete_temp_files = True #delete temporary files
+delete_temp_files = False #delete temporary files
 
 
 # Define the parameters for MitoFates
@@ -183,9 +183,19 @@ perl_script_path = "/home/abalzer/Downloads/MitoFates_1.2/MitoFates/MitoFates.pl
 
 
 for i, name in enumerate(organisms, start=1):
+
     # Log the current organism being processed and the iteration
     logging.info(f"Processing organism: {name}")
     logging.info(f"Durchlauf[{i}/{len(organisms)}]")
+    if cleavable == "No":
+        result_file = f"pipeline/output/filtered_by_GO_no_cleavable_mts_for_{name}.fasta"
+    elif cleavable == "Yes":
+        result_file = f"pipeline/output/filtered_by_GO_cleavable_mts_for_{name}.fasta"
+
+    # Check if the result file already exists
+    if os.path.exists(result_file):
+        logging.info(f"Result file already exists. Skipping this iteration.")
+        continue
 
     # Define the input and output files
     annotation_file = "pipeline/input/" + str(name) + ".goa"  

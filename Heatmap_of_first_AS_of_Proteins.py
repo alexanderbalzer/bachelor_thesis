@@ -27,7 +27,7 @@ def count_instances_at_positions(array):
     #print(dictlist)
     return dictlist
 
-Name = ["human"]
+Name = ["s_cerevisiae"]
 name = Name[0]
 
 position = np.array(["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"])
@@ -37,13 +37,13 @@ amino_acid = np.array(["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I
  #       "output files/filtered_proteins_no_cleavable_mts_for_" + str(name) + "_2.fasta",
   #      "output files/filtered_proteins_by_GO_for_" + str(name) +".fasta"]
 input = [
-    "pipeline/output/filtered_by_GO_cleavable_mts_for_human.fasta",
-    "pipeline/output/filtered_by_GO_no_cleavable_mts_for_human.fasta",
-    "pipeline/cache/filtered_proteins_by_GO_for_human.fasta"
+    "pipeline/output/filtered_by_GO_cleavable_mts_for_" + str(name) + ".fasta",
+    "pipeline/output/filtered_by_GO_no_cleavable_mts_for_" + str(name) + ".fasta",
+    "pipeline/cache/filtered_proteins_by_GO_for_" + str(name) + ".fasta"
 ]
 
 #wanted_result either "absolute" or "hgt"
-wanted_result = "absolute"
+wanted_result = "hgt"
 
 all_arrays = [0, 0, 0]
 all_counted_instances = [0, 0, 0]
