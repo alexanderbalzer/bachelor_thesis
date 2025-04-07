@@ -167,14 +167,18 @@ logging.info("Starting the pipeline...")
 
 
 # Define the paramters for the pipeline
-organisms = ["human", "elegans","s_cerevisiae"]
-cleavable = "No" #Yes or No
+#list of organisms
+#organisms = [    "s_cerevisiae", "human", "elegans", "d_melanogaster", "a_thaliana", "s_pombe", "m_musculus"]
+#flags = ["fungi", "metazoa", "metazoa", "metazoa", "plant", "fungi", "metazoa"] #metazoa or fungi or plant
+
+organisms = ["s_cerevisiae", "Candida_glabrata", "z_rouxii", "K_lactis", "Lachancea thermotolerans", "Debaryomyces_hansenii", "Scheffersomyces_stipitis", "Clavispora_lusitaniae", "Yarrowia_lipolytica", "Geotrichum_candidum"]
+flag = ["fungi"]  # All are fungi
+cleavable = "Yes" #Yes or No
 threshold = 0.9 #threshold for probability of MTS-cleavable
-delete_temp_files = False #delete temporary files
+delete_temp_files = True #delete temporary MitoFates file
 
 
 # Define the parameters for MitoFates
-flag = "metazoa" #flag for MitoFates, either meatazoa or fungi or plant
 target_go_term = "GO:0005739" #go term for mitochondrion
 
 # Define the path to the Perl script
@@ -183,7 +187,7 @@ perl_script_path = "/home/abalzer/Downloads/MitoFates_1.2/MitoFates/MitoFates.pl
 
 
 for i, name in enumerate(organisms, start=1):
-
+#    flag = flags[i-1]  # Get the corresponding flag for the organism
     # Log the current organism being processed and the iteration
     logging.info(f"Processing organism: {name}")
     logging.info(f"Durchlauf[{i}/{len(organisms)}]")
@@ -209,10 +213,6 @@ for i, name in enumerate(organisms, start=1):
     output_dir = "pipeline/output"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    # Check if the output file already exists
-    if os.path.exists(output_filtered_by_GO_file):
-        logging.info(f"Output file {output_filtered_by_GO_file} already exists. Skipping this iteration.")
-        continue
 
     # Parse the GO annotations and the FASTA file
     logging.info(f"Parsing GO annotations from {annotation_file}...")
@@ -276,7 +276,7 @@ for i, name in enumerate(organisms, start=1):
 
     if delete_temp_files:
         # Remove temporary files
-        os.remove("pipeline/cache/filtered_proteins_by_GO_for_" + str(name) + ".fasta")
+#        os.remove("pipeline/cache/filtered_proteins_by_GO_for_" + str(name) + ".fasta")
         os.remove("pipeline/cache/mito_fates_for_" + str(name) + ".cgi")
         logging.info(f"Removed temporary files for {name}")
     else:

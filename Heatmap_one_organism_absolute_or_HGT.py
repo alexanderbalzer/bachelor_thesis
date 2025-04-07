@@ -27,7 +27,7 @@ def count_instances_at_positions(array):
     #print(dictlist)
     return dictlist
 
-Name = ["s_cerevisiae"]
+Name = ["human_with_isoforms"]
 name = Name[0]
 
 position = np.array(["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"])
@@ -135,7 +135,7 @@ if wanted_result == "absolute":
     cmap = "Blues" #Blues or coolwarm
 
 if wanted_result == "hgt":
-    cmap = "coolwarm" #Blues or coolwarm
+    cmap = "RdBu_r" #Blues or coolwarm
 pcm = ax[0].imshow(all_arrays[0], cmap=cmap, vmin=vmin, vmax=vmax)
 pcm = ax[1].imshow(all_arrays[1], cmap=cmap, vmin=vmin, vmax=vmax)
 
@@ -153,4 +153,6 @@ ax[1].set_ylabel("Amino acids")
 
 fig.tight_layout(pad=3.0)
 fig.colorbar(pcm, ax = ax, shrink = 0.6)
+fig.suptitle(f"Heatmap of Amino Acid Frequencies for file {name}", fontsize=16)
+
 plt.show()
