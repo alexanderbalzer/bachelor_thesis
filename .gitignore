@@ -5,3 +5,4 @@ output_files
 pipeline/cache
 test.py
 Phylogeny/input
+Phylogeny/output

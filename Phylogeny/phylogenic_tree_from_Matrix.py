@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from scipy.cluster.hierarchy import linkage, dendrogram
 from scipy.spatial.distance import pdist, squareform
 from scipy.spatial.distance import euclidean, cosine
+from io import StringIO
+from scipy.cluster.hierarchy import to_tree
 
 def calculate_similarity_matrix_with_pearson(data):
     # Load the numpy array from the specified file
@@ -53,13 +55,26 @@ def calculate_similarity_matrix_with_cosine(data):
 
     return similarity_matrix
 
+def convert_to_newick(linkage_matrix, labels):
+    def build_newick(node, parent_dist, leaf_names):
+        if node.is_leaf():
+            return f"{leaf_names[node.id]}:{parent_dist - node.dist:.6f}"
+        else:
+            left = build_newick(node.left, node.dist, leaf_names)
+            right = build_newick(node.right, node.dist, leaf_names)
+            return f"({left},{right}):{parent_dist - node.dist:.6f}"
+
+    tree = to_tree(linkage_matrix, rd=False)
+    return build_newick(tree, tree.dist, labels) + ";"
+
+
 
 method = "pearson"  # Choose the method: "pearson", "euclidean", or "cosine"
 # Read the organisms list from the file
-with open("organisms_list.txt", "r") as file:
+with open("Phylogeny/input/organisms_list.txt", "r") as file:
     labels = [line.strip() for line in file.readlines()]
 
-data = np.load("subset_array.npy")
+data = np.load("Phylogeny/input/HGT_array.npy")
 data = np.array(data)
 
 
@@ -79,6 +94,16 @@ distance_matrix = 1 - similarity_matrix
 
 # Perform hierarchical clustering using UPGMA (Unweighted Pair Group Method with Arithmetic Mean)
 linkage_matrix = linkage(squareform(distance_matrix), method='average')
+
+
+newick_string = convert_to_newick(linkage_matrix, labels)
+
+
+
+# Save the Newick string to a file
+with open("Phylogeny/output/phylogenetic_tree_from_HGT.newick", "w") as file:
+    file.write(newick_string)
+
 
 # Plot the phylogenetic tree
 plt.figure(figsize=(10, 7))

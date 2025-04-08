@@ -15,9 +15,9 @@ def fasta_to_dataframe(fasta_file):
 
 
 #organisms = ["s_cerevisiae", "s_pombe", "elegans", "d_melanogaster", "m_musculus",  "human", "a_thaliana"]
-organisms = ["s_cerevisiae", "Candida_glabrata", "z_rouxii", "Lachancea_thermotolerans", "Debaryomyces_hansenii", "Scheffersomyces_stipitis", "Clavispora_lusitaniae", "Yarrowia_lipolytica", "Geotrichum_candidum"]
+organisms = ["s_cerevisiae", "Candida_glabrata", "z_rouxii", "Lachancea_thermotolerans", "Debaryomyces_hansenii", "Scheffersomyces_stipitis", "Clavispora_lusitaniae", "Yarrowia_lipolytica"]
 # Save the list of organisms to a file
-with open("organisms_list.txt", "w") as file:
+with open("Phylogeny/input/organisms_list.txt", "w") as file:
     for organism in organisms:
         file.write(organism + "\n")
         
@@ -91,7 +91,7 @@ for z, organism in enumerate(organisms):
 # Save the visual array to a file
 #print(visual_array)
 if save_HGT_array_for_phylogenetic_tree:
-    np.save("HGT_array.npy", visual_array)
+    np.save("Phylogeny/input/HGT_array.npy", visual_array)
 
 # normalize the subset array
 for i in range(len(organisms)):
@@ -103,7 +103,7 @@ for i in range(len(organisms)):
 # Save the subset array to a file
 #print(subset_array)
 if save_subset_array_for_phylogenetic_tree:
-    np.save("subset_array.npy", subset_array)
+    np.save("Phylogeny/input/subset_array.npy", subset_array)
 
 fig, ax = plt.subplots()
 ax.set_xticks(np.arange(len(amino_acid)), amino_acid)
