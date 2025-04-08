@@ -11,7 +11,7 @@ def calculate_similarity_matrix(fasta_file):
     sequences = []
     ids = []
     for record in SeqIO.parse(fasta_file, "fasta"):
-        ids.append(" ".join(record.description.split()[1:3]))
+        ids.append(record.description.split()[1])
         sequences.append(str(record.seq))
     
     # Ensure all sequences are of the same length
@@ -55,7 +55,7 @@ def convert_to_newick(linkage_matrix, labels):
 
 
 def main():
-    fasta_file = "aligned_sequences.fasta"  # Replace with your FASTA file path
+    fasta_file = "Phylogeny/output/aligned_sequences.fasta"  # Replace with your FASTA file path
     ids, similarity_matrix = calculate_similarity_matrix(fasta_file)
     
 

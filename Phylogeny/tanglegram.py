@@ -1,49 +1,53 @@
-import dendropy
-from dendropy.interop import raxml
-from matplotlib import gridspec
-
 import matplotlib.pyplot as plt
+from io import StringIO
+from Bio import Phylo
 
-def load_tree(file_path):
-    """
-    Load a phylogenetic tree from a Newick file.
-    """
-    return dendropy.Tree.get(path=file_path, schema="newick")
 
-def plot_tanglegram(tree1, tree2):
-    """
-    Plot a tanglegram to compare two phylogenetic trees.
-    """
-    fig = plt.figure(figsize=(10, 6))
-    gs = gridspec.GridSpec(1, 2, width_ratios=[1, 1])
+# Read Newick strings from two files
+with open("Phylogeny/output/phylogenetic_tree_from_HGT.newick", "r") as file1, open("Phylogeny/output/phylogenetic_tree_from_16s.newick", "r") as file2:
+    newick1 = file1.read().strip()
+    newick2 = file2.read().strip()
 
-    # Plot first tree
-    ax1 = plt.subplot(gs[0])
-    tree1.plot(ax=ax1, show_leaf_labels=True)
-    ax1.set_title("Tree 1")
+# Parse the trees using Biopython
+tree1 = Phylo.read(StringIO(newick1), "newick")
+tree2 = Phylo.read(StringIO(newick2), "newick")
 
-    # Plot second tree
-    ax2 = plt.subplot(gs[1])
-    tree2.plot(ax=ax2, show_leaf_labels=True)
-    ax2.set_title("Tree 2")
+# Create a mapping of leaf names to positions for both trees
+def get_leaf_positions(tree):
+    leaf_positions = {}
+    for i, leaf in enumerate(tree.get_terminals()):
+        leaf_positions[leaf.name] = i
+    return leaf_positions
 
-    # Draw connecting lines
-    for leaf1, leaf2 in zip(tree1.leaf_nodes(), tree2.leaf_nodes()):
-        x1, y1 = ax1.transData.transform((0, leaf1.y))
-        x2, y2 = ax2.transData.transform((1, leaf2.y))
-        plt.plot([x1, x2], [y1, y2], color="gray", linestyle="--", linewidth=0.5)
+leaf_positions1 = get_leaf_positions(tree1)
+leaf_positions2 = get_leaf_positions(tree2)
 
-    plt.tight_layout()
-    plt.show()
+# Create a figure
+fig, axes = plt.subplots(1, 2, figsize=(12, 8))
 
-if __name__ == "__main__":
-    # Paths to the Newick tree files
-    tree1_path = "path/to/tree1.newick"  # Replace with the output of phylogenic_tree_from_matrix.py
-    tree2_path = "path/to/tree2.newick"  # Replace with the output of phylogenic_tree_from_aligned_fasta.py
+# Draw the first tree on the left
+Phylo.draw(tree1, do_show=False, axes=axes[0])
+axes[0].set_title("Tree 1")
 
-    # Load the trees
-    tree1 = load_tree(tree1_path)
-    tree2 = load_tree(tree2_path)
+# Draw the second tree on the right
+Phylo.draw(tree2, do_show=False, axes=axes[1])
+axes[1].set_title("Tree 2")
 
-    # Plot the tanglegram
-    plot_tanglegram(tree1, tree2)
+# Add connecting lines between matching leaf nodes
+fig.canvas.draw()  # Ensure the figure is fully drawn before adding lines
+for leaf_name in leaf_positions1.keys():
+    if leaf_name in leaf_positions2:
+        # Get the positions of the matching leaves
+        x1, y1 = axes[0].transData.transform((0, leaf_positions1[leaf_name]))
+        x2, y2 = axes[1].transData.transform((1, leaf_positions2[leaf_name]))
+
+        # Convert back to figure coordinates
+        x1_fig, y1_fig = fig.transFigure.inverted().transform((x1, y1))
+        x2_fig, y2_fig = fig.transFigure.inverted().transform((x2, y2))
+
+        # Draw a line connecting the matching leaves
+        line = plt.Line2D([x1_fig, x2_fig], [y1_fig, y2_fig], transform=fig.transFigure, color="gray", linestyle="--", linewidth=0.5)
+        fig.lines.append(line)
+
+plt.tight_layout()
+plt.show()

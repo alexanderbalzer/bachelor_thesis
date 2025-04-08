@@ -62,7 +62,7 @@ def convert_to_newick(linkage_matrix, labels):
         else:
             left = build_newick(node.left, node.dist, leaf_names)
             right = build_newick(node.right, node.dist, leaf_names)
-            return f"({left},{right}):{parent_dist - node.dist:.6f}"
+        return f"({left},{right}):{parent_dist - node.dist:.6f}"
 
     tree = to_tree(linkage_matrix, rd=False)
     return build_newick(tree, tree.dist, labels) + ";"
@@ -70,6 +70,7 @@ def convert_to_newick(linkage_matrix, labels):
 
 
 method = "pearson"  # Choose the method: "pearson", "euclidean", or "cosine"
+method2 = "UPGMA" # Choose the method: "UPGMA" or "NJ"
 # Read the organisms list from the file
 with open("Phylogeny/input/organisms_list.txt", "r") as file:
     labels = [line.strip() for line in file.readlines()]

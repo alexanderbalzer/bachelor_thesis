@@ -15,7 +15,10 @@ def fasta_to_dataframe(fasta_file):
 
 
 #organisms = ["s_cerevisiae", "s_pombe", "elegans", "d_melanogaster", "m_musculus",  "human", "a_thaliana"]
-organisms = ["s_cerevisiae", "Candida_glabrata", "z_rouxii", "Lachancea_thermotolerans", "Debaryomyces_hansenii", "Scheffersomyces_stipitis", "Clavispora_lusitaniae", "Yarrowia_lipolytica"]
+organisms = [
+    "s_cerevisiae", "Candida_glabrata", "z_rouxii", "Lachancea_thermotolerans", "Debaryomyces_hansenii", 
+    "Scheffersomyces_stipitis", "Clavispora_lusitaniae", "Yarrowia_lipolytica", "human_with_isoforms", 
+    "elegans", "a_thaliana", "s_pombe", "d_melanogaster", "m_musculus", "human"]
 # Save the list of organisms to a file
 with open("Phylogeny/input/organisms_list.txt", "w") as file:
     for organism in organisms:
