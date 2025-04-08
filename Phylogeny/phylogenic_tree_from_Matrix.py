@@ -55,10 +55,13 @@ def calculate_similarity_matrix_with_cosine(data):
 
 
 method = "pearson"  # Choose the method: "pearson", "euclidean", or "cosine"
-
+# Read the organisms list from the file
+with open("organisms_list.txt", "r") as file:
+    labels = [line.strip() for line in file.readlines()]
 
 data = np.load("subset_array.npy")
 data = np.array(data)
+
 
 if method == "pearson":
     similarity_matrix = calculate_similarity_matrix_with_pearson(data)
@@ -79,9 +82,8 @@ linkage_matrix = linkage(squareform(distance_matrix), method='average')
 
 # Plot the phylogenetic tree
 plt.figure(figsize=(10, 7))
-dendrogram(linkage_matrix, labels=["s_cerevisiae", "s_pombe", "elegans", "d_melanogaster", "m_musculus",  "human", 
-    "a_thaliana"])
-plt.title("Phylogenetic Tree (UPGMA)")
+dendrogram(linkage_matrix, labels= labels, orientation = 'left', leaf_font_size=10)
+plt.title("Phylogenetic Tree (UPGMA) - Pearson Correlation")
 plt.xlabel("Samples")
 plt.ylabel("Distance")
 plt.show()

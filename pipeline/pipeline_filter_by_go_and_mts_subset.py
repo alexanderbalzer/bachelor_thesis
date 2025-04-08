@@ -119,14 +119,12 @@ def parse_probability_of_mts (mts_file):
 
 
 def add_mts_cleavable_to_dataframe(df, probability_of_mts):
-    """
-    Add MTS-cleavable information to the DataFrame based on the protein IDs.
-    """
     for index, row in df.iterrows():
-        protein_id = row["Header"]  
-        if probability_of_mts[protein_id] > 0.9:
+        protein_id = row["Header"]
+        probability = probability_of_mts.get(protein_id, 0.0)  # Default to 0.0 if not found
+        if probability > 0.9:
             df.at[index, "MTS-cleavable?"] = "Yes"
-        elif probability_of_mts[protein_id] < 0.9:
+        elif probability < 0.9:
             df.at[index, "MTS-cleavable?"] = "No"
         else:
             df.at[index, "MTS-cleavable?"] = "Unknown"
@@ -151,13 +149,13 @@ def check_file_exists(file_path):
         raise
 
 def run_perl_script(perl_script_path, input_file, flag, output_file):
-    with open(output_file, "w") as output_file:
+    with open(output_file, "w") as output_handle:
         subprocess.run(
             ["perl", perl_script_path, input_file, flag],
-            stdout=output_file,
+            stdout=output_handle,
             stderr=subprocess.PIPE,
             check=True
-    )
+        )
 
 
 
@@ -171,8 +169,8 @@ logging.info("Starting the pipeline...")
 #organisms = [    "s_cerevisiae", "human", "elegans", "d_melanogaster", "a_thaliana", "s_pombe", "m_musculus"]
 #flags = ["fungi", "metazoa", "metazoa", "metazoa", "plant", "fungi", "metazoa"] #metazoa or fungi or plant
 
-organisms = ["s_cerevisiae", "Candida_glabrata", "z_rouxii", "K_lactis", "Lachancea thermotolerans", "Debaryomyces_hansenii", "Scheffersomyces_stipitis", "Clavispora_lusitaniae", "Yarrowia_lipolytica", "Geotrichum_candidum"]
-flag = ["fungi"]  # All are fungi
+organisms = ["s_cerevisiae", "Candida_glabrata", "z_rouxii", "Lachancea_thermotolerans", "Debaryomyces_hansenii", "Scheffersomyces_stipitis", "Clavispora_lusitaniae", "Yarrowia_lipolytica", "Geotrichum_candidum"]
+flag = "fungi"  # All are fungi
 cleavable = "Yes" #Yes or No
 threshold = 0.9 #threshold for probability of MTS-cleavable
 delete_temp_files = True #delete temporary MitoFates file
@@ -190,7 +188,7 @@ for i, name in enumerate(organisms, start=1):
 #    flag = flags[i-1]  # Get the corresponding flag for the organism
     # Log the current organism being processed and the iteration
     logging.info(f"Processing organism: {name}")
-    logging.info(f"Durchlauf[{i}/{len(organisms)}]")
+    logging.info(f"Run[{i}/{len(organisms)}]")
     if cleavable == "No":
         result_file = f"pipeline/output/filtered_by_GO_no_cleavable_mts_for_{name}.fasta"
     elif cleavable == "Yes":
@@ -217,12 +215,15 @@ for i, name in enumerate(organisms, start=1):
     # Parse the GO annotations and the FASTA file
     logging.info(f"Parsing GO annotations from {annotation_file}...")
     go_annotation = parse_go_annotations(annotation_file)
+    if not go_annotation:
+        logging.error(f"No GO annotations found for {name}. Check the .goa file.")
     proteome = fasta_to_dataframe(fasta_file)
 
     proteome_with_go_terms = add_go_terms_to_dataframe(proteome, go_annotation)
 
-
     filtered_proteins = filter_proteins_by_go(proteome_with_go_terms, target_go_term)
+    if not filtered_proteins:
+        logging.error(f"No proteins matched the target GO term {target_go_term} for {name}.")
 
     # Option to limit the number of filtered proteins to 2000
     #filtered_proteins = filtered_proteins[:2000]  # Limit to the first 2000 proteins
@@ -236,6 +237,8 @@ for i, name in enumerate(organisms, start=1):
         for protein_id, protein_seq in filtered_proteins
         if set(protein_seq).issubset(valid_amino_acids)
     ]
+    if not filtered_proteins:
+        logging.error(f"All proteins for {name} were filtered out due to invalid amino acids.")
 
     # Write the filtered proteins to the cache
     with open(output_filtered_by_GO_file, "w") as output_handle:
@@ -247,7 +250,14 @@ for i, name in enumerate(organisms, start=1):
     output_MitoFates_file = "pipeline/cache/mito_fates_for_" + str(name) + ".cgi"
 
     logging.info(f"Running MitoFates Perl script for {name}...")
-    run_perl_script(perl_script_path, input_MitoFates_file, flag, output_MitoFates_file)
+    if not os.path.exists(perl_script_path):
+        raise FileNotFoundError(f"Perl script not found: {perl_script_path}")
+    if not os.path.exists(input_MitoFates_file):
+        raise FileNotFoundError(f"Input file not found: {input_MitoFates_file}")
+    try:
+        run_perl_script(perl_script_path, input_MitoFates_file, flag, output_MitoFates_file)
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Error running MitoFates Perl script: {e.stderr.decode()}")
     logging.info(f"Finished running MitoFates Perl script for {name}")
 
     fasta_file = "pipeline/cache/filtered_proteins_by_GO_for_" + str(name) + ".fasta"
@@ -258,6 +268,8 @@ for i, name in enumerate(organisms, start=1):
 
     mts_cleavable = parse_mts_cleavable_annotations(mts_cleavable_file)
     probability_of_mts = parse_probability_of_mts(mts_cleavable_file)
+    if not probability_of_mts:
+        logging.error(f"No MTS-cleavable probabilities found for {name}. Check the MitoFates output.")
     proteome = add_mts_cleavable_to_dataframe(proteome, probability_of_mts)
 
 

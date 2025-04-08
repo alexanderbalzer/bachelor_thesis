@@ -14,9 +14,16 @@ def fasta_to_dataframe(fasta_file):
 
 
 
-organisms = ["s_cerevisiae", "s_pombe", "elegans", "d_melanogaster", "m_musculus",  "human", 
-    "a_thaliana"]
-#organisms = ["human", "s_cerevisiae"]
+#organisms = ["s_cerevisiae", "s_pombe", "elegans", "d_melanogaster", "m_musculus",  "human", "a_thaliana"]
+organisms = ["s_cerevisiae", "Candida_glabrata", "z_rouxii", "Lachancea_thermotolerans", "Debaryomyces_hansenii", "Scheffersomyces_stipitis", "Clavispora_lusitaniae", "Yarrowia_lipolytica", "Geotrichum_candidum"]
+# Save the list of organisms to a file
+with open("organisms_list.txt", "w") as file:
+    for organism in organisms:
+        file.write(organism + "\n")
+        
+save_subset_array_for_phylogenetic_tree = True 
+save_HGT_array_for_phylogenetic_tree = True
+
 
 position = np.array(["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"])
 amino_acid = np.array(["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "A", "T", "C", "P", "G", "V"])
@@ -82,8 +89,9 @@ for z, organism in enumerate(organisms):
                 result = abs_log_val
             visual_array[i, j] = result
 # Save the visual array to a file
-print(visual_array)
-np.save("HGT_array.npy", visual_array)
+#print(visual_array)
+if save_HGT_array_for_phylogenetic_tree:
+    np.save("HGT_array.npy", visual_array)
 
 # normalize the subset array
 for i in range(len(organisms)):
@@ -93,8 +101,9 @@ for i in range(len(organisms)):
         else:
             subset_array[i, j] = 0
 # Save the subset array to a file
-print(subset_array)
-np.save("subset_array.npy", subset_array)
+#print(subset_array)
+if save_subset_array_for_phylogenetic_tree:
+    np.save("subset_array.npy", subset_array)
 
 fig, ax = plt.subplots()
 ax.set_xticks(np.arange(len(amino_acid)), amino_acid)
