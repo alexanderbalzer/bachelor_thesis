@@ -1,13 +1,16 @@
 import init
 import os
-from go_filter import parse_go_annotations, filter_proteins_by_go, load_proteome
-from mts_filter import run_perl_script, parse_mts_annotations, filter_proteins_by_mts
-from utils import save_fasta, log_message
+import go_filter 
+import mts_filter
+import logging
+from utils import log_message
 
 def main():
     """
     Main function to run the pipeline.
     """
+
+    logging.basicConfig(level=logging.INFO)
     # Check for config file and load it
     clearance = init.check_config()
     if not clearance:
@@ -20,9 +23,12 @@ def main():
     output_dir = config['DEFAULT']['output_dir']
     cache_dir = config['DEFAULT']['cache_dir']
     target_go_term = config['DEFAULT']['target_GO_term']
-    perl_script_path = config['DEFAULT']['mitofates_path']
-    cleavable = config['DEFAULT']['cleavable']
+    perl_script_path = os.path.abspath(config['DEFAULT']['mitofates_path'])
+    cleavable = config['DEFAULT'].get('cleavable', 'No')
     threshold = config['DEFAULT'].getfloat('threshold', 0.9)
+    save_filtered_proteins = config['DEFAULT'].getboolean('save_filtered_proteins', False)
+    save_hgt_array = config['DEFAULT'].getboolean('save_hgt_array', False)
+    delete_cache = config['DEFAULT'].getboolean('delete_cache', False)
 
 
     # Log the start of the pipeline
@@ -32,46 +38,25 @@ def main():
     fasta_files = [f for f in os.listdir(input_dir) if f.endswith(".fasta")]
     organism_names = [os.path.splitext(f)[0] for f in fasta_files]
     log_message(f"Organism names extracted: {', '.join(organism_names)}")
+    
+    # Filter proteins by GO term
+    go_filter.run(organism_names, input_dir, cache_dir, output_dir, target_go_term)
+    log_message("GO term filtering completed.")
 
-    for organism in organism_names:
-        log_message(f"Processing organism: {organism}")
-        organism_input_dir = os.path.join(input_dir, organism)
-        organism_output_dir = os.path.join(output_dir, organism)
-        organism_cache_dir = os.path.join(cache_dir, organism)
+    #read the flaglist for MitoFates as a dictionairy
+    flaglist = {}
+    with open(os.path.join(input_dir, "flaglist.txt"), "r") as file:
+        for line in file:
+            parts = line.strip().split("\t")
+            if len(parts) == 2:
+                flaglist[parts[0]] = parts[1]
+    log_message(f"Flaglist loaded: {flaglist}")
 
-        # Ensure organism-specific directories exist
-        os.makedirs(organism_output_dir, exist_ok=True)
-        os.makedirs(organism_cache_dir, exist_ok=True)
+    # Filter proteins by MTS-cleavable probability
 
-        # Update paths for organism-specific processing
-        annotation_file = os.path.join(organism_input_dir, "annotations.goa")
-        fasta_file = os.path.join(organism_input_dir, "proteome.fasta")
-        go_filtered_file = os.path.join(organism_cache_dir, "filtered_by_go.fasta")
-        mts_output_file = os.path.join(organism_cache_dir, "mts_annotations.txt")
-        mts_filtered_file = os.path.join(organism_output_dir, "filtered_by_mts.fasta")
 
-        # Step 1: Parse GO annotations
-        go_annotations = parse_go_annotations(annotation_file)
-        log_message(f"GO annotations parsed for {organism}.")
 
-        # Step 2: Load proteome
-        proteome = load_proteome(fasta_file)
-        log_message(f"Proteome loaded for {organism}.")
 
-        # Step 3: Filter by GO term
-        filtered_by_go = filter_proteins_by_go(proteome, go_annotations, target_go_term)
-        save_fasta(filtered_by_go, go_filtered_file)
-        log_message(f"Proteins filtered by GO term for {organism}.")
-
-        # Step 4: Run MitoFates
-        run_perl_script(perl_script_path, go_filtered_file, "fungi", mts_output_file)
-        log_message(f"MitoFates script executed for {organism}.")
-
-        # Step 5: Filter by MTS-cleavable annotations
-        mts_annotations = parse_mts_annotations(mts_output_file)
-        filtered_by_mts = filter_proteins_by_mts(filtered_by_go, mts_annotations)
-        save_fasta(filtered_by_mts, mts_filtered_file)
-        log_message(f"Proteins filtered by MTS-cleavable annotations for {organism}.")
 
 
 if __name__ == "__main__":
