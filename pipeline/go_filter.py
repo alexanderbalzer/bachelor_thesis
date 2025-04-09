@@ -48,7 +48,7 @@ def add_go_terms_to_dataframe(df, go_annotation):
     Add GO terms to the DataFrame based on the protein IDs.
     """
     for index, row in df.iterrows():
-        protein_id = row["Header"].strip().split("|")[1]  
+        protein_id = row["Header"].strip().split("|")[1] 
         if protein_id in go_annotation:
             go_terms = go_annotation[protein_id]
             df.at[index, "GO_Term"] = ", ".join(go_terms)
@@ -57,10 +57,11 @@ def add_go_terms_to_dataframe(df, go_annotation):
     return df
 
 def filter_proteins_by_go(dataframe, target_go_term):
+    print(target_go_term)
     filtered_proteins = []
     for index, row in dataframe.iterrows():
-            go_terms = row["GO_Term"]
-            if target_go_term in go_terms:
+            go_terms = str(row["GO_Term"]).split(", ")
+            if str(target_go_term) in go_terms:
                 filtered_proteins.append((row["Header"], row["Sequence"]))
     return filtered_proteins
 
@@ -100,9 +101,9 @@ def run(list_of_organisms, input_dir, cache_dir, target_go_term):
         logging.info(f"Run[{i}/{len(list_of_organisms)}]")
 
         # Define the input and output files
-        annotation_file = str(input_dir) + str(name) + ".goa"  
-        fasta_file = input_dir + str(name) + ".fasta"
-        output_filtered_by_GO_file = str(cache_dir) + str(name) + "_filtered_by_GO.fasta"
+        annotation_file = os.path.join(input_dir, f"{name}.goa")
+        fasta_file = os.path.join(input_dir, f"{name}.fasta")
+        output_filtered_by_GO_file = os.path.join(cache_dir, f"filtered_proteins_by_GO_for_{name}.fasta")
 
         # Check if the input files exist
         check_file_exists(annotation_file)
@@ -115,11 +116,13 @@ def run(list_of_organisms, input_dir, cache_dir, target_go_term):
         proteome = fasta_to_dataframe(fasta_file)
 
         proteome_with_go_terms = add_go_terms_to_dataframe(proteome, go_annotation)
+        if proteome_with_go_terms.empty:
+            logging.error(f"No proteins found in the FASTA file {fasta_file}.")
+            continue
 
         filtered_proteins = filter_proteins_by_go(proteome_with_go_terms, target_go_term)
         if not filtered_proteins:
             logging.error(f"No proteins matched the target GO term {target_go_term} for {name}.")
-            return
 
         valid_amino_acids = set("ACDEFGHIKLMNPQRSTVWY") #ARNDCEQGHILKMFPSTWYV
 

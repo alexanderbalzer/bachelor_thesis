@@ -53,7 +53,7 @@ def main():
 
     # Filter proteins by MTS-cleavable probability
 
-    mts_filter.run(organism_names, cache_dir, output_dir, cleavable, perl_script_path, flaglist, delete_cache)
+    mts_filter.run(organism_names, cache_dir, output_dir, cleavable, perl_script_path, flaglist, delete_cache, threshold)
     log_message("MitoFates filtering completed.")
 
 
