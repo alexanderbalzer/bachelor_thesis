@@ -91,7 +91,7 @@ def check_file_exists(file_path):
         raise
 
 
-def run(list_of_organisms, input_dir, cache_dir, output_dir, target_go_term):
+def run(list_of_organisms, input_dir, cache_dir, target_go_term):
     """
     Main function to run the pipeline.
     """
@@ -102,7 +102,7 @@ def run(list_of_organisms, input_dir, cache_dir, output_dir, target_go_term):
         # Define the input and output files
         annotation_file = str(input_dir) + str(name) + ".goa"  
         fasta_file = input_dir + str(name) + ".fasta"
-        output_filtered_by_GO_file = str(cache_dir) + str(name) + ".fasta"
+        output_filtered_by_GO_file = str(cache_dir) + str(name) + "_filtered_by_GO.fasta"
 
         # Check if the input files exist
         check_file_exists(annotation_file)
@@ -119,6 +119,7 @@ def run(list_of_organisms, input_dir, cache_dir, output_dir, target_go_term):
         filtered_proteins = filter_proteins_by_go(proteome_with_go_terms, target_go_term)
         if not filtered_proteins:
             logging.error(f"No proteins matched the target GO term {target_go_term} for {name}.")
+            return
 
         valid_amino_acids = set("ACDEFGHIKLMNPQRSTVWY") #ARNDCEQGHILKMFPSTWYV
 

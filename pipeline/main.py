@@ -28,7 +28,7 @@ def main():
     threshold = config['DEFAULT'].getfloat('threshold', 0.9)
     save_filtered_proteins = config['DEFAULT'].getboolean('save_filtered_proteins', False)
     save_hgt_array = config['DEFAULT'].getboolean('save_hgt_array', False)
-    delete_cache = config['DEFAULT'].getboolean('delete_cache', False)
+    delete_cache = config['DEFAULT']['delete_cache']
 
 
     # Log the start of the pipeline
@@ -40,21 +40,21 @@ def main():
     log_message(f"Organism names extracted: {', '.join(organism_names)}")
     
     # Filter proteins by GO term
-    go_filter.run(organism_names, input_dir, cache_dir, output_dir, target_go_term)
+    go_filter.run(organism_names, input_dir, cache_dir, target_go_term)
     log_message("GO term filtering completed.")
 
     #read the flaglist for MitoFates as a dictionairy
     flaglist = {}
     with open(os.path.join(input_dir, "flaglist.txt"), "r") as file:
         for line in file:
-            parts = line.strip().split("\t")
-            if len(parts) == 2:
-                flaglist[parts[0]] = parts[1]
+            key, value = line.strip().split(":")
+            flaglist[key.strip()] = value.strip()
     log_message(f"Flaglist loaded: {flaglist}")
 
     # Filter proteins by MTS-cleavable probability
 
-
+    mts_filter.run(organism_names, cache_dir, output_dir, cleavable, perl_script_path, flaglist, delete_cache)
+    log_message("MitoFates filtering completed.")
 
 
 

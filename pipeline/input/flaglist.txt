@@ -1,1 +1,1 @@
-a_thaliana fungi
+a_thaliana: fungi
