@@ -1,8 +1,8 @@
-pipeline/input
-pipeline/output
+pipeline_test/input
+pipeline_test/output
 input_files
 output_files
-pipeline/cache
+pipeline_test/cache
 test.py
 Phylogeny/input
 Phylogeny/output
