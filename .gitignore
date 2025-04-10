@@ -4,4 +4,3 @@ pipeline/cache
 pipeline/test.py
 extra_stuff
 README.md
-.gitignore
