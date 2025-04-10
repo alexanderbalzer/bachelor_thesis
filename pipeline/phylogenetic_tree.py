@@ -8,6 +8,9 @@ from scipy.spatial.distance import euclidean, cosine
 from io import StringIO
 from scipy.cluster.hierarchy import to_tree
 import os
+from init import transform_labels_to_names
+from Bio.Phylo.TreeConstruction import DistanceTreeConstructor, DistanceMatrix
+from Bio import Phylo
 
 def calculate_similarity_matrix_with_pearson(data):
     # Load the numpy array from the specified file
@@ -90,39 +93,68 @@ def run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_alg
     # Convert the similarity matrix to a distance matrix
     distance_matrix = 1 - similarity_matrix
 
-    # Perform hierarchical clustering using UPGMA (Unweighted Pair Group Method with Arithmetic Mean)
-    linkage_matrix = linkage(squareform(distance_matrix), method='average')
+    if algorythm == "UPGMA":
+        # Perform hierarchical clustering using UPGMA (Unweighted Pair Group Method with Arithmetic Mean)
+        linkage_matrix = linkage(squareform(distance_matrix), method='average')
 
 
-    newick_string = convert_to_newick(linkage_matrix, labels)
+        newick_string = convert_to_newick(linkage_matrix, labels)
 
 
-    # Save the Newick string to a file
-    if save_newick:
-        with open(os.path.join(output_dir, "phylogenetic_tree.newick"), "w") as file:
-            file.write(newick_string)
+        # Save the Newick string to a file
+        if save_newick:
+            with open(os.path.join(output_dir, "phylogenetic_tree.newick"), "w") as file:
+                file.write(newick_string)
+
+
+        # Plot the phylogenetic tree
+        plt.figure(figsize=(10, 7))
+
+        italic_labels = [f"$\\mathit{{{name.replace(' ', '\\ ')}}}$" for name in transform_labels_to_names(labels)]
+
+        dendrogram(
+            linkage_matrix, 
+            labels= italic_labels, 
+            orientation = 'left', 
+            leaf_font_size=10
+            )
+        plt.title("Phylogenetic Tree (UPGMA) - Pearson Correlation")
+        plt.xlabel("Samples")
+        plt.ylabel("Distance")
+        # Adjust the layout to prevent labels from being cut off
+        plt.subplots_adjust(left=0.3)  # Increase the left margin
+        plt.tight_layout()
+        # Save the plot to a file
+        plt.savefig(os.path.join(output_dir, "phylogenetic_tree.png"), dpi=300)
+
+        # delete the cache
+        os.remove(os.path.join(cache_dir, "phyl_tree_array.npy"))
+        return
     
+    elif algorythm == "nj":
+        # Perform hierarchical clustering using Neighbor Joining (NJ)
+        # Convert the similarity matrix to a distance matrix
+        distance_matrix = [[1 - similarity_matrix[i][j] for j in range(len(similarity_matrix))] for i in range(len(similarity_matrix))]
+        constructor = DistanceTreeConstructor()
+        lower_triangle = []
+        for i in range(len(distance_matrix)):
+            lower_triangle.append(distance_matrix[i][:i + 1])  # Include only elements up to the diagonal
+        italic_labels = [f"$\\mathit{{{name.replace(' ', '\\ ')}}}$" for name in transform_labels_to_names(labels)]
+        distance_matrix = DistanceMatrix(names=italic_labels, matrix=lower_triangle)
+        tree = constructor.nj(distance_matrix)
 
-    # Plot the phylogenetic tree
-    plt.figure(figsize=(10, 7))
-    dendrogram(linkage_matrix, labels= labels, orientation = 'left', leaf_font_size=10)
-    plt.title("Phylogenetic Tree (UPGMA) - Pearson Correlation")
-    plt.xlabel("Samples")
-    plt.ylabel("Distance")
-    plt.show()
-    # Save the plot to a file
-    plt.savefig(os.path.join(output_dir, "phylogenetic_tree.png"), dpi=300)
+        # Save the Newick string to a file
+        if save_newick:
+            with open(os.path.join(output_dir, "phylogenetic_tree.newick"), "w") as file:
+                Phylo.write(tree, file, format="newick")
 
-    # delete the cache
-    os.remove(os.path.join(cache_dir, "phyl_tree_array.npy"))
-    return
+        # Plot the phylogenetic tree
+        Phylo.draw(tree)
 
-if __name__ == "__main__":
-    organism_names = ["Organism1", "Organism2", "Organism3"]  # Example organism names
-    cache_dir = "Phylogeny/cache"  # Example cache directory
-    output_dir = "Phylogeny/output"  # Example output directory
-    phylo_tree_method = "pearson"  # Example method
-    phylo_tree_algorithm = "UPGMA"  # Example algorithm
-    save_newick = True  # Example flag to save Newick format
+        plt.title("Phylogenetic Tree")
+        # Save the plot to a file
+        plt.savefig(os.path.join(output_dir, "phylogenetic_tree.png"), dpi=300)
 
-    run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_algorithm, save_newick)
+        # delete the cache
+        os.remove(os.path.join(cache_dir, "phyl_tree_array.npy"))
+        return

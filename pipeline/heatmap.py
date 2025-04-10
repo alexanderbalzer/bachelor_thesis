@@ -4,6 +4,7 @@ import pandas as pd
 from Bio import SeqIO
 from scipy.stats import hypergeom
 import os
+from init import transform_labels_to_names
 
 def fasta_to_dataframe(fasta_file):
     data = []
@@ -113,15 +114,18 @@ def run(organism_names, cache_dir, output_dir, create_heatmap, heatmap_type, cre
     ax.set_xticks(np.arange(len(amino_acid)), amino_acid)
     ax.set_yticks(np.arange(len(organism_names)), organism_names)
     ax.set_xticklabels(amino_acid)
-    ax.set_yticklabels(organism_names)
+    ax.set_yticklabels(transform_labels_to_names(organism_names), fontstyle="italic")
     cmap = 'coolwarm'
     pcm = ax.imshow(visual_array, cmap=cmap)
-    plt.colorbar(pcm, ax=ax, shrink=0.8)
+    plt.colorbar(pcm, ax=ax, shrink=0.3)
     plt.title("HGT scores")
-    plt.show()
-    # save the heatmap
+
+    # Adjust the layout to prevent labels from being cut off
+    plt.subplots_adjust(left=0.3)  # Increase the left margin
+    plt.tight_layout()
+
     if create_heatmap:
         plt.savefig(os.path.join(output_dir, "heatmap.png"), dpi=300)
-        plt.close()
+    # save the heatmap
     return
 

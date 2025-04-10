@@ -15,7 +15,8 @@ def check_config():
         config.read(config_path)
         section = "DEFAULT"
         required_sections = ["DEFAULT"]
-        required_keys = ["input_dir", "output_dir", "cache_dir", "target_GO_term", "mitofates_path", "cleavable", "threshold", "save_filtered_proteins", "save_hgt_array", "delete_cache"]
+        required_keys = ["input_dir", "output_dir", "cache_dir", "target_GO_term", "mitofates_path", "cleavable", "threshold", "save_filtered_proteins", "delete_cache", "create_heatmap", "heatmap_type", "create_phylogenetic_tree", "phylo_tree_type", "phylo_tree_method", "phylo_tree_algorithm", "save_newick"]
+        # Check if the required sections and keys are present
         for section in required_sections:
             if section not in config:
                 print(f"Error: Section '{section}' not found in config.ini.")
@@ -47,4 +48,17 @@ def load_config():
     config.read(os.path.join(os.path.dirname(__file__), "config.ini"))
     return config
 
+def transform_labels_to_names(organism_names):
+    """
+    Transform organism labels to names 
+    """
+    names = []
+    for label in organism_names:
+        # Replace underscores with spaces
+        name = label.replace("_", " ")
+        # Capitalize the first letter of each word
+        name = name.title()
+        # Add the transformed name to the list
+        names.append(name)
 
+    return names
