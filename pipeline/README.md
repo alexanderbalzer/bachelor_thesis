@@ -14,8 +14,7 @@ mitochondrial proteins
 V
 mitochondrial proteins with
 cleavable MTS
-[options:calculate HGT score] 
-[or use absolute values     ]    -> visualize as heatmap
+[HGT/absolute values]    -> visualize as heatmap
 | cluster with either neighbourjoining or upgma 
 V
 newick string                    -> visualize as phylogenic tree 
