@@ -140,7 +140,7 @@ def run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_alg
         for i in range(len(distance_matrix)):
             lower_triangle.append(distance_matrix[i][:i + 1])  # Include only elements up to the diagonal
         italic_labels = [f"$\\mathit{{{name.replace(' ', '\\ ')}}}$" for name in transform_labels_to_names(labels)]
-        distance_matrix = DistanceMatrix(names=italic_labels, matrix=lower_triangle)
+        distance_matrix = DistanceMatrix(names=labels, matrix=lower_triangle)
         tree = constructor.nj(distance_matrix)
 
         # Save the Newick string to a file
@@ -148,8 +148,11 @@ def run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_alg
             with open(os.path.join(output_dir, "phylogenetic_tree.newick"), "w") as file:
                 Phylo.write(tree, file, format="newick")
 
+        distance_matrix = DistanceMatrix(names=italic_labels, matrix=lower_triangle)
+        tree = constructor.nj(distance_matrix)
         # Plot the phylogenetic tree
-        Phylo.draw(tree)
+        plt.figure(figsize=(10, 7))
+        Phylo.draw(tree, do_show=False, label_func=lambda x: x.name)
 
         plt.title("Phylogenetic Tree")
         # Save the plot to a file

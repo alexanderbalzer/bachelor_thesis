@@ -68,7 +68,7 @@ def check_file_exists(file_path):
 def run_perl_script(mitofates_path, input_file, flag, output_file):
 
     env = os.environ.copy()
-    env["PATH"] = "/usr/bin:" + env["PATH"]
+    env["PATH"] = "/usr/bin:" + env["PATH"]  
     with open(output_file, "w") as output_handle:
         subprocess.run(
             ["perl", mitofates_path, input_file, flag],
