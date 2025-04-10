@@ -1,12 +1,7 @@
-pipeline_test
-input_files
-output_files
-test.py
-Phylogeny/input
-Phylogeny/output
 pipeline/input
 pipeline/output
 pipeline/cache
-pipeline/__pycache__
+pipeline/test.py
 extra_stuff
 README.md
+.gitignore

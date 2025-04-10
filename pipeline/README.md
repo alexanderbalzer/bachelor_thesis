@@ -24,6 +24,10 @@ newick string                    -> visualize as phylogenic tree
     ```bash
     git clone https://github.com/alexanderbalzer/bachelor_thesis/tree/cmd_line_arg/pipeline
     ```
+- Install the conda library:
+    ```bash
+    conda env create -f bachelor_env.yml
+    ```
 - Navigate to the pipeline directory:
     ```bash
     cd bachelor_thesis/pipeline
@@ -55,13 +59,13 @@ newick string                    -> visualize as phylogenic tree
 ## Directory Structure
 ```
 pipeline/
-├── input/          # Input data
-├── output/         # output data
-├── cache/          # cache data
-├── config.ini      # configuration file
-├── README.md       # Documentation
-├── flaglist.txt    # flags for MitoFates
-└── bachelor_env    # conda environment for the project
+├── input/           # Input data
+├── output/          # output data
+├── cache/           # cache data
+├── config.ini       # configuration file
+├── README.md        # Documentation
+├── flaglist.txt     # flags for MitoFates
+└── bachelor_env.yml # conda environment for the project
 ```
 
 Aditional Information:
