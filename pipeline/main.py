@@ -33,7 +33,7 @@ def main():
     create_heatmap = config['DEFAULT'].getboolean('create_heatmap', True)
     heatmap_type = config['DEFAULT'].get('heatmap_type', 'hgt')
     create_phylogenetic_tree = config['DEFAULT'].getboolean('create_phylogenetic_tree', True)
-    phylo_tree_type = config['DEFAULT'].get('phylo_tree_type', 'absolute')
+    type = config['DEFAULT'].get('type', 'absolute')
     phylo_tree_method = config['DEFAULT'].get('phylo_tree_method', 'pearson')
     phylo_tree_algorithm = config['DEFAULT'].get('phylo_tree_algorithm', 'upgma')
     save_newick = config['DEFAULT'].getboolean('save_newick', True)
@@ -53,7 +53,11 @@ def main():
 
     #read the flaglist for MitoFates as a dictionairy
     flaglist = {}
-    with open(os.path.join(input_dir, "flaglist.txt"), "r") as file:
+    flaglist_path = os.path.join(os.path.dirname(__file__), "flaglist.txt")
+    if not os.path.exists(flaglist_path):
+        print("Error: flaglist.txt file not found.")
+        return False
+    with open(flaglist_path, "r") as file:
         for line in file:
             key, value = line.strip().split(":")
             flaglist[key.strip()] = value.strip()
@@ -64,7 +68,7 @@ def main():
     log_message("MitoFates filtering completed.")
 
     if create_heatmap or create_phylogenetic_tree:
-        heatmap.run(organism_names, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, phylo_tree_type)
+        heatmap.run(organism_names, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, type)
         if create_heatmap:
             log_message("Heatmap creation completed.")
 

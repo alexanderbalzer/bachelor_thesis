@@ -1,2 +1,0 @@
-a_thaliana: plant
-s_cerevisiae: fungi

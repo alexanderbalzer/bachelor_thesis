@@ -15,7 +15,10 @@ def check_config():
         config.read(config_path)
         section = "DEFAULT"
         required_sections = ["DEFAULT"]
-        required_keys = ["input_dir", "output_dir", "cache_dir", "target_GO_term", "mitofates_path", "cleavable", "threshold", "save_filtered_proteins", "delete_cache", "create_heatmap", "heatmap_type", "create_phylogenetic_tree", "phylo_tree_type", "phylo_tree_method", "phylo_tree_algorithm", "save_newick"]
+        required_keys = ["input_dir", "output_dir", "cache_dir", "target_GO_term", 
+                         "mitofates_path", "cleavable", "threshold", "save_filtered_proteins", 
+                         "delete_cache", "create_heatmap", "create_phylogenetic_tree", 
+                         "type", "phylo_tree_method", "phylo_tree_algorithm", "save_newick"]
         # Check if the required sections and keys are present
         for section in required_sections:
             if section not in config:
