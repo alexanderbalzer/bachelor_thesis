@@ -2,7 +2,9 @@ import init
 import os
 import go_filter 
 import mts_filter
+import heatmap
 import logging
+import phylogenetic_tree
 from utils import log_message
 
 def main():
@@ -26,9 +28,15 @@ def main():
     perl_script_path = os.path.abspath(config['DEFAULT']['mitofates_path'])
     cleavable = config['DEFAULT'].get('cleavable', 'No')
     threshold = config['DEFAULT'].getfloat('threshold', 0.9)
-    save_filtered_proteins = config['DEFAULT'].getboolean('save_filtered_proteins', False)
-    save_hgt_array = config['DEFAULT'].getboolean('save_hgt_array', False)
     delete_cache = config['DEFAULT']['delete_cache']
+    save_filtered_proteins = config['DEFAULT'].getboolean('save_filtered_proteins', True)
+    create_heatmap = config['DEFAULT'].getboolean('create_heatmap', True)
+    heatmap_type = config['DEFAULT'].get('heatmap_type', 'hgt')
+    create_phylogenetic_tree = config['DEFAULT'].getboolean('create_phylogenetic_tree', True)
+    phylo_tree_type = config['DEFAULT'].get('phylo_tree_type', 'absolute')
+    phylo_tree_method = config['DEFAULT'].get('phylo_tree_method', 'pearson')
+    phylo_tree_algorithm = config['DEFAULT'].get('phylo_tree_algorithm', 'upgma')
+    save_newick = config['DEFAULT'].getboolean('save_newick', True)
 
 
     # Log the start of the pipeline
@@ -52,11 +60,27 @@ def main():
     log_message(f"Flaglist loaded: {flaglist}")
 
     # Filter proteins by MTS-cleavable probability
-
     mts_filter.run(organism_names, cache_dir, output_dir, cleavable, perl_script_path, flaglist, delete_cache, threshold)
     log_message("MitoFates filtering completed.")
 
+    if create_heatmap or create_phylogenetic_tree:
+        heatmap.run(organism_names, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, phylo_tree_type)
+        if create_heatmap:
+            log_message("Heatmap creation completed.")
 
+    if create_phylogenetic_tree:
+        phylogenetic_tree.run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_algorithm, save_newick)
+        log_message("Phylogenetic tree creation completed.")
+
+    if not save_filtered_proteins:
+        for organism in organism_names:
+            os.remove(os.path.join(output_dir, f"{organism}_filtered_by_go_and_mts.fasta"))
+            log_message(f"Deleted filtered proteins file for {organism}")
+    else:
+        log_message("Filtered proteins files are retained.")
+
+
+    log_message("Pipeline completed successfully.")
 
 
 if __name__ == "__main__":

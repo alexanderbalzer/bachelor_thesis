@@ -6,3 +6,7 @@ pipeline_test/cache
 test.py
 Phylogeny/input
 Phylogeny/output
+pipeline/input
+pipeline/output
+pipeline/cache
+pipeline/__pycache__

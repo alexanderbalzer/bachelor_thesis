@@ -4,7 +4,7 @@ import pandas as pd
 from Bio import SeqIO
 import os
 import logging
-import subprocess
+from utils import log_message
 
 
 def parse_go_annotations(annotation_file):
@@ -57,7 +57,7 @@ def add_go_terms_to_dataframe(df, go_annotation):
     return df
 
 def filter_proteins_by_go(dataframe, target_go_term):
-    print(target_go_term)
+    logging.info(f"Filtering proteins by GO term: {target_go_term}")
     filtered_proteins = []
     for index, row in dataframe.iterrows():
             go_terms = str(row["GO_Term"]).split(", ")
@@ -104,6 +104,11 @@ def run(list_of_organisms, input_dir, cache_dir, target_go_term):
         annotation_file = os.path.join(input_dir, f"{name}.goa")
         fasta_file = os.path.join(input_dir, f"{name}.fasta")
         output_filtered_by_GO_file = os.path.join(cache_dir, f"filtered_proteins_by_GO_for_{name}.fasta")
+
+        # check if the output file already exists
+        if os.path.exists(output_filtered_by_GO_file):
+            logging.info(f"Output file {output_filtered_by_GO_file} already exists. Skipping.")
+            continue
 
         # Check if the input files exist
         check_file_exists(annotation_file)
