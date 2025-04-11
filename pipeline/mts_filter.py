@@ -136,6 +136,7 @@ def run(list_of_organisms, cache_dir, output_dir, cleavable, mitofates_path, fla
         if delete_cache == "yes":
             os.remove(input_file)
             os.remove(output_file)
+            os.remove(os.path.join(cache_dir, f"filtered_proteins_by_GO_for_{organism}.fasta"))
             logging.info(f"Deleted cache files for {organism}")
 
     logging.info("MitoFates filtering completed.")

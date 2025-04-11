@@ -9,8 +9,8 @@ from utils import log_message
 
 def parse_go_annotations(annotation_file):
     """
-    Parse a GO annotation fileto create a dictionary
-    mapping protein IDs to their associated GO terms.
+    Parse a GO annotation file to create a dictionary
+    mapping protein IDs and their associated GO terms.
     """
     go_annotation = {}
     with open(annotation_file, "r") as file:
@@ -92,7 +92,7 @@ def check_file_exists(file_path):
         raise
 
 
-def run(list_of_organisms, input_dir, cache_dir, target_go_term):
+def run(list_of_organisms, input_dir, cache_dir, target_go_term, run_from_scratch):
     """
     Main function to run the pipeline.
     """
@@ -105,10 +105,11 @@ def run(list_of_organisms, input_dir, cache_dir, target_go_term):
         fasta_file = os.path.join(input_dir, f"{name}.fasta")
         output_filtered_by_GO_file = os.path.join(cache_dir, f"filtered_proteins_by_GO_for_{name}.fasta")
 
+        if not run_from_scratch:
         # check if the output file already exists
-        if os.path.exists(output_filtered_by_GO_file):
-            logging.info(f"Output file {output_filtered_by_GO_file} already exists. Skipping.")
-            continue
+            if os.path.exists(output_filtered_by_GO_file):
+                logging.info(f"Output file {output_filtered_by_GO_file} already exists. Skipping.")
+                continue
 
         # Check if the input files exist
         check_file_exists(annotation_file)

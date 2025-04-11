@@ -6,6 +6,7 @@ import heatmap
 import logging
 import phylogenetic_tree
 from utils import log_message
+from datetime import datetime
 
 def main():
     """
@@ -37,6 +38,7 @@ def main():
     phylo_tree_method = config['DEFAULT'].get('phylo_tree_method', 'pearson')
     phylo_tree_algorithm = config['DEFAULT'].get('phylo_tree_algorithm', 'upgma')
     save_newick = config['DEFAULT'].getboolean('save_newick', True)
+    run_from_scratch = config['DEFAULT'].getboolean('run_from_scratch', False)
 
 
     # Log the start of the pipeline
@@ -47,8 +49,18 @@ def main():
     organism_names = [os.path.splitext(f)[0] for f in fasta_files]
     log_message(f"Organism names extracted: {', '.join(organism_names)}")
     
+    #create a folder with a timestamp for the cache and the output files
+    now = datetime.now()
+    timestamp = now.strftime("%Y%m%d_%H%M%S")
+    cache_dir = os.path.join(cache_dir, f"cache_{timestamp}/")
+    output_dir = os.path.join(output_dir, f"output_{timestamp}/")
+    os.makedirs(cache_dir, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
+    log_message(f"Cache directory created: {cache_dir}")
+    log_message(f"Output directory created: {output_dir}")
+
     # Filter proteins by GO term
-    go_filter.run(organism_names, input_dir, cache_dir, target_go_term)
+    go_filter.run(organism_names, input_dir, cache_dir, target_go_term, run_from_scratch)
     log_message("GO term filtering completed.")
 
     #read the flaglist for MitoFates as a dictionairy
@@ -82,7 +94,10 @@ def main():
             log_message(f"Deleted filtered proteins file for {organism}")
     else:
         log_message("Filtered proteins files are retained.")
-
+    
+    if delete_cache.lower() == "yes" and not save_filtered_proteins:
+        os.rmdir(cache_dir)
+        log_message(f"Deleted cache directory: {cache_dir}")
 
     log_message("Pipeline completed successfully.")
 

@@ -8,7 +8,7 @@ from scipy.spatial.distance import euclidean, cosine
 from io import StringIO
 from scipy.cluster.hierarchy import to_tree
 import os
-from init import transform_labels_to_names
+from utils import transform_labels_to_names
 from Bio.Phylo.TreeConstruction import DistanceTreeConstructor, DistanceMatrix
 from Bio import Phylo
 

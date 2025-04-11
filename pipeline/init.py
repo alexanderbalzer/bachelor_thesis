@@ -3,7 +3,7 @@ import os
 
 def check_config():
     """
-    Check if the config.ini file exists.
+    Check if the config.ini file exists with all needed keys.
     """
     config_path = os.path.join(os.path.dirname(__file__), "config.ini")
     if not os.path.exists(config_path):
@@ -18,11 +18,12 @@ def check_config():
         required_keys = ["input_dir", "output_dir", "cache_dir", "target_GO_term", 
                          "mitofates_path", "cleavable", "threshold", "save_filtered_proteins", 
                          "delete_cache", "create_heatmap", "create_phylogenetic_tree", 
-                         "type", "phylo_tree_method", "phylo_tree_algorithm", "save_newick"]
+                         "type", "phylo_tree_method", "phylo_tree_algorithm", "save_newick",
+                         "run_from_scratch"]
         # Check if the required sections and keys are present
         for section in required_sections:
             if section not in config:
-                print(f"Error: Section '{section}' not found in config.ini.")
+                print(f"Error: Section '{section}' not found in config.ini, please copy from Github.")
                 return False
         for key in required_keys:
             if key not in config[section]:
@@ -51,17 +52,4 @@ def load_config():
     config.read(os.path.join(os.path.dirname(__file__), "config.ini"))
     return config
 
-def transform_labels_to_names(organism_names):
-    """
-    Transform organism labels to names 
-    """
-    names = []
-    for label in organism_names:
-        # Replace underscores with spaces
-        name = label.replace("_", " ")
-        # Capitalize the first letter of each word
-        name = name.title()
-        # Add the transformed name to the list
-        names.append(name)
 
-    return names

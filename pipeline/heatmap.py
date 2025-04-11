@@ -4,7 +4,7 @@ import pandas as pd
 from Bio import SeqIO
 from scipy.stats import hypergeom
 import os
-from init import transform_labels_to_names
+from utils import transform_labels_to_names
 
 def fasta_to_dataframe(fasta_file):
     data = []
