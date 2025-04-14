@@ -137,10 +137,10 @@ def run(list_of_organisms, cache_dir, output_dir, cleavable, mitofates_path, fla
         proteome = add_mts_cleavable_to_dataframe(proteome, probability_of_mts, threshold)
         filtered_proteins = filter_proteins_by_mts(proteome, cleavable)
         amount_of_proteins_per_step.at["Mitochondrial with MTS", organism] = len(filtered_proteins)
-        with open(os.path.join(output_dir, f"{organism}_filtered_by_go_and_mts.fasta"), "w") as output_handle:
+        with open(os.path.join(cache_dir, f"{organism}_filtered_by_go_and_mts.fasta"), "w") as output_handle:
             for header, sequence in filtered_proteins:
                 output_handle.write(f">{header}\n{sequence}\n")
-        logging.info(f"Filtered proteins saved to {output_dir}{organism}_filtered_by_go_and_mts.fasta")
+        logging.info(f"Filtered proteins saved to {cache_dir}{organism}_filtered_by_go_and_mts.fasta")
 
         if delete_cache == "yes":
             os.remove(input_file)

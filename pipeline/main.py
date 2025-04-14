@@ -8,6 +8,7 @@ import phylogenetic_tree
 from utils import log_message
 from datetime import datetime
 import pandas as pd
+import shutil
 
 def main():
     """
@@ -71,6 +72,11 @@ def main():
     output_dir = os.path.join(output_dir, f"output_{timestamp}/")
     os.makedirs(cache_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
+    # copy the config file to the output directory
+    config_file_path = os.path.join(os.getcwd(), "config.ini")
+    if os.path.exists(config_file_path):
+        shutil.copy(config_file_path, output_dir)
+        log_message(f"Config file copied to output directory: {output_dir}")
     log_message(f"Cache directory created: {cache_dir}")
     log_message(f"Output directory created: {output_dir}")
 
