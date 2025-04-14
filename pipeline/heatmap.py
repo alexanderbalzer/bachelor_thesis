@@ -5,6 +5,7 @@ from Bio import SeqIO
 from scipy.stats import hypergeom
 import os
 from utils import transform_labels_to_names
+from matplotlib.colors import TwoSlopeNorm
 
 def fasta_to_dataframe(fasta_file):
     data = []
@@ -64,7 +65,6 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
             df_counts = df_counts.transpose()
             # Convert the DataFrame to a dictionary
             count_dict = df_counts.to_dict()   
-            print(count_dict)         
             dictlist.append(count_dict)
             if y == 0:
                 for i in range(len(amino_acid)):
@@ -125,6 +125,9 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
     pcm = ax.imshow(visual_array, cmap=cmap)
     cbar = plt.colorbar(pcm, ax=ax, shrink=0.3, aspect=10, pad=0.01)
     max = np.max(visual_array)
+    max = np.round(max, decimals=0)
+    norm = TwoSlopeNorm(vmin=-max, vcenter=0, vmax=max)
+    pcm.set_norm(norm)
     cbar.set_ticks([-max, 0, max])
     cbar.ax.set_title('HGT', pad=10)
 
