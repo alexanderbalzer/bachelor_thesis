@@ -94,14 +94,14 @@ def main():
     log_message(f"Flaglist loaded: {flaglist}")
 
     # Filter proteins by MTS-cleavable probability
-    amount_of_proteins_per_step = mts_filter.run(organism_names, cache_dir, output_dir, cleavable, perl_script_path, flaglist, delete_cache, threshold,run_from_scratch, amount_of_proteins_per_step, last_run)
+    amount_of_proteins_per_step = mts_filter.run(organism_names, cache_dir, output_dir, cleavable, perl_script_path, flaglist, delete_cache, threshold, run_from_scratch, amount_of_proteins_per_step, last_run)
     log_message("MitoFates filtering completed.")
     # save the amount of proteins per step to a file
     amount_of_proteins_per_step.to_csv(os.path.join(output_dir, "amount_of_proteins_per_step.csv"), index=False)
     log_message("Amount of proteins per step saved.")
 
     if create_heatmap or create_phylogenetic_tree:
-        heatmap.run(organism_names, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, type, reference)
+        heatmap.run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, type, reference)
         if create_heatmap:
             log_message("Heatmap creation completed.")
 

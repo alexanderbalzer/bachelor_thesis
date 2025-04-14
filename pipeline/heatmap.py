@@ -36,12 +36,12 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
     for z, organism in enumerate(organism_names):
         if reference == "subset":
             input = [
-                os.path.join(output_dir, f"{organism}_filtered_by_go_and_mts.fasta"),
+                os.path.join(cache_dir, f"{organism}_filtered_by_go_and_mts.fasta"),
                 os.path.join(cache_dir, f"filtered_proteins_by_GO_for_{organism}.fasta")
                 ]
         elif reference == "proteome":
             input = [
-                os.path.join(output_dir, f"{organism}_filtered_by_go_and_mts.fasta"),
+                os.path.join(cache_dir, f"{organism}_filtered_by_go_and_mts.fasta"),
                 os.path.join(input_dir, f"{organism}.fasta")
                 ]
         y = 0
@@ -53,7 +53,7 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
             # limit the length of the sequences to 20 and cut the first
             for i in range(len(data)):
                 data[i] = data[i][1:20]
-            df = pd.DataFrame(data, columns=[list(range(20))])
+            df = pd.DataFrame(data, columns=[list(range(19))])
             # count the instances of each amino acid per column
             df_counts = df.apply(pd.Series.value_counts).fillna(0)
             # Rearrange rows of df_counts to align with the order of amino_acid
@@ -63,7 +63,8 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
             # transpose the dataframe
             df_counts = df_counts.transpose()
             # Convert the DataFrame to a dictionary
-            count_dict = df_counts.to_dict()            
+            count_dict = df_counts.to_dict()   
+            print(count_dict)         
             dictlist.append(count_dict)
             if y == 0:
                 for i in range(len(amino_acid)):
@@ -122,8 +123,10 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
     ax.set_yticklabels(transform_labels_to_names(organism_names), fontstyle="italic")
     cmap = 'coolwarm'
     pcm = ax.imshow(visual_array, cmap=cmap)
-    plt.colorbar(pcm, ax=ax, shrink=0.3)
-    plt.title("HGT scores")
+    cbar = plt.colorbar(pcm, ax=ax, shrink=0.3, aspect=10, pad=0.01)
+    max = np.max(visual_array)
+    cbar.set_ticks([-max, 0, max])
+    cbar.ax.set_title('HGT', pad=10)
 
     # Adjust the layout to prevent labels from being cut off
     plt.subplots_adjust(left=0.3)  # Increase the left margin
@@ -134,3 +137,15 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
     # save the heatmap
     return
 
+if __name__ == "__main__":
+    # Example usage
+    organism_names = ["Caenorhabditis_elegans", "human_with_isoforms", "Saccharomyces_cerevisiae"]
+    input_dir = "pipeline/input"
+    cache_dir = "pipeline/cache/cache_20250414_134336/"
+    output_dir = "pipeline/output"
+    create_heatmap = True
+    heatmap_type = "hgt"
+    create_phylogenetic_tree = True
+    phylo_tree_type = "hgt"
+    reference = "subset"
+    run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, phylo_tree_type, reference)
