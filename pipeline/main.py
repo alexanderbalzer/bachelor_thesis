@@ -7,6 +7,7 @@ import logging
 import phylogenetic_tree
 from utils import log_message
 from datetime import datetime
+import pandas as pd
 
 def main():
     """
@@ -39,6 +40,7 @@ def main():
     phylo_tree_algorithm = config['DEFAULT'].get('phylo_tree_algorithm', 'upgma')
     save_newick = config['DEFAULT'].getboolean('save_newick', True)
     run_from_scratch = config['DEFAULT'].getboolean('run_from_scratch', False)
+    reference = config['DEFAULT'].get('reference', 'subset')
 
 
     # Log the start of the pipeline
@@ -48,19 +50,35 @@ def main():
     fasta_files = [f for f in os.listdir(input_dir) if f.endswith(".fasta")]
     organism_names = [os.path.splitext(f)[0] for f in fasta_files]
     log_message(f"Organism names extracted: {', '.join(organism_names)}")
-    
-    #create a folder with a timestamp for the cache and the output files
+
+    # Read the last run timestamp from the file cache_of_last_run.txt
+    last_run_file = os.path.join(os.getcwd(), "cache_of_last_run.txt")
+    if os.path.exists(last_run_file):
+        with open(last_run_file, "r") as file:
+            last_run = file.read().strip()
+        log_message(f"Last run timestamp loaded: {last_run}")
+    else:
+        last_run = None
+        run_from_scratch = True
+        log_message("No previous run timestamp found.")
+
+    # Create a folder with a timestamp for the cache and the output files
     now = datetime.now()
     timestamp = now.strftime("%Y%m%d_%H%M%S")
     cache_dir = os.path.join(cache_dir, f"cache_{timestamp}/")
+    with open(last_run_file, "w") as file:
+        file.write(cache_dir)
     output_dir = os.path.join(output_dir, f"output_{timestamp}/")
     os.makedirs(cache_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
     log_message(f"Cache directory created: {cache_dir}")
     log_message(f"Output directory created: {output_dir}")
 
+    # Initialize a DataFrame to keep track of the amount of proteins per step
+    amount_of_proteins_per_step = pd.DataFrame(index=["Start", "Mitochondrial", "Mitochondrial with MTS"], columns=organism_names)
+
     # Filter proteins by GO term
-    go_filter.run(organism_names, input_dir, cache_dir, target_go_term, run_from_scratch)
+    amount_of_proteins_per_step = go_filter.run(organism_names, input_dir, cache_dir, target_go_term, run_from_scratch, amount_of_proteins_per_step, last_run)
     log_message("GO term filtering completed.")
 
     #read the flaglist for MitoFates as a dictionairy
@@ -76,11 +94,14 @@ def main():
     log_message(f"Flaglist loaded: {flaglist}")
 
     # Filter proteins by MTS-cleavable probability
-    mts_filter.run(organism_names, cache_dir, output_dir, cleavable, perl_script_path, flaglist, delete_cache, threshold)
+    amount_of_proteins_per_step = mts_filter.run(organism_names, cache_dir, output_dir, cleavable, perl_script_path, flaglist, delete_cache, threshold,run_from_scratch, amount_of_proteins_per_step, last_run)
     log_message("MitoFates filtering completed.")
+    # save the amount of proteins per step to a file
+    amount_of_proteins_per_step.to_csv(os.path.join(output_dir, "amount_of_proteins_per_step.csv"), index=False)
+    log_message("Amount of proteins per step saved.")
 
     if create_heatmap or create_phylogenetic_tree:
-        heatmap.run(organism_names, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, type)
+        heatmap.run(organism_names, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, type, reference)
         if create_heatmap:
             log_message("Heatmap creation completed.")
 
@@ -99,6 +120,7 @@ def main():
         os.rmdir(cache_dir)
         log_message(f"Deleted cache directory: {cache_dir}")
 
+    # Log the completion of the pipeline
     log_message("Pipeline completed successfully.")
 
 

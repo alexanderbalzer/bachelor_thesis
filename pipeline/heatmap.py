@@ -15,7 +15,7 @@ def fasta_to_dataframe(fasta_file):
 
 
 
-def run(organism_names, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, phylo_tree_type):
+def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, phylo_tree_type, reference):
 
     amino_acid = np.array(["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "A", "T", "C", "P", "G", "V"])
 
@@ -34,31 +34,36 @@ def run(organism_names, cache_dir, output_dir, create_heatmap, heatmap_type, cre
     subset_array = np.zeros((len(organism_names), len(amino_acid)), dtype=float)
     visual_array = np.zeros((len(organism_names), len(amino_acid)), dtype=float)
     for z, organism in enumerate(organism_names):
-        input = [
-            os.path.join(output_dir, f"{organism}_filtered_by_go_and_mts.fasta"),
-            os.path.join(cache_dir, f"filtered_proteins_by_GO_for_{organism}.fasta")
-            ]
+        if reference == "subset":
+            input = [
+                os.path.join(output_dir, f"{organism}_filtered_by_go_and_mts.fasta"),
+                os.path.join(cache_dir, f"filtered_proteins_by_GO_for_{organism}.fasta")
+                ]
+        elif reference == "proteome":
+            input = [
+                os.path.join(output_dir, f"{organism}_filtered_by_go_and_mts.fasta"),
+                os.path.join(input_dir, f"{organism}.fasta")
+                ]
         y = 0
         for file in input:
-            panda_df = fasta_to_dataframe(file)
-            proteome = list(panda_df['sequence'])
-            amount_of_proteins = len(proteome)
-
-            proteome_as_array = np.zeros((amount_of_proteins, 20), dtype=object)
-            for i, amino_acids_in_proteome in enumerate(proteome):
-                sequence = amino_acids_in_proteome[1:20]
-                for j in range(19):
-                    if j < len(sequence):
-                        proteome_as_array[i, j] = sequence[j]
-                    else:
-                        proteome_as_array[i, j] = "X"
-                count_dict = {}
-                for row in range(amount_of_proteins):
-                    value = proteome_as_array[row, 0]
-                    if (value) in count_dict:
-                        count_dict[value] += 1
-                    else:
-                        count_dict[value] = 1
+            data = []
+            for line in SeqIO.parse(file, "fasta"):
+                data.append(list(str(line.seq)))
+            data = list(data)
+            # limit the length of the sequences to 20 and cut the first
+            for i in range(len(data)):
+                data[i] = data[i][1:20]
+            df = pd.DataFrame(data, columns=[list(range(20))])
+            # count the instances of each amino acid per column
+            df_counts = df.apply(pd.Series.value_counts).fillna(0)
+            # Rearrange rows of df_counts to align with the order of amino_acid
+            df_counts = df_counts.reindex(amino_acid, fill_value=0)
+            # only use the first column of the dataframe
+            df_counts = df_counts.iloc[:, 0]
+            # transpose the dataframe
+            df_counts = df_counts.transpose()
+            # Convert the DataFrame to a dictionary
+            count_dict = df_counts.to_dict()            
             dictlist.append(count_dict)
             if y == 0:
                 for i in range(len(amino_acid)):

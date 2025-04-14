@@ -3,6 +3,7 @@ import os
 import pandas as pd
 from Bio import SeqIO
 import logging
+import shutil
 
 def parse_mts_cleavable_annotations(mts_file):
     """
@@ -97,7 +98,7 @@ def fasta_to_dataframe(fasta_file):
 
 
 
-def run(list_of_organisms, cache_dir, output_dir, cleavable, mitofates_path, flagdict, delete_cache, threshold):
+def run(list_of_organisms, cache_dir, output_dir, cleavable, mitofates_path, flagdict, delete_cache, threshold,run_from_scratch, amount_of_proteins_per_step, last_run):
     """
     Run the MitoFates Perl script and filter proteins by MTS-cleavable probability.
     """
@@ -107,8 +108,16 @@ def run(list_of_organisms, cache_dir, output_dir, cleavable, mitofates_path, fla
 
     # Run the Perl script for each organism
     for organism in list_of_organisms:
+        logging.info(f"Running MitoFates for {organism}")
+        if not run_from_scratch:    
+            if os.path.exists(os.path.join(last_run, f"{organism}_filtered_by_go_and_mts.fasta")):
+                # copy the file to the new cache directory
+                shutil.copy(os.path.join(last_run, f"{organism}_filtered_by_go_and_mts.fasta"), os.path.join(cache_dir, f"{organism}_filtered_by_go_and_mts.fasta"))
+                logging.info(f"File already exists for {organism}: {os.path.join(last_run, f'{organism}_filtered_by_go_and_mts.fasta')}")
+                continue
+
         # check if the output file already exists and skip if it does
-        output_file = os.path.join(output_dir, f"{organism}_filtered_by_go_and_mts.fasta")
+        output_file = os.path.join(cache_dir, f"{organism}_filtered_by_go_and_mts.fasta")
         if os.path.exists(output_file):
             logging.info(f"Output file already exists for {organism}: {output_file}")
             continue
@@ -127,7 +136,7 @@ def run(list_of_organisms, cache_dir, output_dir, cleavable, mitofates_path, fla
         probability_of_mts = parse_probability_of_mts(output_file)
         proteome = add_mts_cleavable_to_dataframe(proteome, probability_of_mts, threshold)
         filtered_proteins = filter_proteins_by_mts(proteome, cleavable)
-
+        amount_of_proteins_per_step.at["Mitochondrial with MTS", organism] = len(filtered_proteins)
         with open(os.path.join(output_dir, f"{organism}_filtered_by_go_and_mts.fasta"), "w") as output_handle:
             for header, sequence in filtered_proteins:
                 output_handle.write(f">{header}\n{sequence}\n")
@@ -140,4 +149,5 @@ def run(list_of_organisms, cache_dir, output_dir, cleavable, mitofates_path, fla
             logging.info(f"Deleted cache files for {organism}")
 
     logging.info("MitoFates filtering completed.")
+    return amount_of_proteins_per_step
 

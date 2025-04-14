@@ -1,3 +1,3 @@
-a_thaliana: plant
-s_cerevisiae: fungi
-elegans: metazoa
+Saccharomyces_cerevisiae: fungi
+Caenorhabditis_elegans: metazoa
+human_with_isoforms: metazoa

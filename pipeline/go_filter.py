@@ -5,6 +5,7 @@ from Bio import SeqIO
 import os
 import logging
 from utils import log_message
+import shutil
 
 
 def parse_go_annotations(annotation_file):
@@ -92,7 +93,7 @@ def check_file_exists(file_path):
         raise
 
 
-def run(list_of_organisms, input_dir, cache_dir, target_go_term, run_from_scratch):
+def run(list_of_organisms, input_dir, cache_dir, target_go_term, run_from_scratch, amount_of_proteins_per_step, last_run):
     """
     Main function to run the pipeline.
     """
@@ -107,7 +108,9 @@ def run(list_of_organisms, input_dir, cache_dir, target_go_term, run_from_scratc
 
         if not run_from_scratch:
         # check if the output file already exists
-            if os.path.exists(output_filtered_by_GO_file):
+            if os.path.exists(os.path.join(last_run, f"filtered_proteins_by_GO_for_{name}.fasta")):
+                # copy the file to the new cache directory
+                shutil.copy(os.path.join(last_run, f"filtered_proteins_by_GO_for_{name}.fasta"), output_filtered_by_GO_file)
                 logging.info(f"Output file {output_filtered_by_GO_file} already exists. Skipping.")
                 continue
 
@@ -120,6 +123,7 @@ def run(list_of_organisms, input_dir, cache_dir, target_go_term, run_from_scratc
         if not go_annotation:
             logging.error(f"No GO annotations found for {name}. Check the .goa file.")
         proteome = fasta_to_dataframe(fasta_file)
+        amount_of_proteins_per_step.at["Start", name] = len(proteome)
 
         proteome_with_go_terms = add_go_terms_to_dataframe(proteome, go_annotation)
         if proteome_with_go_terms.empty:
@@ -142,11 +146,13 @@ def run(list_of_organisms, input_dir, cache_dir, target_go_term, run_from_scratc
         if not filtered_proteins:
             logging.error(f"All proteins for {name} were filtered out due to invalid amino acids.")
 
+        amount_of_proteins_per_step.at["Mitochondrial", name] = len(filtered_proteins)
         # Write the filtered proteins to the cache
         with open(output_filtered_by_GO_file, "w") as output_handle:
             for protein_id, protein_seq in filtered_proteins:
                 output_handle.write(f">{protein_id}\n{protein_seq}\n")
         logging.info(f"Filtered proteins by GO term and saved to {output_filtered_by_GO_file}")
+    return amount_of_proteins_per_step
 
 
 
