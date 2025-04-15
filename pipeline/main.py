@@ -71,14 +71,14 @@ def main():
         file.write(cache_dir)
     output_dir = os.path.join(output_dir, f"output_{timestamp}/")
     os.makedirs(cache_dir, exist_ok=True)
+    log_message(f"Cache directory created: {cache_dir}")
     os.makedirs(output_dir, exist_ok=True)
+    log_message(f"Output directory created: {output_dir}")
     # copy the config file to the output directory
     config_file_path = os.path.join(os.getcwd(), "config.ini")
     if os.path.exists(config_file_path):
         shutil.copy(config_file_path, output_dir)
         log_message(f"Config file copied to output directory: {output_dir}")
-    log_message(f"Cache directory created: {cache_dir}")
-    log_message(f"Output directory created: {output_dir}")
 
     # Initialize a DataFrame to keep track of the amount of proteins per step
     amount_of_proteins_per_step = pd.DataFrame(index=["Start", "Mitochondrial", "Mitochondrial with MTS"], columns=organism_names)

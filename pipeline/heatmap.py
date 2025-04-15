@@ -142,13 +142,29 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
 
 if __name__ == "__main__":
     # Example usage
-    organism_names = ["Caenorhabditis_elegans", "human_with_isoforms", "Saccharomyces_cerevisiae"]
+    organism_names = ["Arabidopsis_thaliana",
+    "Caenorhabditis_elegans",
+    "Candida_glabrata",
+    "Clavispora_lusitaniae",
+    "Debaryomyces_hansenii",
+    "Drosophila_Melanogaster",
+    "Geotrichum_candidum",
+    "human",
+    "human_with_isoforms",
+    "Lachancea_thermotolerans",
+    "Mus_musculus",
+    "Physcomitrium_patens",
+    "Saccharomyces_cerevisiae",
+    "Scheffersomyces_stipitis",
+    "Schizosaccharomyces_pombe",
+    "Yarrowia_lipolytica",
+    "Zygosaccharomyces_rouxii"]
     input_dir = "pipeline/input"
-    cache_dir = "pipeline/cache/cache_20250414_134336/"
-    output_dir = "pipeline/output"
+    cache_dir = "pipeline/cache/cache_20250414_224234/"
+    output_dir = "pipeline/output/output_20250414_224234"
     create_heatmap = True
     heatmap_type = "hgt"
     create_phylogenetic_tree = True
     phylo_tree_type = "hgt"
-    reference = "subset"
+    reference = "proteome"
     run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, phylo_tree_type, reference)

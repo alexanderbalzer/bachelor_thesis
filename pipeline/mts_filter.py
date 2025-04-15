@@ -116,11 +116,11 @@ def run(list_of_organisms, cache_dir, output_dir, cleavable, mitofates_path, fla
                 logging.info(f"File already exists for {organism}: {os.path.join(last_run, f'{organism}_filtered_by_go_and_mts.fasta')}")
                 continue
 
-        # check if the output file already exists and skip if it does
-        output_file = os.path.join(cache_dir, f"{organism}_filtered_by_go_and_mts.fasta")
-        if os.path.exists(output_file):
-            logging.info(f"Output file already exists for {organism}: {output_file}")
-            continue
+            # check if the output file already exists and skip if it does
+            output_file = os.path.join(cache_dir, f"{organism}_filtered_by_go_and_mts.fasta")
+            if os.path.exists(output_file):
+                logging.info(f"Output file already exists for {organism}: {output_file}")
+                continue
         try:
             input_file = os.path.join(cache_dir, f"filtered_proteins_by_GO_for_{organism}.fasta")
             output_file = os.path.join(cache_dir, f"mitofates_for_{organism}.cgi")
@@ -151,3 +151,43 @@ def run(list_of_organisms, cache_dir, output_dir, cleavable, mitofates_path, fla
     logging.info("MitoFates filtering completed.")
     return amount_of_proteins_per_step
 
+if __name__ == "__main__":
+    # Example usage
+    organism_names = ["Arabidopsis_thaliana",
+    "Caenorhabditis_elegans",
+    "Candida_glabrata",
+    "Clavispora_lusitaniae",
+    "Debaryomyces_hansenii",
+    "Drosophila_Melanogaster",
+    "Geotrichum_candidum",
+    "human",
+    "human_with_isoforms",
+    "Lachancea_thermotolerans",
+    "Mus_musculus",
+    "Physcomitrium_patens",
+    "Saccharomyces_cerevisiae",
+    "Scheffersomyces_stipitis",
+    "Schizosaccharomyces_pombe",
+    "Yarrowia_lipolytica",
+    "Zygosaccharomyces_rouxii"]
+    input_dir = "pipeline/input"
+    cache_dir = "pipeline/cache/cache_20250414_224234/"
+    output_dir = "pipeline/output/output_20250414_224234"
+    create_heatmap = True
+    heatmap_type = "hgt"
+    create_phylogenetic_tree = True
+    phylo_tree_type = "hgt"
+    reference = "proteome"
+    cleavable = "No"
+    perl_script_path = "/home/abalzer/MitoFates/MitoFates.pl"
+    with open("pipeline/flaglist.txt", "r") as file:
+        flaglist = {}
+        for line in file:
+            key, value = line.strip().split(":")
+            flaglist[key.strip()] = value.strip()
+    delete_cache = "No"
+    threshold = 0.9
+    run_from_scratch = True
+    amount_of_proteins_per_step = pd.DataFrame(index=["Start", "Mitochondrial", "Mitochondrial with MTS"], columns=organism_names)
+    last_run = "pipeline/cache/cache_20250414_224234/"
+    run(organism_names, cache_dir, output_dir, cleavable, perl_script_path, flaglist, delete_cache, threshold, run_from_scratch, amount_of_proteins_per_step, last_run)
