@@ -178,7 +178,7 @@ if __name__ == "__main__":
     create_phylogenetic_tree = True
     phylo_tree_type = "hgt"
     reference = "proteome"
-    cleavable = "No"
+    cleavable = "Yes"
     perl_script_path = "/home/abalzer/MitoFates/MitoFates.pl"
     with open("pipeline/flaglist.txt", "r") as file:
         flaglist = {}

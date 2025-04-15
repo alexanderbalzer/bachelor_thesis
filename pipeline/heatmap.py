@@ -82,7 +82,7 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
             for j in range(len(amino_acid)):
                 x = subset_array[i, j]
                 n = reference_array[i, j]
-                p_value = hypergeom.pmf(x, M, n, N)
+                p_value = hypergeom.sf(x, M, n, N)
                 abs_log_val = abs(np.log10(p_value))
                 f_obs = x / N if N != 0 else 0
                 f_exp = n / M if M != 0 else 0
@@ -107,8 +107,9 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
     #print(subset_array)
     if save_subset_array_for_phylogenetic_tree:
         np.save(os.path.join(cache_dir, "phyl_tree_array.npy"), subset_array)
+    # Apply log2 transformation while conserving the sign
 
-
+    #visual_array = np.sign(visual_array) * np.abs(np.log2(np.abs(visual_array) + 1e-10))
     if create_heatmap:
         if heatmap_type == "absolute":
             visual_array = subset_array
@@ -116,12 +117,18 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
             visual_array = visual_array
         else:
             raise ValueError("Invalid heatmap type. Choose 'absolute' or 'hgt'.")
+    
+    for i in range(len(organism_names)):
+        for j in range(len(amino_acid)):
+            if visual_array[i, j] == 0:
+                visual_array[i, j] = 0.00001
+
     fig, ax = plt.subplots()
     ax.set_xticks(np.arange(len(amino_acid)), amino_acid)
     ax.set_yticks(np.arange(len(organism_names)), organism_names)
     ax.set_xticklabels(amino_acid)
     ax.set_yticklabels(transform_labels_to_names(organism_names), fontstyle="italic")
-    cmap = 'coolwarm'
+    cmap = 'RdBu_r'
     pcm = ax.imshow(visual_array, cmap=cmap)
     cbar = plt.colorbar(pcm, ax=ax, shrink=0.3, aspect=10, pad=0.01)
     max = np.max(visual_array)

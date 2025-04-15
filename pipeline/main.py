@@ -9,6 +9,7 @@ from utils import log_message
 from datetime import datetime
 import pandas as pd
 import shutil
+import create_logoplot
 
 def main():
     """
@@ -42,6 +43,9 @@ def main():
     save_newick = config['DEFAULT'].getboolean('save_newick', True)
     run_from_scratch = config['DEFAULT'].getboolean('run_from_scratch', False)
     reference = config['DEFAULT'].get('reference', 'subset')
+    create_logoplot = config['DEFAULT'].getboolean('create_logoplot', True)
+
+    log_message("Configuration loaded successfully.")
 
 
     # Log the start of the pipeline
@@ -110,6 +114,8 @@ def main():
         heatmap.run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, type, reference)
         if create_heatmap:
             log_message("Heatmap creation completed.")
+    
+    create_logoplot.run(organism_names, cache_dir, output_dir)
 
     if create_phylogenetic_tree:
         phylogenetic_tree.run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_algorithm, save_newick)
@@ -128,6 +134,8 @@ def main():
 
     # Log the completion of the pipeline
     log_message("Pipeline completed successfully.")
+
+
 
 
 if __name__ == "__main__":
