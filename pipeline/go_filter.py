@@ -21,8 +21,8 @@ def parse_go_annotations(annotation_file):
             fields = line.strip().split("\t")
             protein_id = fields[1]  #protein ID (column 2 in GAF)
             function = fields[8]  #function type (column 9 in GAF)
-            if function != "C":  #filter for location information
-                continue
+#            if function != "C":  #filter for location information
+#                continue
             go_term = fields[4]     #GO term (column 5 in GAF)
             if protein_id not in go_annotation:
                 go_annotation[protein_id] = []

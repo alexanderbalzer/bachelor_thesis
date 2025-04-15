@@ -82,7 +82,7 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
             for j in range(len(amino_acid)):
                 x = subset_array[i, j]
                 n = reference_array[i, j]
-                p_value = hypergeom.sf(x, M, n, N)
+                p_value = hypergeom.pmf(x, M, n, N)
                 abs_log_val = abs(np.log10(p_value))
                 f_obs = x / N if N != 0 else 0
                 f_exp = n / M if M != 0 else 0
@@ -117,7 +117,6 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
             visual_array = visual_array
         else:
             raise ValueError("Invalid heatmap type. Choose 'absolute' or 'hgt'.")
-    
     for i in range(len(organism_names)):
         for j in range(len(amino_acid)):
             if visual_array[i, j] == 0:

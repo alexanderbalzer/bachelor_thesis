@@ -9,7 +9,7 @@ from utils import log_message
 from datetime import datetime
 import pandas as pd
 import shutil
-import create_logoplot
+# import create_logoplot
 
 def main():
     """
@@ -114,8 +114,6 @@ def main():
         heatmap.run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, type, reference)
         if create_heatmap:
             log_message("Heatmap creation completed.")
-    
-    create_logoplot.run(organism_names, cache_dir, output_dir)
 
     if create_phylogenetic_tree:
         phylogenetic_tree.run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_algorithm, save_newick)
