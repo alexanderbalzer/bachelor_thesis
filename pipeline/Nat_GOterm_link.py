@@ -7,9 +7,6 @@ import matplotlib.pyplot as plt
 from goatools.obo_parser import GODag
 from goatools.base import download_go_basic_obo
 
-fasta = "pipeline/cache/cache_20250415_153127/human_filtered_by_go_and_mts.fasta"
-goa = "pipeline/input/human.goa"
-
 
 # parse the fasta file and create a dataframe
 def fasta_to_dataframe(fasta_file):
@@ -91,6 +88,22 @@ def get_go_aspect(go_id):
         return go_term.name
     else:
         return "Unknown"
+
+def format_species_name(name: str) -> str:
+    # Teile den Namen anhand des Unterstrichs
+    parts = name.split("_")
+    if len(parts) != 2:
+        raise ValueError("Name muss genau ein Unterstrich enthalten (Gattung_Art)")
+    
+    genus, species = parts
+    # Kürze den Gattungsnamen auf den ersten Buchstaben + Punkt
+    short_genus = genus[0] + "."
+    
+    # Setze alles in kursiv (z. B. für Markdown oder HTML)
+    formatted = f"{short_genus} {species}"
+    return formatted
+
+
     
 obo_path = "pipeline/go.obo"
 if not os.path.exists(obo_path):
@@ -102,14 +115,17 @@ go_dag = GODag(obo_path)
 
 
 
-filter = False
-threshold = 10  # Minimum number of occurrences for a GO term to be included in the heatmap
-filter_by = "P"  # Filter for cellular component
+filter = True
+threshold = 5  # Minimum number of occurrences for a GO term to be included in the heatmap
+filter_by = "C"  
 # filter_by = "C"  # Filter for cellular component
 # filter_by = "F"  # Filter for function
 # filter_by = "P"  # Filter for process
-# filter_by = "C" or "F" or "P" # Filter for all functions
+name = "human" # Saccharomyces_cerevisiae Caenorhabditis_elegans human
 
+
+fasta = "pipeline/cache/cache_20250415_153127/" + name + "_filtered_by_go_and_mts.fasta"
+goa = "pipeline/input/" + name + ".goa"
 if __name__ == "__main__":
 
     df = fasta_to_dataframe(fasta)
@@ -138,7 +154,7 @@ if __name__ == "__main__":
     print(go_term_summary)
     
     if filter_by == "C":
-        function = "cellular_component"
+        function = "cellular component"
     elif filter_by == "F":
         function = "function"
     elif filter_by == "P":
@@ -147,13 +163,21 @@ if __name__ == "__main__":
         function = "all_functions"
     # exchange GO terms with their aspects
     go_term_summary.index = [get_go_aspect(go_id) for go_id in go_term_summary.index]
+    if "Unknown" in go_term_summary.index:
+        go_term_summary = go_term_summary.drop("Unknown")
 
     # Create a heatmap
     plt.figure(figsize=(12, 8))
     sns.heatmap(go_term_summary, cmap="YlGnBu", annot=True, fmt="d")
-    plt.title(f"GO Term Distribution by 2nd Amino Acid. subset = {function}")
-    plt.xlabel("GO Terms")
-    plt.ylabel("2nd Amino Acid")
+    if name == "human":
+        biological_name = "Human"
+    else:
+        biological_name = format_species_name(name)
+    plt.title(biological_name, fontstyle="italic")
+    colorbar = plt.gca().collections[0].colorbar
+    colorbar.set_label("Absolute count")
+    plt.xlabel("Nat substrate")
+    plt.ylabel(function)
     plt.xticks(rotation=90)
     plt.tight_layout()
     plt.show()

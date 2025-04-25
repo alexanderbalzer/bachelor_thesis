@@ -4,7 +4,6 @@ import pandas as pd
 from Bio import SeqIO
 import os
 import logging
-from utils import log_message
 import shutil
 
 

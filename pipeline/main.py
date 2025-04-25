@@ -79,7 +79,7 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
     log_message(f"Output directory created: {output_dir}")
     # copy the config file to the output directory
-    config_file_path = os.path.join(os.getcwd(), "config.ini")
+    config_file_path = "pipeline/config.ini"
     if os.path.exists(config_file_path):
         shutil.copy(config_file_path, output_dir)
         log_message(f"Config file copied to output directory: {output_dir}")

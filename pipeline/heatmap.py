@@ -82,7 +82,7 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
             for j in range(len(amino_acid)):
                 x = subset_array[i, j]
                 n = reference_array[i, j]
-                p_value = hypergeom.pmf(x, M, n, N)
+                p_value = hypergeom.sf(x, M, n, N)
                 abs_log_val = abs(np.log10(p_value))
                 f_obs = x / N if N != 0 else 0
                 f_exp = n / M if M != 0 else 0
@@ -129,13 +129,14 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
     ax.set_yticklabels(transform_labels_to_names(organism_names), fontstyle="italic")
     cmap = 'RdBu_r'
     pcm = ax.imshow(visual_array, cmap=cmap)
-    cbar = plt.colorbar(pcm, ax=ax, shrink=0.3, aspect=10, pad=0.01)
     max = np.max(visual_array)
     max = np.round(max, decimals=0)
+    max = 20
     norm = TwoSlopeNorm(vmin=-max, vcenter=0, vmax=max)
     pcm.set_norm(norm)
+    cbar = plt.colorbar(pcm, ax=ax, shrink=0.3, aspect=10, pad=0.01)
     cbar.set_ticks([-max, 0, max])
-    cbar.ax.set_title('HGT', pad=10)
+    cbar.ax.set_title('HGT', fontsize=7)
 
     # Adjust the layout to prevent labels from being cut off
     plt.subplots_adjust(left=0.3)  # Increase the left margin
@@ -166,8 +167,8 @@ if __name__ == "__main__":
     "Yarrowia_lipolytica",
     "Zygosaccharomyces_rouxii"]
     input_dir = "pipeline/input"
-    cache_dir = "pipeline/cache/cache_20250414_224234/"
-    output_dir = "pipeline/output/output_20250414_224234"
+    cache_dir = "pipeline/cache/cache_20250424_111739/"
+    output_dir = "pipeline/output/output_20250424_111739"
     create_heatmap = True
     heatmap_type = "hgt"
     create_phylogenetic_tree = True

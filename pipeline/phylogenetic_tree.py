@@ -128,7 +128,7 @@ def run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_alg
         plt.savefig(os.path.join(output_dir, "phylogenetic_tree.png"), dpi=300)
 
         # delete the cache
-        os.remove(os.path.join(cache_dir, "phyl_tree_array.npy"))
+        #os.remove(os.path.join(cache_dir, "phyl_tree_array.npy"))
         return
     
     elif algorythm == "nj":
@@ -182,8 +182,8 @@ if __name__ == "__main__":
 "Schizosaccharomyces_pombe",
 "Yarrowia_lipolytica",
 "Zygosaccharomyces_rouxii"]
-    cache_dir = "pipeline/cache/cache_20250415_154148/"
-    output_dir = "pipeline/output/output_20250415_154148/"
+    cache_dir = "pipeline/cache/cache_20250424_111739/"
+    output_dir = "pipeline/output/output_20250424_111739/"
     phylo_tree_method = "pearson"  # or "euclidean" or "cosine"
     phylo_tree_algorithm = "UPGMA"  # or "nj"
     save_newick = True
