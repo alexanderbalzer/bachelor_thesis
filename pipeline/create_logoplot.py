@@ -1,165 +1,131 @@
-import matplotlib.pyplot as plt
-import numpy as np
+import os
 import pandas as pd
+import logging
+import shutil
 from Bio import SeqIO
-from scipy.stats import hypergeom
-from matplotlib.colors import TwoSlopeNorm
-import 
+from datetime import datetime
+from matplotlib import pyplot as plt
+import numpy as np
+import seaborn as sns
+from logomaker import Logo
+from collections import Counter
+from matplotlib.patches import Patch
 
-def fasta_to_dataframe(fasta_file):
-    data = []
-    for record in SeqIO.parse(fasta_file, "fasta"):
-        data.append([str(record.seq)])
-    return pd.DataFrame(data, columns=['sequence'])
+def format_species_name(name: str) -> str:
+    # Teile den Namen anhand des Unterstrichs
+    parts = name.split("_")
+    if len(parts) != 2:
+        raise ValueError("Name muss genau ein Unterstrich enthalten (Gattung_Art)")
+    
+    genus, species = parts
+    # Kürze den Gattungsnamen auf den ersten Buchstaben + Punkt
+    short_genus = genus[0] + "."
+    
+    # Setze alles in kursiv (z. B. für Markdown oder HTML)
+    formatted = f"{short_genus} {species}"
+    return formatted
+
+# Create a frequency matrix for the MTS sequences
+def create_frequency_matrix(sequences):
+    max_length = max(len(seq) for seq in sequences)
+    frequency_matrix = []
+    for i in range(max_length):
+        column = [seq[i] if i < len(seq) else '-' for seq in sequences]
+        counts = Counter(column)
+        total = sum(counts.values())
+        frequency_matrix.append({key: counts[key] / total for key in counts})
+    return pd.DataFrame(frequency_matrix).fillna(0)
 
 
-def count_instances_at_positions(array):
-    rows, cols = array.shape
-    print("amount of proteins: ", rows)
-    dictlist = []
-    for col in range(0,20): ######
-        count_dict = {}
-        for row in range(rows):
-            value = array[row, col]
-            if (value) in count_dict:
-                count_dict[value] += 1
-            else:
-                count_dict[value] = 1
-        dictlist.append(count_dict)
-    #print(dictlist)
-    return dictlist
 
-Name = ["Caenorhabditis_elegans"]
-name = Name[0]
-run()
-position = np.array(["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"])
-amino_acid = np.array(["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "A", "T", "C", "P", "G", "V"])
 
-#input= ["output files/filtered_proteins_cleavable_mts_for_" + str(name) + "_2.fasta", 
- #       "output files/filtered_proteins_no_cleavable_mts_for_" + str(name) + "_2.fasta",
-  #      "output files/filtered_proteins_by_GO_for_" + str(name) +".fasta"]
-input = [
-    "/home/abalzer/Documents/good results/Cleavable_and_proteome_ref/cache_20250414_224234/" + str(name) + "_filtered_by_go_and_mts.fasta",
-    "/home/abalzer/Documents/good results/not cleavable, but proteome_ref/cache_20250414_224234/" + str(name) + "_filtered_by_go_and_mts.fasta",
-    "pipeline/input/" + str(name) + ".fasta"
-    #"/home/abalzer/Documents/good results/Cleavable_and_proteome_ref/cache_20250414_224234/filtered_proteins_by_GO_for_" + str(name) + ".fasta",
-    ]
+name = "Saccharomyces_cerevisiae"  # Caenorhabditis_elegans  Saccharomyces_cerevisiae  human
+start = "MTS" # MTS or beginning
 
-#wanted_result either "absolute" or "hgt"
-wanted_result = "hgt"
 
-all_arrays = [0, 0, 0]
-all_counted_instances = [0, 0, 0]
-amount_of_proteins = [0, 0, 0]
-for file in range(len(input)):
-    panda_df = fasta_to_dataframe(input[file])
-    proteomes = list(panda_df['sequence'])
-    #print(proteomes)
 
-    proteome_array = np.zeros((len(proteomes), 20), dtype=object)
-    for i, proteome in enumerate(proteomes):
-        proteome = proteome[1:20] 
-        for j in range(20):
-            if j < len(proteome):
-                proteome_array[i, j] = proteome[j]
-            else:
-                proteome_array[i, j] = 'X'
-  #  print(proteome_array)
+data = []  # Initialize an empty list to store the data
+with open("pipeline/cache/cache_20250424_104057/" + name + "_filtered_by_go_and_mts.fasta", "r") as file:
+    headers = []
+    second_as = []
+    sequences = []
+    for protein in SeqIO.parse(file, "fasta"):
+        headers.append(protein.id)
+        sequences.append(str(protein.seq))
+        second_as.append(str(protein.seq)[1])
+    # Create a pandas DataFrame with headers as the index and second_as as the column
+    df_headers = pd.DataFrame({"Second_AS": second_as, "Sequence": sequences}, index=headers)
+    
 
-    counted_instances = count_instances_at_positions(proteome_array)
-    rows, cols = proteome_array.shape
-    amount_of_proteins[file] = rows
-    all_counted_instances[file] = counted_instances
-    #print(counted_instances)
-
-    percentage = np.zeros((len(amino_acid)), dtype=object)
-if wanted_result == "absolute":
-    for file in range(2):
-        counted_instances = all_counted_instances[file]
-        cols = len(amino_acid)
-        rows = len(position)
-        visual_array = np.zeros((cols, rows))
-        for i in range(rows):
-            for j in range(cols):
-                if amino_acid[j] in counted_instances[i]:
-                    visual_array[j, i] = counted_instances[i][amino_acid[j]]
-        all_arrays[file]= visual_array
+with open("pipeline/cache/cache_20250424_104057/mitofates_for_" + name + ".cgi", "r") as file:
+    lines = file.readlines()
+    for i, line in enumerate(lines):
+        if line.startswith("!") or i == 0:  # Skip header line
+            continue
+        fields = line.strip().split("\t")
+        protein_id = fields[0]
+        probability_of_MTS = fields[1]
+        position_of_MTS = fields[6]
+        start_of_MTS = position_of_MTS.strip().split("-")[0]
+        length_of_MTS = float(position_of_MTS.strip().split("-")[1]) - float(position_of_MTS.strip().split("-")[0])
         
-        #print(visual_array)
-
-if wanted_result == "hgt":
-    whole_set = all_counted_instances[2]
-    for file in range(2):
-        counted_instances = all_counted_instances[file]
-   #     print(counted_instances)
-        cols = len(amino_acid)
-        rows = len(position)
-        visual_array = np.zeros((cols, rows))
-    #    print(visual_array)
-        for i in range(rows):
-            for j in range(cols):
-                if amino_acid[j] in counted_instances[i]:
-                    x = counted_instances[i][amino_acid[j]] #amount of amino acid in the subset
-                    n = whole_set[i][amino_acid[j]] #amount of amino acid in the whole set
-                    M = amount_of_proteins[2] #amount of all amino acids in the whole set
-                    N = amount_of_proteins[file] #amount of all amino acids in the subset
-                    p_value = hypergeom.pmf(x, M, n, N)
-                    if i ==10 and j == 1:
-                        print(p_value)
-                    abs_log_val = abs(np.log10(p_value))
-                    f_obs = x / N
-                    f_exp = n / M
- #                   print(f_obs, f_exp)
-                    result = 0
-                    if f_obs < f_exp:
-                        result = -1 * abs_log_val
-                    else:
-                        result = abs_log_val
-                    visual_array[j, i] = result
- #       print(visual_array)
-        all_arrays[file]= visual_array
- #       print(visual_array)
- #       print(visual_array.shape)
+        # Append the data for this line to the list if the probability is above the threshold
+        if float(probability_of_MTS) >= 0.9:
+            second_as = df_headers.loc[protein_id, "Second_AS"] if protein_id in df_headers.index else None
+            sequence = df_headers.loc[protein_id, "Sequence"] if protein_id in df_headers.index else None
+            if second_as is not None:
+                # Append the data to the list
+                data.append({"Protein_ID": protein_id, "Sequence": sequence, "Second_AS": second_as, "start_of_MTS": start_of_MTS, "Probability_of_MTS": probability_of_MTS, "length_of_MTS": length_of_MTS})
+# Convert the list of dictionaries into a pandas DataFrame
+df = pd.DataFrame(data)
+# Create a new column for the desired sequence
+if start == "MTS":
+    df["MTS_Sequence"] = df.apply(
+    lambda row: row["Sequence"][int(row["start_of_MTS"]) - 1:int(row["start_of_MTS"]) - 1 + int(row["length_of_MTS"])],
+    axis=1
+    )
+elif start == "beginning":
+    df["MTS_Sequence"] = df.apply(
+    lambda row: row["Sequence"][0:0 + int(row["length_of_MTS"])],
+    axis=1
+    )
+else:
+    raise ValueError("Invalid start value. Use 'MTS' or 'beginning'.")
 
 
-fig, ax = plt.subplots(ncols= 2)
-fig.subplots_adjust(bottom=0.5)
+# Generate the frequency matrix
+frequency_matrix = create_frequency_matrix(df["MTS_Sequence"])
+frequency_matrix = frequency_matrix.fillna(0)
+# Create a color scheme for the logoplot
+# Define a custom color scheme
+custom_color_scheme = {
+    'L': 'green', 'F': 'green', 'I': 'green', 'V': 'green', 'W': 'green', 'Y': 'green', 'M': 'green', 'C': 'green', 'A': 'green',
+    'R': 'blue', 'K': 'blue', 'H': 'blue',
+    'S': 'lightblue', 'T': 'lightblue', 'N': 'lightblue', 'Q': 'lightblue',
+    'P': 'yellow', 'G': 'yellow',
+    'D': 'gray', 'E': 'gray', 'X': 'gray',
+    '-': 'white'
 
-ax[0].set_xticks(range(len(position)), labels=position, rotation=0, rotation_mode="anchor")
-ax[0].set_yticks(range(len(amino_acid)), labels=amino_acid, rotation=0, rotation_mode="anchor")
-ax[0].set_yticklabels(amino_acid)
-ax[0].set_xticklabels(position)
-
-# Normalize the colormap across both graphs
-vmin = min(np.min(all_arrays[0]), np.min(all_arrays[1]))
-vmax = max(np.max(all_arrays[0]), np.max(all_arrays[1]))
-
-if wanted_result == "absolute":
-    cmap = "Blues" #Blues or coolwarm
-
-if wanted_result == "hgt":
-    cmap = "RdBu_r" #Blues or coolwarm
-pcm1 = ax[0].imshow(all_arrays[0], cmap=cmap, vmin=vmin, vmax=vmax)
-pcm2 = ax[1].imshow(all_arrays[1], cmap=cmap, vmin=vmin, vmax=vmax)
-
-ax[0].set_xlabel("Position")
-ax[0].set_ylabel("Amino acids")
-ax[0].set_title("Mitochondrial Proteins with MTS")
-
-ax[1].set_xticks(range(len(position)), labels=position, rotation=0, rotation_mode="anchor")
-ax[1].set_yticks(range(len(amino_acid)), labels=amino_acid, rotation=0, rotation_mode="anchor")
-ax[1].set_title("Mitochondrial Proteins without MTS")
-ax[1].set_xlabel("Position")
-ax[1].set_ylabel("Amino acids")
+}
+# Create a legend for the color scheme
+legend_elements = [
+    Patch(facecolor='green', edgecolor='black', label='Hydrophobic'),
+    Patch(facecolor='blue', edgecolor='black', label='Basic'),
+    Patch(facecolor='lightblue', edgecolor='black', label='Polar'),
+    Patch(facecolor='yellow', edgecolor='black', label='Secondary Structure Breaker')
+#    Patch(facecolor='gray', edgecolor='black', label='Not Relevant')
+]
 
 
 
-fig.tight_layout(pad=3.0)
-cbar = plt.colorbar(pcm1, ax=ax, shrink=0.3, aspect=10, pad=0.01)
-vmax = np.round(vmax, decimals=0)
-norm = TwoSlopeNorm(vmin=-vmax, vcenter=0, vmax=20)
-pcm1.set_norm(norm)
-pcm2.set_norm(norm)
-cbar.set_ticks([-vmax, 0, vmax])
-cbar.ax.set_title('HGT', pad=10)
+logo = Logo(frequency_matrix, color_scheme=custom_color_scheme)
+if start == "MTS":
+    logo.ax.set_title(f"Logoplot of MTS Sequences for {format_species_name(name)}")
+elif start == "beginning":
+    logo.ax.set_title(f"Logoplot of Beginning Sequences for {format_species_name(name)}")
+plt.xlabel("Position")
+plt.ylabel("Frequency")
+plt.legend(handles=legend_elements, title="Amino Acid Properties", loc='upper right')
 plt.show()
+
+
