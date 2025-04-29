@@ -92,7 +92,7 @@ def check_file_exists(file_path):
         raise
 
 
-def run(list_of_organisms, input_dir, cache_dir, target_go_term, run_from_scratch, amount_of_proteins_per_step, last_run):
+def run(list_of_organisms, input_dir, output_dir, target_go_term, run_from_scratch, amount_of_proteins_per_step, last_run):
     """
     Main function to run the pipeline.
     """
@@ -103,13 +103,17 @@ def run(list_of_organisms, input_dir, cache_dir, target_go_term, run_from_scratc
         # Define the input and output files
         annotation_file = os.path.join(input_dir, f"{name}.goa")
         fasta_file = os.path.join(input_dir, f"{name}.fasta")
-        output_filtered_by_GO_file = os.path.join(cache_dir, f"filtered_proteins_by_GO_for_{name}.fasta")
+        output_filtered_by_GO_file = output_dir + "/" + name + f"/filtered_proteins_by_GO_for_{name}.fasta"
+        # Create the output directory if it doesn't exist
+        os.makedirs(os.path.dirname(output_filtered_by_GO_file), exist_ok=True)
+
+        last_run_output_file = last_run + "/" + name + f"/filtered_proteins_by_GO_for_{name}.fasta"
 
         if not run_from_scratch:
         # check if the output file already exists
-            if os.path.exists(os.path.join(last_run, f"filtered_proteins_by_GO_for_{name}.fasta")):
+            if os.path.exists(last_run_output_file):
                 # copy the file to the new cache directory
-                shutil.copy(os.path.join(last_run, f"filtered_proteins_by_GO_for_{name}.fasta"), output_filtered_by_GO_file)
+                shutil.copy(last_run_output_file, output_filtered_by_GO_file)
                 logging.info(f"Output file {output_filtered_by_GO_file} already exists. Skipping.")
                 continue
 
@@ -121,6 +125,7 @@ def run(list_of_organisms, input_dir, cache_dir, target_go_term, run_from_scratc
         go_annotation = parse_go_annotations(annotation_file)
         if not go_annotation:
             logging.error(f"No GO annotations found for {name}. Check the .goa file.")
+            continue
         proteome = fasta_to_dataframe(fasta_file)
         amount_of_proteins_per_step.at["Start", name] = len(proteome)
 

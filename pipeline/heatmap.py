@@ -35,14 +35,15 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
     subset_array = np.zeros((len(organism_names), len(amino_acid)), dtype=float)
     visual_array = np.zeros((len(organism_names), len(amino_acid)), dtype=float)
     for z, organism in enumerate(organism_names):
+        output_dir_per_organism = output_dir + "/" + organism 
         if reference == "subset":
             input = [
-                os.path.join(cache_dir, f"{organism}_filtered_by_go_and_mts.fasta"),
-                os.path.join(cache_dir, f"filtered_proteins_by_GO_for_{organism}.fasta")
+                os.path.join(output_dir_per_organism, f"/{organism}_filtered_by_GO_cleavable_mts.fasta"),
+                output_dir + "/" + organism + f"/filtered_proteins_by_GO_for_{organism}.fasta"
                 ]
         elif reference == "proteome":
             input = [
-                os.path.join(cache_dir, f"{organism}_filtered_by_go_and_mts.fasta"),
+                os.path.join(output_dir_per_organism, f"/{organism}_filtered_by_GO_cleavable_mts.fasta"),
                 os.path.join(input_dir, f"{organism}.fasta")
                 ]
         y = 0

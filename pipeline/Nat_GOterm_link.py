@@ -124,60 +124,64 @@ filter_by = "C"
 name = "human" # Saccharomyces_cerevisiae Caenorhabditis_elegans human
 
 
-fasta = "pipeline/cache/cache_20250415_153127/" + name + "_filtered_by_go_and_mts.fasta"
-goa = "pipeline/input/" + name + ".goa"
-if __name__ == "__main__":
 
-    df = fasta_to_dataframe(fasta)
-    go_annotation = parse_go_annotations(goa, filter_by, filter)
-    df = add_go_terms_to_dataframe(df, go_annotation)
-    df = df.drop(columns=["protein_id"])
-    # Create a new DataFrame with one-hot encoding for GO terms
-    go_term_counts = df["GO_Term"].str.get_dummies(sep=", ")
+def run(organism_names, input_dir, ouput_dir):
+    for i, name in enumerate(organism_names, start=1):
+        output_dir_per_organism = ouput_dir + "/" + name
+        fasta = os.path.join(output_dir_per_organism, f"/{name}_filtered_by_GO_cleavable_mts.fasta")
+        goa = os.path.join(input_dir, f"{name}.goa")
+        df = fasta_to_dataframe(fasta)
+        go_annotation = parse_go_annotations(goa, filter_by, filter)
+        df = add_go_terms_to_dataframe(df, go_annotation)
+        df = df.drop(columns=["protein_id"])
+        # Create a new DataFrame with one-hot encoding for GO terms
+        go_term_counts = df["GO_Term"].str.get_dummies(sep=", ")
 
-    # Add a column "NatC_Substrate" based on the second amino acid
-    df["NatC_Substrate"] = df["2nd_amino_acid"].apply(classify_natc_substrate)
+        # Add a column "NatC_Substrate" based on the second amino acid
+        df["NatC_Substrate"] = df["2nd_amino_acid"].apply(classify_natc_substrate)
 
-    # Add the counts to the original DataFrame
-    df = pd.concat([df, go_term_counts], axis=1)
+        # Add the counts to the original DataFrame
+        df = pd.concat([df, go_term_counts], axis=1)
 
-    # Group by the second amino acid and sum the counts for each GO term
-    go_term_summary = df.groupby("NatC_Substrate")[go_term_counts.columns].sum()
-    # Remove columns with less than 4 occurrences for any amino acid
-    go_term_summary = go_term_summary.loc[:, (go_term_summary >= threshold).any()]
-    # transpose the DataFrame for better visualization
-    go_term_summary = go_term_summary.transpose()
-        # Replace the GO term "GO:0005739" with its sum and move it to the bottom
-    if "GO:0005739" in go_term_summary.index:
-        go_term_summary.loc["sum"] = go_term_summary.loc["GO:0005739"]
-        go_term_summary = go_term_summary.drop("GO:0005739")
-    print(go_term_summary)
-    
-    if filter_by == "C":
-        function = "cellular component"
-    elif filter_by == "F":
-        function = "function"
-    elif filter_by == "P":
-        function = "process"
-    else:
-        function = "all_functions"
-    # exchange GO terms with their aspects
-    go_term_summary.index = [get_go_aspect(go_id) for go_id in go_term_summary.index]
-    if "Unknown" in go_term_summary.index:
-        go_term_summary = go_term_summary.drop("Unknown")
+        # Group by the second amino acid and sum the counts for each GO term
+        go_term_summary = df.groupby("NatC_Substrate")[go_term_counts.columns].sum()
+        # Remove columns with less than 4 occurrences for any amino acid
+        go_term_summary = go_term_summary.loc[:, (go_term_summary >= threshold).any()]
+        # transpose the DataFrame for better visualization
+        go_term_summary = go_term_summary.transpose()
+            # Replace the GO term "GO:0005739" with its sum and move it to the bottom
+        if "GO:0005739" in go_term_summary.index:
+            go_term_summary.loc["sum"] = go_term_summary.loc["GO:0005739"]
+            go_term_summary = go_term_summary.drop("GO:0005739")
+        print(go_term_summary)
+        
+        if filter_by == "C":
+            function = "cellular component"
+        elif filter_by == "F":
+            function = "function"
+        elif filter_by == "P":
+            function = "process"
+        else:
+            function = "all_functions"
+        # exchange GO terms with their aspects
+        go_term_summary.index = [get_go_aspect(go_id) for go_id in go_term_summary.index]
+        if "Unknown" in go_term_summary.index:
+            go_term_summary = go_term_summary.drop("Unknown")
 
-    # Create a heatmap
-    plt.figure(figsize=(12, 8))
-    sns.heatmap(go_term_summary, cmap="YlGnBu", annot=True, fmt="d")
-    if name == "human":
-        biological_name = "Human"
-    else:
-        biological_name = format_species_name(name)
-    plt.title(biological_name, fontstyle="italic")
-    colorbar = plt.gca().collections[0].colorbar
-    colorbar.set_label("Absolute count")
-    plt.xlabel("Nat substrate")
-    plt.ylabel(function)
-    plt.xticks(rotation=90)
-    plt.tight_layout()
-    plt.show()
+        # Create a heatmap
+        plt.figure(figsize=(12, 8))
+        sns.heatmap(go_term_summary, cmap="YlGnBu", annot=True, fmt="d")
+        if name == "human":
+            biological_name = "Human"
+        else:
+            biological_name = format_species_name(name)
+        plt.title(biological_name, fontstyle="italic")
+        colorbar = plt.gca().collections[0].colorbar
+        colorbar.set_label("Absolute count")
+        plt.xlabel("Nat substrate")
+        plt.ylabel(function)
+        plt.xticks(rotation=90)
+        plt.tight_layout()
+        os.makedirs(output_dir_per_organism, exist_ok=True)
+        plt.savefig(os.path.join(output_dir_per_organism, f"heatmap_{name}_{function}.png"))
+        plt.close()

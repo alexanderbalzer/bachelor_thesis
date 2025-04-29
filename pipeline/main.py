@@ -5,6 +5,9 @@ import mts_filter
 import heatmap
 import logging
 import phylogenetic_tree
+import Nat_GOterm_link
+import logoplot
+import Heatmap_one_organism_absolute_or_HGT
 from utils import log_message
 from datetime import datetime
 import pandas as pd
@@ -103,7 +106,7 @@ def main():
     log_message(f"Flaglist loaded: {flaglist}")
 
     # Filter proteins by MTS-cleavable probability
-    amount_of_proteins_per_step = mts_filter.run(organism_names, cache_dir, output_dir, cleavable, perl_script_path, flaglist, delete_cache, threshold, run_from_scratch, amount_of_proteins_per_step, last_run)
+    amount_of_proteins_per_step = mts_filter.run(organism_names, output_dir, cleavable, perl_script_path, flaglist, delete_cache, threshold, run_from_scratch, amount_of_proteins_per_step, last_run)
     log_message("MitoFates filtering completed.")
     # save the amount of proteins per step to a file
     amount_of_proteins_per_step.to_csv(os.path.join(output_dir, "amount_of_proteins_per_step.csv"), index=False)
@@ -117,6 +120,20 @@ def main():
     if create_phylogenetic_tree:
         phylogenetic_tree.run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_algorithm, save_newick)
         log_message("Phylogenetic tree creation completed.")
+    
+    log_message("Creating heatmaps for each organism.")
+    Heatmap_one_organism_absolute_or_HGT.run(organism_names, input_dir, output_dir, heatmap_type)
+    log_message("Heatmap creation for each organism completed.")
+    
+    log_message("creating logoplot")
+    logoplot.run(organism_names, output_dir)
+    log_message("Logoplot creation completed.")
+
+    log_message("Creating Nat GO term link.")
+    Nat_GOterm_link.run(organism_names, output_dir)
+    log_message("Nat GO term link creation completed.")
+    
+
 
     if not save_filtered_proteins:
         for organism in organism_names:

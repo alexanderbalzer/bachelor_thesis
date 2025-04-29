@@ -112,30 +112,33 @@ legend_elements = [
     Patch(facecolor='yellow', edgecolor='black', label='Secondary Structure Breaker')
 #    Patch(facecolor='gray', edgecolor='black', label='Not Relevant')
 ]
-def run(names):
-    for name in names:
-            # Generate frequency matrices for both MTS and beginning sequences
-            frequency_matrix_mts = generate_frequency_matrix(name, "MTS")
-            frequency_matrix_beginning = generate_frequency_matrix(name, "beginning")
+def run(organism_names, output_dir):
+    for name in organism_names:
+        output_dir_per_organism = output_dir_per_organism = output_dir + "/" + name 
+        # Generate frequency matrices for both MTS and beginning sequences
+        frequency_matrix_mts = generate_frequency_matrix(name, "MTS")
+        frequency_matrix_beginning = generate_frequency_matrix(name, "beginning")
 
-            # Create a figure with two subplots (one for MTS, one for beginning sequence)
-            fig, axes = plt.subplots(2, 1, figsize=(15, 10))  # Two rows, one column
+        # Create a figure with two subplots (one for MTS, one for beginning sequence)
+        fig, axes = plt.subplots(2, 1, figsize=(15, 10))  # Two rows, one column
 
-            # Create the MTS logoplot
-            ax_mts = axes[0]
-            logo_mts = Logo(frequency_matrix_mts, color_scheme=custom_color_scheme, ax=ax_mts)
-            ax_mts.set_title(f"Logoplot of MTS Sequences for {format_species_name(name)}")
+        # Create the MTS logoplot
+        ax_mts = axes[0]
+        logo_mts = Logo(frequency_matrix_mts, color_scheme=custom_color_scheme, ax=ax_mts)
+        ax_mts.set_title(f"Logoplot of MTS Sequences for {format_species_name(name)}")
 
-            # Create the beginning sequence logoplot
-            ax_beginning = axes[1]
-            logo_beginning = Logo(frequency_matrix_beginning, color_scheme=custom_color_scheme, ax=ax_beginning)
-            ax_beginning.set_title(f"Logoplot of Beginning Sequences for {format_species_name(name)}")
+        # Create the beginning sequence logoplot
+        ax_beginning = axes[1]
+        logo_beginning = Logo(frequency_matrix_beginning, color_scheme=custom_color_scheme, ax=ax_beginning)
+        ax_beginning.set_title(f"Logoplot of Beginning Sequences for {format_species_name(name)}")
 
-            # Add a legend to the first subplot
-            ax_mts.legend(handles=legend_elements, title="Amino Acid Properties", loc='upper right')
+        # Add a legend to the first subplot
+        ax_mts.legend(handles=legend_elements, title="Amino Acid Properties", loc='upper right')
 
-            # Adjust layout and save the figure
-            plt.tight_layout()
+        # Adjust layout and save the figure
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir_per_organism, f"logoplot_{name}.png"))
+        plt.close(fig)
 
 
 if __name__ == "__main__":
