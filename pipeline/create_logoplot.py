@@ -10,6 +10,7 @@ import seaborn as sns
 from logomaker import Logo
 from collections import Counter
 from matplotlib.patches import Patch
+from itertools import islice
 
 def format_species_name(name: str) -> str:
     if name == "human":
@@ -38,7 +39,7 @@ def create_frequency_matrix(sequences):
         frequency_matrix.append({key: counts[key] / total for key in counts})
     return pd.DataFrame(frequency_matrix).fillna(0)
 
-def run(name, start):
+def generate_frequency_matrix(name, start):
         data = []  # Initialize an empty list to store the data
         with open("pipeline/cache/cache_20250424_104057/" + name + "_filtered_by_go_and_mts.fasta", "r") as file:
             headers = []
@@ -111,40 +112,36 @@ legend_elements = [
     Patch(facecolor='yellow', edgecolor='black', label='Secondary Structure Breaker')
 #    Patch(facecolor='gray', edgecolor='black', label='Not Relevant')
 ]
+def run(names):
+    for name in names:
+            # Generate frequency matrices for both MTS and beginning sequences
+            frequency_matrix_mts = generate_frequency_matrix(name, "MTS")
+            frequency_matrix_beginning = generate_frequency_matrix(name, "beginning")
+
+            # Create a figure with two subplots (one for MTS, one for beginning sequence)
+            fig, axes = plt.subplots(2, 1, figsize=(15, 10))  # Two rows, one column
+
+            # Create the MTS logoplot
+            ax_mts = axes[0]
+            logo_mts = Logo(frequency_matrix_mts, color_scheme=custom_color_scheme, ax=ax_mts)
+            ax_mts.set_title(f"Logoplot of MTS Sequences for {format_species_name(name)}")
+
+            # Create the beginning sequence logoplot
+            ax_beginning = axes[1]
+            logo_beginning = Logo(frequency_matrix_beginning, color_scheme=custom_color_scheme, ax=ax_beginning)
+            ax_beginning.set_title(f"Logoplot of Beginning Sequences for {format_species_name(name)}")
+
+            # Add a legend to the first subplot
+            ax_mts.legend(handles=legend_elements, title="Amino Acid Properties", loc='upper right')
+
+            # Adjust layout and save the figure
+            plt.tight_layout()
+
 
 if __name__ == "__main__":
-    # Create a list to store the frequency matrices
-    frequency_matrixes = []
     # Define the names of the organisms
-    names = ["Saccharomyces_cerevisiae", "Caenorhabditis_elegans", "human"]
-    starts = ["MTS", "beginning"]
-    # Loop through the names and create the frequency matrices
-
-    for start in starts:
-        frequency_matrixes = []
-        for name in names:
-            frequency_matrix = run(name, start)
-            frequency_matrixes.append(frequency_matrix)
-            # Create a figure with subplots
-        fig, axes = plt.subplots(len(names), 1 , figsize=(15, 5))
-        for idx, frequency_matrix in enumerate(frequency_matrixes):
-            # Create a logoplot for each frequency matrix
-            ax = axes[idx]
-            logo = Logo(frequency_matrix, color_scheme=custom_color_scheme, ax=ax)
-            # Set the title based on the start value
-            if start == "MTS" and name == "human":
-                ax.set_title(f"Logoplot of MTS Sequences for {format_species_name(name)}")
-            elif start == "beginning" and name == "human":
-                ax.set_title(f"Logoplot of Beginning Sequences for {format_species_name(name)}")
-            elif start == "MTS":
-                ax.set_title(f"Logoplot of MTS Sequences for {format_species_name(name)}")
-            elif start == "beginning":
-                ax.set_title(f"Logoplot of Beginning Sequences for {format_species_name(name)}")
-
-        
-        # Add a legend to the last subplot
-        axes[0].legend(handles=legend_elements, title="Amino Acid Properties", loc='upper right')
-        plt.tight_layout()
-        plt.show()
+    names = ["Saccharomyces_cerevisiae", "Caenorhabditis_elegans", "human", "Mus_musculus", "Arabidopsis_thaliana"]
+    run(names)
+    
 
 

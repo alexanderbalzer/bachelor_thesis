@@ -9,7 +9,6 @@ from utils import log_message
 from datetime import datetime
 import pandas as pd
 import shutil
-# import create_logoplot
 
 def main():
     """
@@ -88,7 +87,7 @@ def main():
     amount_of_proteins_per_step = pd.DataFrame(index=["Start", "Mitochondrial", "Mitochondrial with MTS"], columns=organism_names)
 
     # Filter proteins by GO term
-    amount_of_proteins_per_step = go_filter.run(organism_names, input_dir, cache_dir, target_go_term, run_from_scratch, amount_of_proteins_per_step, last_run)
+    amount_of_proteins_per_step = go_filter.run(organism_names, input_dir, output_dir, target_go_term, run_from_scratch, amount_of_proteins_per_step, last_run)
     log_message("GO term filtering completed.")
 
     #read the flaglist for MitoFates as a dictionairy

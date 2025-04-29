@@ -25,7 +25,6 @@ def format_species_name(name: str) -> str:
 
 name = "human"  # Caenorhabditis_elegans  Saccharomyces_cerevisiae  human
 data = []  # Initialize an empty list to store the data
-
 with open("pipeline/cache/cache_20250424_104057/" + name + "_filtered_by_go_and_mts.fasta", "r") as file:
     headers = []
     second_as = []
