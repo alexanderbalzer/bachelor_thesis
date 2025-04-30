@@ -182,8 +182,8 @@ if __name__ == "__main__":
 "Schizosaccharomyces_pombe",
 "Yarrowia_lipolytica",
 "Zygosaccharomyces_rouxii"]
-    cache_dir = "pipeline/cache/cache_20250424_111739/"
-    output_dir = "pipeline/output/output_20250424_111739/"
+    cache_dir = "pipeline/cache/cache_20250430_113051/"
+    output_dir = "pipeline/output/output_20250430_113051/"
     phylo_tree_method = "pearson"  # or "euclidean" or "cosine"
     phylo_tree_algorithm = "UPGMA"  # or "nj"
     save_newick = True

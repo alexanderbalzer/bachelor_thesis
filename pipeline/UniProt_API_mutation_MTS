@@ -1,0 +1,76 @@
+import requests
+import json
+import pandas as pd
+from Bio import SeqIO
+from tqdm import tqdm
+
+
+# path to fasta file
+organism_name = "human"  # Example organism name
+fasta_file = f"pipeline/output/output_20250430_143623/{organism_name}/MTS_sequences_{organism_name}.fasta"
+
+
+
+data = []
+# Read the .fasta file using SeqIO
+with open(fasta_file, "r") as file: 
+    current_entry = {}
+    for line in file:
+        if line.startswith(">"):
+            # Extract the protein ID from the header line
+            if current_entry:  # Save the previous entry if it exists
+                data.append(current_entry)
+            current_entry = {"Protein_ID": line.strip().split("|")[1]}
+        elif line.startswith("+"):
+            current_entry["MTS_sequence"] = line.strip().split("+")[1]
+        elif line.startswith("<"):
+            # Extract the sequence from the line
+            current_entry["Sequence"] = line.strip().split("<")[1]
+        elif line.startswith("*"):
+            # Extract the start of MTS from the line
+            current_entry["Start_of_MTS"] = line.strip().split("*")[1]
+    if current_entry:  # Append the last entry
+        data.append(current_entry)
+
+# Create a DataFrame from the data
+df = pd.DataFrame(data)
+# Print the DataFrame
+
+for index, row in tqdm(df.iterrows()):
+    relevant_variants = []
+    protein_id = row["Protein_ID"]
+    print(f"Processing protein ID: {protein_id}")
+    # Extract the MTS sequence and start position
+
+    start_of_mts = row["Start_of_MTS"]
+
+    # URL for accessing UniProt data via API (you can choose JSON or XML format)
+    url = f"https://www.ebi.ac.uk/proteins/api/variation/{protein_id}?format=json"
+
+    # Send GET request to fetch the protein data
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        # Parse the response JSON
+        protein_data = response.json()
+        # Check if the protein entry has 'features' (mutations)
+        if 'features' in protein_data:
+            variants = protein_data['features']
+            for variant in variants:
+                if int(variant.get('begin')) == int(start_of_mts):  # Use .get() to avoid KeyError
+                    description = variant.get('descriptions', [])  # Default to an empty list if 'descriptions' is missing
+                    print("yay")
+                    relevant_variants.append({
+                        'Protein_ID': protein_id,
+                        'MTS_sequence': row["MTS_sequence"],
+                        'Start_of_MTS': start_of_mts,
+                        'Variant_Description': description 
+                    })
+    else:
+        print(f"Failed to retrieve data. HTTP Status Code: {response.status_code}")
+# Convert the list of relevant variants to a DataFrame
+df_variants = pd.DataFrame(relevant_variants)
+# Save the DataFrame to a CSV file
+output_file = f"pipeline/variants.csv"
+df_variants.to_csv(output_file, index=False)
+print(f"Data saved to {output_file}")

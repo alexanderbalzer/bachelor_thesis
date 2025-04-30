@@ -126,11 +126,11 @@ def main():
     log_message("Heatmap creation for each organism completed.")
     
     log_message("creating logoplot")
-    logoplot.run(organism_names, input_dir, output_dir)
+    logoplot.run(organism_names, output_dir)
     log_message("Logoplot creation completed.")
 
     log_message("Creating Nat GO term link.")
-    Nat_GOterm_link.run(organism_names, output_dir)
+    Nat_GOterm_link.run(organism_names, input_dir, output_dir)
     log_message("Nat GO term link creation completed.")
     
 

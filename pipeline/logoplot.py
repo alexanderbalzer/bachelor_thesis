@@ -96,7 +96,7 @@ def generate_frequency_matrix(name, start, output_dir_per_organism):
         frequency_matrix = frequency_matrix.fillna(0)
         # Create a color scheme for the logoplot
         # Define a custom color scheme
-        return frequency_matrix
+        return frequency_matrix, df
 custom_color_scheme = {
     'L': 'green', 'F': 'green', 'I': 'green', 'V': 'green', 'W': 'green', 'Y': 'green', 'M': 'green', 'C': 'green', 'A': 'green',
     'R': 'blue', 'K': 'blue', 'H': 'blue',
@@ -119,8 +119,8 @@ def run(organism_names, output_dir):
         print(f"Processing organism: {name}")
         output_dir_per_organism = output_dir + "/" + name 
         # Generate frequency matrices for both MTS and beginning sequences
-        frequency_matrix_mts = generate_frequency_matrix(name, "MTS", output_dir_per_organism)
-        frequency_matrix_beginning = generate_frequency_matrix(name, "beginning", output_dir_per_organism)
+        frequency_matrix_mts, data = generate_frequency_matrix(name, "MTS", output_dir_per_organism)
+        frequency_matrix_beginning, unused = generate_frequency_matrix(name, "beginning", output_dir_per_organism)
 
         # Create a figure with two subplots (one for MTS, one for beginning sequence)
         fig, axes = plt.subplots(2, 1, figsize=(15, 10))  # Two rows, one column
@@ -142,6 +142,10 @@ def run(organism_names, output_dir):
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir_per_organism, f"logoplot_{name}.png"))
         plt.close(fig)
+        # save whole data to fasta file
+        with open(os.path.join(output_dir_per_organism, f"MTS_sequences_{name}.fasta"), "w") as fasta_file:
+            for index, row in data.iterrows():
+                fasta_file.write(f">{row['Protein_ID']}\n+{row['MTS_Sequence']}\n<{row['Sequence']}\n*{row['start_of_MTS']}\n")
 
 
 if __name__ == "__main__":
@@ -152,7 +156,7 @@ if __name__ == "__main__":
         "Mus_musculus", "Caenorhabditis_elegans", "Candida_glabrata", "Schizosaccharomyces_pombe", 
         "Debaryomyces_hansenii", "Yarrowia_lipolytica", "Saccharomyces_cerevisiae", 
         "Zygosaccharomyces_rouxii", "Physcomitrium_patens", "Scheffersomyces_stipitis"]
-    output_dir = "pipeline/output/output_20250430_102406"
+    output_dir = "pipeline/output/output_20250430_143623"
 
     run(organism_names, output_dir)
     
