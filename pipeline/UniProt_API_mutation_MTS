@@ -35,9 +35,8 @@ with open(fasta_file, "r") as file:
 # Create a DataFrame from the data
 df = pd.DataFrame(data)
 # Print the DataFrame
-
+relevant_variants = []
 for index, row in tqdm(df.iterrows()):
-    relevant_variants = []
     protein_id = row["Protein_ID"]
     print(f"Processing protein ID: {protein_id}")
     # Extract the MTS sequence and start position
@@ -58,14 +57,19 @@ for index, row in tqdm(df.iterrows()):
             variants = protein_data['features']
             for variant in variants:
                 if int(variant.get('begin')) == int(start_of_mts):  # Use .get() to avoid KeyError
-                    description = variant.get('descriptions', [])  # Default to an empty list if 'descriptions' is missing
+                    descriptions = variant.get('descriptions', [])  # Default to an empty list if 'descriptions' is missing
                     print("yay")
-                    relevant_variants.append({
-                        'Protein_ID': protein_id,
-                        'MTS_sequence': row["MTS_sequence"],
-                        'Start_of_MTS': start_of_mts,
-                        'Variant_Description': description 
-                    })
+                    if descriptions:
+                        # Extract the relevant information from the variant
+                        for description in descriptions:
+                            description = description["value"]
+                            # Append the relevant variant information to the list
+                            relevant_variants.append({
+                                'Protein_ID': protein_id,
+                                'MTS_sequence': row["MTS_sequence"],
+                                'Start_of_MTS': start_of_mts,
+                                'Variant_Description': description 
+                            })
     else:
         print(f"Failed to retrieve data. HTTP Status Code: {response.status_code}")
 # Convert the list of relevant variants to a DataFrame
@@ -74,3 +78,9 @@ df_variants = pd.DataFrame(relevant_variants)
 output_file = f"pipeline/variants.csv"
 df_variants.to_csv(output_file, index=False)
 print(f"Data saved to {output_file}")
+
+if __name__ == "__main__":
+    open (output_file, "r")
+    # Read the CSV file
+    df = pd.read_csv(output_file)
+    
