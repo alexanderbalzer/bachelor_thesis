@@ -43,7 +43,7 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
                 ]
         elif reference == "proteome":
             input = [
-                output_dir_per_organism + organism + "_filtered_by_GO_cleavable_mts.fasta",
+                output_dir_per_organism + "/" + organism + "_filtered_by_GO_cleavable_mts.fasta",
                 os.path.join(input_dir, f"{organism}.fasta")
                 ]
         y = 0

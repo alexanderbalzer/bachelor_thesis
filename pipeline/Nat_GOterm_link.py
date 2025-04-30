@@ -92,6 +92,10 @@ def get_go_aspect(go_id):
 def format_species_name(name: str) -> str:
     # Teile den Namen anhand des Unterstrichs
     parts = name.split("_")
+    if name == "human":
+        return "Human"
+    if name == "human_with_isoforms":
+        return "Human with isoforms"
     if len(parts) != 2:
         raise ValueError("Name muss genau ein Unterstrich enthalten (Gattung_Art)")
     
@@ -127,6 +131,7 @@ name = "human" # Saccharomyces_cerevisiae Caenorhabditis_elegans human
 
 def run(organism_names, input_dir, ouput_dir):
     for i, name in enumerate(organism_names, start=1):
+        print(f"Processing organism: {name}")
         output_dir_per_organism = ouput_dir + "/" + name
         fasta = output_dir_per_organism + "/" + name + "_filtered_by_GO_cleavable_mts.fasta"
         goa = os.path.join(input_dir, f"{name}.goa")
@@ -185,3 +190,15 @@ def run(organism_names, input_dir, ouput_dir):
         os.makedirs(output_dir_per_organism, exist_ok=True)
         plt.savefig(os.path.join(output_dir_per_organism, f"heatmap_{name}_{function}.png"))
         plt.close()
+    
+if __name__ == "__main__":
+    # Define the names of the organisms
+    organism_names = [
+        "Geotrichum_candidum", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
+        "Lachancea_thermotolerans", "human_with_isoforms", "human", "Clavispora_lusitaniae", 
+        "Mus_musculus", "Caenorhabditis_elegans", "Candida_glabrata", "Schizosaccharomyces_pombe", 
+        "Debaryomyces_hansenii", "Yarrowia_lipolytica", "Saccharomyces_cerevisiae", 
+        "Zygosaccharomyces_rouxii", "Physcomitrium_patens", "Scheffersomyces_stipitis"]
+    output_dir = "pipeline/output/output_20250430_102406"
+    input_dir = "pipeline/input"
+    run(organism_names, input_dir, output_dir)

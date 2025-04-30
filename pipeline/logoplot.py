@@ -55,7 +55,7 @@ def generate_frequency_matrix(name, start, output_dir_per_organism):
             df_headers = pd.DataFrame({"Second_AS": second_as, "Sequence": sequences}, index=headers)
             
 
-        with open(output_dir_per_organism + "/" + name + "/mitofates_for_" + name + ".cgi", "r") as file:
+        with open(output_dir_per_organism + "/" + "mitofates_for_" + name + ".cgi", "r") as file:
             lines = file.readlines()
             for i, line in enumerate(lines):
                 if line.startswith("!") or i == 0:  # Skip header line
@@ -116,6 +116,7 @@ legend_elements = [
 ]
 def run(organism_names, output_dir):
     for name in organism_names:
+        print(f"Processing organism: {name}")
         output_dir_per_organism = output_dir + "/" + name 
         # Generate frequency matrices for both MTS and beginning sequences
         frequency_matrix_mts = generate_frequency_matrix(name, "MTS", output_dir_per_organism)
@@ -145,8 +146,15 @@ def run(organism_names, output_dir):
 
 if __name__ == "__main__":
     # Define the names of the organisms
-    names = ["Saccharomyces_cerevisiae", "Caenorhabditis_elegans", "human", "Mus_musculus", "Arabidopsis_thaliana"]
-    run(names)
+    organism_names = [
+        "Geotrichum_candidum", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
+        "Lachancea_thermotolerans", "human_with_isoforms", "human", "Clavispora_lusitaniae", 
+        "Mus_musculus", "Caenorhabditis_elegans", "Candida_glabrata", "Schizosaccharomyces_pombe", 
+        "Debaryomyces_hansenii", "Yarrowia_lipolytica", "Saccharomyces_cerevisiae", 
+        "Zygosaccharomyces_rouxii", "Physcomitrium_patens", "Scheffersomyces_stipitis"]
+    output_dir = "pipeline/output/output_20250430_102406"
+
+    run(organism_names, output_dir)
     
 
 

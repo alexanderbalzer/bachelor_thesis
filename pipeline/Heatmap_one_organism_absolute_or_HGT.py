@@ -34,6 +34,7 @@ def count_instances_at_positions(array):
 def run(organism_names, input_dir, output_dir, heatmap_type):
     wanted_result = heatmap_type
     for i, name in enumerate(organism_names, start=1):
+        print(f"Processing organism: {name}")
         output_dir_per_organism = output_dir + "/" + name 
         position = np.array(["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"])
         amino_acid = np.array(["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "A", "T", "C", "P", "G", "V"])
@@ -47,7 +48,7 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
             os.path.join(input_dir, f"{name}.fasta")
             ]
 
-        all_arrays = [0, 0, 0]
+        all_arrays = [0, 0]
         all_counted_instances = [0, 0, 0]
         amount_of_proteins = [0, 0, 0]
         for file in range(len(input)):
@@ -57,7 +58,7 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
 
             proteome_array = np.zeros((len(proteomes), 20), dtype=object)
             for i, proteome in enumerate(proteomes):
-                proteome = proteome[1:20] 
+                proteome = proteome[1:21] 
                 for j in range(20):
                     if j < len(proteome):
                         proteome_array[i, j] = proteome[j]
@@ -71,7 +72,6 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
             all_counted_instances[file] = counted_instances
             #print(counted_instances)
 
-            percentage = np.zeros((len(amino_acid)), dtype=object)
         if wanted_result == "absolute":
             for file in range(2):
                 counted_instances = all_counted_instances[file]
@@ -130,38 +130,51 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
         ax[0].set_xticklabels(position)
 
         # Normalize the colormap across both graphs
-        vmin = min(np.min(all_arrays[0]), np.min(all_arrays[1]))
-        vmax = max(np.max(all_arrays[0]), np.max(all_arrays[1]))
+        #vmin = min(np.min(all_arrays[0]), np.min(all_arrays[1]))
+        #vmax = max(np.max(all_arrays[0]), np.max(all_arrays[1]))
 
         if wanted_result == "absolute":
             cmap = "Blues" #Blues or coolwarm
 
         if wanted_result == "hgt":
             cmap = "RdBu_r" #Blues or coolwarm
-        pcm1 = ax[0].imshow(all_arrays[0], cmap=cmap, vmin=vmin, vmax=vmax)
-        pcm2 = ax[1].imshow(all_arrays[1], cmap=cmap, vmin=vmin, vmax=vmax)
+        pcm1 = ax[0].imshow(all_arrays[0], cmap=cmap, vmin=-20, vmax=20)
+        pcm2 = ax[1].imshow(all_arrays[1], cmap=cmap, vmin=-20, vmax=20)
 
         ax[0].set_xlabel("Position")
         ax[0].set_ylabel("Amino acids")
-        ax[0].set_title("Mitochondrial Proteins with MTS")
+        ax[0].set_title("With MTS")
 
-        ax[1].set_xticks(range(len(position)), labels=position, rotation=0, rotation_mode="anchor")
-        ax[1].set_yticks(range(len(amino_acid)), labels=amino_acid, rotation=0, rotation_mode="anchor")
-        ax[1].set_title("Mitochondrial Proteins without MTS")
-        ax[1].set_xlabel("Position")
+        ax[1].set_xticks(range(len(position)), labels=position, rotation=0, rotation_mode="anchor", fontsize=7)
+        ax[1].set_yticks(range(len(amino_acid)), labels=amino_acid, rotation=0, rotation_mode="anchor", fontsize=7)
+        ax[1].set_title("Without MTS")
         ax[1].set_ylabel("Amino acids")
 
 
 
         fig.tight_layout(pad=3.0)
         max = 20
-        vmax = np.round(vmax, decimals=0)
+        #vmax = np.round(vmax, decimals=0)
         norm = TwoSlopeNorm(vmin=-max, vcenter=0, vmax=max)
         pcm1.set_norm(norm)
         pcm2.set_norm(norm)
         cbar = plt.colorbar(pcm1, ax=ax, shrink=0.3, aspect=10, pad=0.01)
         cbar.set_ticks(np.linspace(-max, max, num=5))
-        cbar.ax.set_title('HGT', pad=5)
+        cbar.ax.set_title('HGT', pad=5, fontsize=7)
         plt.savefig(os.path.join(output_dir_per_organism, f"heatmap_{name}_{wanted_result}.png"), dpi=300)
         plt.close(fig)
+
+if __name__ == "__main__":
+    # Define the names of the organisms
+    organism_names = [
+        "Geotrichum_candidum", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
+        "Lachancea_thermotolerans", "human_with_isoforms", "human", "Clavispora_lusitaniae", 
+        "Mus_musculus", "Caenorhabditis_elegans", "Candida_glabrata", "Schizosaccharomyces_pombe", 
+        "Debaryomyces_hansenii", "Yarrowia_lipolytica", "Saccharomyces_cerevisiae", 
+        "Zygosaccharomyces_rouxii", "Physcomitrium_patens", "Scheffersomyces_stipitis"]
+    input_dir = "pipeline/input"
+    output_dir = "pipeline/output/output_20250430_102406"
+    heatmap_type = "hgt"  # or "hgt"
+
+    run(organism_names, input_dir, output_dir, heatmap_type)
     
