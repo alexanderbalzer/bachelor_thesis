@@ -124,8 +124,8 @@ def run(list_of_organisms, output_dir, cleavable, mitofates_path, flagdict, dele
                 continue
         try:
             input_file = os.path.join(output_dir_per_organism, f"filtered_proteins_by_GO_for_{organism}.fasta")
-            output_mitofates__file = os.path.join(output_dir_per_organism, f"mitofates_for_{organism}.cgi")
-            run_perl_script(mitofates_path, input_file, flagdict[organism], output_mitofates__file)
+            output_mitofates_file = os.path.join(output_dir_per_organism, f"mitofates_for_{organism}.cgi")
+            run_perl_script(mitofates_path, input_file, flagdict[organism], output_mitofates_file)
             logging.info(f"Perl script completed for {organism}")
         except subprocess.CalledProcessError as e:
             logging.error(f"Error running MitoFates Perl script for {organism}: {e.stderr.decode()}")
@@ -134,16 +134,15 @@ def run(list_of_organisms, output_dir, cleavable, mitofates_path, flagdict, dele
             logging.error(f"Input file not found for {organism}: {input_file}")
             continue
         proteome = fasta_to_dataframe(input_file)
-        probability_of_mts = parse_probability_of_mts(output_mitofates__file)
+        probability_of_mts = parse_probability_of_mts(output_mitofates_file)
         proteome = add_mts_cleavable_to_dataframe(proteome, probability_of_mts, threshold)
         filtered_proteins_cleavable = filter_proteins_by_mts(proteome, cleavable="Yes")
         filtered_proteins_non_cleavable = filter_proteins_by_mts(proteome, cleavable="No")
         amount_of_proteins_per_step.at["Mitochondrial with MTS", organism] = len(filtered_proteins_cleavable)
-        with open(os.path.join(output_dir_per_organism, f"/{organism}_filtered_by_GO_cleavable_mts.fasta"), "w") as output_handle:
+        with open(output_dir_per_organism + "/" + organism + "_filtered_by_GO_cleavable_mts.fasta", "w") as output_handle:
             for header, sequence in filtered_proteins_cleavable:
                 output_handle.write(f">{header}\n{sequence}\n")
-        logging.info(f"Filtered proteins saved to {output_dir_per_organism}/{organism}_filtered_by_GO_cleavable_mts.fasta")
-        with open(os.path.join(output_dir_per_organism, f"/filtered_proteins_by_GO_noncleavable_mts_{organism}.fasta"), "w") as output_handle:
+        with open(output_dir_per_organism + "/" + organism + "_filtered_proteins_by_GO_noncleavable_mts.fasta", "w") as output_handle:
             for header, sequence in filtered_proteins_non_cleavable:
                 output_handle.write(f">{header}\n{sequence}\n")
 

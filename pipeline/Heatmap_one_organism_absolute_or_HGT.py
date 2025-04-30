@@ -42,8 +42,8 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
         #       "output files/filtered_proteins_no_cleavable_mts_for_" + str(name) + "_2.fasta",
         #      "output files/filtered_proteins_by_GO_for_" + str(name) +".fasta"]
         input = [
-            os.path.join(output_dir_per_organism, f"/{name}_filtered_by_GO_cleavable_mts.fasta"),
-            os.path.join(output_dir_per_organism, f"/filtered_proteins_by_GO_noncleavable_mts_{name}.fasta"),
+            output_dir_per_organism + "/" + name + "_filtered_by_GO_cleavable_mts.fasta",
+            output_dir_per_organism + "/" + name + "_filtered_proteins_by_GO_noncleavable_mts.fasta",
             os.path.join(input_dir, f"{name}.fasta")
             ]
 

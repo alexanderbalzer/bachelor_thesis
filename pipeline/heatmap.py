@@ -38,12 +38,12 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
         output_dir_per_organism = output_dir + "/" + organism 
         if reference == "subset":
             input = [
-                os.path.join(output_dir_per_organism, f"/{organism}_filtered_by_GO_cleavable_mts.fasta"),
-                output_dir + "/" + organism + f"/filtered_proteins_by_GO_for_{organism}.fasta"
+                output_dir_per_organism + "/" + organism + "_filtered_by_GO_cleavable_mts.fasta",
+                output_dir_per_organism + "/" + organism + f"/filtered_proteins_by_GO_for_{organism}.fasta"
                 ]
         elif reference == "proteome":
             input = [
-                os.path.join(output_dir_per_organism, f"/{organism}_filtered_by_GO_cleavable_mts.fasta"),
+                output_dir_per_organism + organism + "_filtered_by_GO_cleavable_mts.fasta",
                 os.path.join(input_dir, f"{organism}.fasta")
                 ]
         y = 0

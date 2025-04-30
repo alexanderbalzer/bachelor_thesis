@@ -15,6 +15,8 @@ from itertools import islice
 def format_species_name(name: str) -> str:
     if name == "human":
         return "human"
+    elif name == "human_with_isoforms":
+        return "human with isoforms"
     # Teile den Namen anhand des Unterstrichs
     parts = name.split("_")
     if len(parts) != 2:
@@ -39,9 +41,9 @@ def create_frequency_matrix(sequences):
         frequency_matrix.append({key: counts[key] / total for key in counts})
     return pd.DataFrame(frequency_matrix).fillna(0)
 
-def generate_frequency_matrix(name, start):
+def generate_frequency_matrix(name, start, output_dir_per_organism):
         data = []  # Initialize an empty list to store the data
-        with open("pipeline/cache/cache_20250424_104057/" + name + "_filtered_by_go_and_mts.fasta", "r") as file:
+        with open(output_dir_per_organism + "/" + name + "_filtered_by_GO_cleavable_mts.fasta", "r") as file:
             headers = []
             second_as = []
             sequences = []
@@ -53,7 +55,7 @@ def generate_frequency_matrix(name, start):
             df_headers = pd.DataFrame({"Second_AS": second_as, "Sequence": sequences}, index=headers)
             
 
-        with open("pipeline/cache/cache_20250424_104057/mitofates_for_" + name + ".cgi", "r") as file:
+        with open(output_dir_per_organism + "/" + name + "/mitofates_for_" + name + ".cgi", "r") as file:
             lines = file.readlines()
             for i, line in enumerate(lines):
                 if line.startswith("!") or i == 0:  # Skip header line
@@ -114,10 +116,10 @@ legend_elements = [
 ]
 def run(organism_names, output_dir):
     for name in organism_names:
-        output_dir_per_organism = output_dir_per_organism = output_dir + "/" + name 
+        output_dir_per_organism = output_dir + "/" + name 
         # Generate frequency matrices for both MTS and beginning sequences
-        frequency_matrix_mts = generate_frequency_matrix(name, "MTS")
-        frequency_matrix_beginning = generate_frequency_matrix(name, "beginning")
+        frequency_matrix_mts = generate_frequency_matrix(name, "MTS", output_dir_per_organism)
+        frequency_matrix_beginning = generate_frequency_matrix(name, "beginning", output_dir_per_organism)
 
         # Create a figure with two subplots (one for MTS, one for beginning sequence)
         fig, axes = plt.subplots(2, 1, figsize=(15, 10))  # Two rows, one column

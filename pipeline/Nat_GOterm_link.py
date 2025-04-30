@@ -128,7 +128,7 @@ name = "human" # Saccharomyces_cerevisiae Caenorhabditis_elegans human
 def run(organism_names, input_dir, ouput_dir):
     for i, name in enumerate(organism_names, start=1):
         output_dir_per_organism = ouput_dir + "/" + name
-        fasta = os.path.join(output_dir_per_organism, f"/{name}_filtered_by_GO_cleavable_mts.fasta")
+        fasta = output_dir_per_organism + "/" + name + "_filtered_by_GO_cleavable_mts.fasta"
         goa = os.path.join(input_dir, f"{name}.goa")
         df = fasta_to_dataframe(fasta)
         go_annotation = parse_go_annotations(goa, filter_by, filter)
