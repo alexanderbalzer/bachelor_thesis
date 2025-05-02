@@ -1,0 +1,121 @@
+Protein_ID,MTS_sequence,Start_of_MTS,Variant_Description,Mutation
+A8MUP2,ALRRMLHLP,3,['Variant assessed as Somatic; MODERATE impact.'],A>E
+O14521,LSAVCGALG,7,"['Carney-Stratakis syndrome', 'Paragangliomas 1']",L>None
+O14521,LSAVCGALG,7,['Carney-Stratakis syndrome'],L>P
+O14521,LSAVCGALG,7,"['Hereditary cancer-predisposing syndrome', 'Carney-Stratakis syndrome']",L>Q
+O14521,LSAVCGALG,7,['Carney-Stratakis syndrome'],L>R
+O43181,SMSVVLRQT,5,"['Leigh syndrome', 'NDUFS4-related disorder', 'Mitochondrial complex I deficiency, nuclear type 1', 'Mitochondrial complex I deficiency', 'Inborn genetic diseases']",S>P
+O43766,FGRYFCSPVRP,17,['Lipoic acid synthetase deficiency'],F>S
+O75208,LGRAGWRLL,10,['Inborn genetic diseases'],L>F
+O75306,FRGVAAQVL,10,['Variant assessed as Somatic; MODERATE impact.'],F>L
+O75439,RRLWGFSESL,16,['Variant assessed as Somatic; MODERATE impact.'],R>L
+O75489,AVARLWWRG,5,['Variant assessed as Somatic; MODERATE impact.'],A>V
+O95169,QWLQRASRN,12,['Variant assessed as Somatic; MODERATE impact.'],Q>H
+O95182,RLIQRLRNW,6,['Variant assessed as Somatic; MODERATE impact.'],R>C
+O95363,VGSALRRGA,2,['Combined oxidative phosphorylation defect type 14'],V>L
+O95571,VLRVARRQLS,5,['Ethylmalonic encephalopathy'],V>None
+O95822,MRGFGPGLT,1,['Deficiency of malonyl-CoA decarboxylase'],M>L
+P00367,MYRYLGEAL,1,['Hyperinsulinism-hyperammonemia syndrome'],M>I
+P04179,LSRAVCGTSRQ,2,['Variant assessed as Somatic; MODERATE impact.'],L>F
+P05165,RRGRWPPQQ,16,['Propionic acidemia'],R>None
+P05165,RRGRWPPQQ,16,['Variant assessed as Somatic; MODERATE impact.'],R>Q
+P05166,LASGLRAAVRS,17,"['PA-2; likely benign', 'PCCB-related disorder', 'Propionic acidemia']",L>M
+P06576,MLGFVGRVA,1,['Variant assessed as Somatic; HIGH impact.'],M>?
+P07954,MYRALRLLA,1,['Hereditary cancer-predisposing syndrome'],M>I
+P07954,MYRALRLLA,1,['Hereditary cancer-predisposing syndrome'],M>K
+P07954,MYRALRLLA,1,"['Fumarase deficiency', 'Hereditary leiomyomatosis and renal cell cancer', 'Hereditary cancer-predisposing syndrome']",M>L
+P07954,MYRALRLLA,1,['Hereditary cancer-predisposing syndrome'],M>R
+P07954,MYRALRLLA,1,['Hereditary cancer-predisposing syndrome'],M>T
+P07954,MYRALRLLA,1,"['Fumarase deficiency', 'Hereditary cancer-predisposing syndrome']",M>V
+P10809,HLTRAYAKD,21,['Spastic paraplegia'],H>P
+P11177,VSGLVRRPLRE,4,['Pyruvate dehydrogenase E1-beta deficiency'],V>A
+P11177,VSGLVRRPLRE,4,"['Pyruvate dehydrogenase E1-beta deficiency', 'Inborn genetic diseases']",V>M
+P11182,MLRTWSRNAGKL,6,['Maple syrup urine disease'],M>None
+P11310,CRVLRSISR,9,['Variant assessed as Somatic; MODERATE impact.'],C>F
+P11498,RTVHGGLRL,5,['Pyruvate carboxylase deficiency'],R>Q
+P12694,RLNRGLSQA,12,"['Maple syrup urine disease', 'Inborn genetic diseases']",R>P
+P12694,RLNRGLSQA,12,['Maple syrup urine disease'],R>Q
+P13804,SLLRFQSTL,15,"['Variant assessed as Somatic; HIGH impact.', 'Multiple acyl-CoA dehydrogenase deficiency']",S>*
+P15538,AQALGTRAA,21,['Variant assessed as Somatic; MODERATE impact.'],A>V
+P19099,ARALGTRAA,21,['Variant assessed as Somatic; MODERATE impact.'],A>E
+P19099,ARALGTRAA,21,['Inborn genetic diseases'],A>T
+P21912,VALSLRRRL,5,"['Gastrointestinal stromal tumor (gist)', 'Gastrointestinal stromal tumor']",V>A
+P21912,VALSLRRRL,5,['Gastrointestinal stromal tumor'],V>F
+P21912,VALSLRRRL,5,"['Gastrointestinal stromal tumor (gist)', 'Hereditary cancer-predisposing syndrome', 'Gastrointestinal stromal tumor']",V>G
+P21912,VALSLRRRL,5,['Gastrointestinal stromal tumor'],V>L
+P22033,LSPHYLRQVK,11,['Methylmalonic aciduria due to methylmalonyl-CoA mutase deficiency'],L>None
+P22557,LARGPTSLLGKVV,14,['Variant assessed as Somatic; MODERATE impact.'],L>F
+P22830,MRSLGANMAAA,1,['Variant assessed as Somatic; HIGH impact.'],M>?
+P23378,LGRGVGGGR,12,['Glycine encephalopathy'],L>P
+P24752,LLRRLVQEI,18,['Deficiency of acetyl-CoA acetyltransferase'],L>None
+P28331,VRKALVGLS,6,['Variant assessed as Somatic; MODERATE impact.'],VRKALVGLSK>None
+P30405,RCGSRWLGL,5,['Variant assessed as Somatic; MODERATE impact.'],R>C
+P30837,MLRFLAPRL,1,['Variant assessed as Somatic; HIGH impact.'],M>?
+P31040,LAKAWPTVL,18,"['Mitochondrial complex II deficiency, nuclear type 1', 'Hereditary cancer-predisposing syndrome', 'Paragangliomas 5']",L>None
+P31040,LAKAWPTVL,18,"['Mitochondrial complex II deficiency, nuclear type 1', 'Hereditary cancer-predisposing syndrome']",L>V
+P33316,LTSLLRSAM,15,['Variant assessed as Somatic; MODERATE impact.'],L>I
+P35914,AMRKALPRR,3,['Deficiency of hydroxymethylglutaryl-CoA lyase'],A>V
+P40939,VACRAIGILSR,2,['Long chain 3-hydroxyacyl-CoA dehydrogenase deficiency'],V>None
+P42704,LLRSARWLL,4,['Variant assessed as Somatic; MODERATE impact.'],L>P
+P43897,SLLRSLRVF,2,['Fatal mitochondrial disease due to combined oxidative phosphorylation defect type 3'],S>L
+P49748,RMAASLGRQ,5,['Very long chain acyl-CoA dehydrogenase deficiency'],R>G
+P50440,IGSRLGRTL,20,['Arginine:glycine amidinotransferase deficiency'],I>M
+P51649,CGARRLGST,10,['Succinate-semialdehyde dehydrogenase deficiency'],C>S
+P55084,TILTYPFKN,2,['Mitochondrial trifunctional protein deficiency'],T>TT
+P78549,MTALSARML,1,['Hereditary cancer-predisposing syndrome'],M>T
+P78549,MTALSARML,1,['Hereditary cancer-predisposing syndrome'],M>V
+Q10713,ATRLLRGSG,8,['Variant assessed as Somatic; MODERATE impact.'],A>V
+Q13825,SLHAGGARL,14,['3-methylglutaconic aciduria type 1'],S>P
+Q15526,ASAAWRSVL,21,['Leigh syndrome'],A>None
+Q16595,MWTLGRRAVAGL,1,"['Friedreich ataxia', 'Friedreich ataxia 1']",M>I
+Q16654,VPREVEHFS,20,['Malignant tumor of prostate'],V>G
+Q5JTZ9,ARRLRRAIR,9,['Inborn genetic diseases'],A>S
+Q5JTZ9,ARRLRRAIR,9,"['Combined oxidative phosphorylation defect type 8', 'Inborn genetic diseases']",A>T
+Q6NVY1,REMWRLMSR,4,['Variant assessed as Somatic; MODERATE impact.'],R>C
+Q6NVY1,REMWRLMSR,4,['Deficiency of 3-hydroxyisobutyryl CoA hydrolase'],R>L
+Q7Z3D6,RLPSAIRSL,10,['Variant assessed as Somatic; MODERATE impact.'],R>H
+Q86TS9,LGTVLFTGVRR,4,['Variant assessed as Somatic; MODERATE impact.'],L>F
+Q8N0V3,RAGLRALFR,12,['Variant assessed as Somatic; MODERATE impact.'],R>G
+Q8N1Q8,MIRRCFQVAAR,1,['Variant assessed as Somatic; HIGH impact.'],M>?
+Q92506,QLQNRLRSA,4,['Variant assessed as Somatic; MODERATE impact.'],Q>E
+Q96EH3,RVARLLAPL,6,['Variant assessed as Somatic; MODERATE impact.'],R>C
+Q99643,LRHVGRHCL,6,['Variant assessed as Somatic; LOW impact.'],L>=
+Q99643,LRHVGRHCL,6,"['Hereditary pheochromocytoma-paraganglioma', 'Hereditary cancer-predisposing syndrome', 'Gastrointestinal stromal tumor']",L>P
+Q99643,LRHVGRHCL,6,"['Hereditary pheochromocytoma-paraganglioma', 'Gastrointestinal stromal tumor']",L>V
+Q9BQ52,ALCSLLRSA,3,['Combined oxidative phosphorylation defect type 17'],A>V
+Q9H1K1,RLRRAASAL,8,['Inborn genetic diseases'],R>C
+Q9NP81,SMARRLWPL,4,"['Hyperuricemia, pulmonary hypertension, renal failure, alkalosis syndrome']",S>F
+Q9NZB8,LSRMLRRLL,6,['Sulfite oxidase deficiency due to molybdenum cofactor deficiency type A'],L>P
+Q9UDR5,LGRLGVSLSKG,9,['Variant assessed as Somatic; MODERATE impact.'],L>P
+Q9UMS0,LRRRFCHML,18,['Variant assessed as Somatic; MODERATE impact.'],L>P
+Q9Y2D0,VMNSLRVIL,3,['Variant assessed as Somatic; MODERATE impact.'],V>M
+Q9Y676,SVLNTVLRR,4,['Variant assessed as Somatic; MODERATE impact.'],S>P
+D6RFM5,LAKAWPTVL,18,"['Mitochondrial complex II deficiency, nuclear type 1', 'Hereditary cancer-predisposing syndrome', 'Paragangliomas 5']",L>None
+D6RFM5,LAKAWPTVL,18,"['Mitochondrial complex II deficiency, nuclear type 1', 'Hereditary cancer-predisposing syndrome']",L>V
+F5GZQ3,TILTYPFKN,2,['Mitochondrial trifunctional protein deficiency'],T>TT
+Q7Z7F7,VGSLLGRLR,4,['Variant assessed as Somatic; MODERATE impact.'],V>A
+Q8TAA5,VRSLWAGRL,3,['Variant assessed as Somatic; MODERATE impact.'],V>I
+Q9GZT6,RWVSRPRGH,18,['Variant assessed as Somatic; MODERATE impact.'],R>C
+Q9NP92,AARCWRPLL,3,['Variant assessed as Somatic; MODERATE impact.'],A>T
+Q9NX20,MWRLLARASAPLL,1,['Variant assessed as Somatic; HIGH impact.'],M>?
+A0A7I2V599,HLTRAYAKD,21,['Spastic paraplegia'],H>P
+A0AAQ5BHD9,VALSLRRRL,5,"['Gastrointestinal stromal tumor (gist)', 'Gastrointestinal stromal tumor']",V>A
+A0AAQ5BHD9,VALSLRRRL,5,['Gastrointestinal stromal tumor'],V>F
+A0AAQ5BHD9,VALSLRRRL,5,"['Gastrointestinal stromal tumor (gist)', 'Hereditary cancer-predisposing syndrome', 'Gastrointestinal stromal tumor']",V>G
+A0AAQ5BHD9,VALSLRRRL,5,['Gastrointestinal stromal tumor'],V>L
+G3V0E4,RRLWGFSESL,16,['Variant assessed as Somatic; MODERATE impact.'],R>L
+Q8TB22,GARAWLGRV,3,['Variant assessed as Somatic; MODERATE impact.'],G>D
+A0A8I5KVL5,SLLRFQSTL,15,"['Variant assessed as Somatic; HIGH impact.', 'Multiple acyl-CoA dehydrogenase deficiency']",S>*
+A0A8I5KYP7,SLLRFQSTL,15,"['Variant assessed as Somatic; HIGH impact.', 'Multiple acyl-CoA dehydrogenase deficiency']",S>*
+E7EXB4,HLTRAYAKD,21,['Spastic paraplegia'],H>P
+E9PK73,LSAVCGALG,7,['Carney-Stratakis syndrome'],L>P
+E9PK73,LSAVCGALG,7,"['Hereditary cancer-predisposing syndrome', 'Carney-Stratakis syndrome']",L>Q
+E9PK73,LSAVCGALG,7,['Carney-Stratakis syndrome'],L>R
+F8VS27,SLLRSLRVF,2,['Fatal mitochondrial disease due to combined oxidative phosphorylation defect type 3'],S>L
+G5E9P5,LGTVLFSVR,4,['Variant assessed as Somatic; MODERATE impact.'],L>F
+H3BRC0,LGRAGWRLL,10,['Inborn genetic diseases'],L>F
+H3BRW5,LSAVCGALG,7,['Carney-Stratakis syndrome'],L>P
+H3BRW5,LSAVCGALG,7,"['Hereditary cancer-predisposing syndrome', 'Carney-Stratakis syndrome']",L>Q
+H3BRW5,LSAVCGALG,7,['Carney-Stratakis syndrome'],L>R
+H3BSJ5,LGRAGWRLL,10,['Inborn genetic diseases'],L>F
+Q5SXN9,ATRLLRGSG,8,['Variant assessed as Somatic; MODERATE impact.'],A>V
