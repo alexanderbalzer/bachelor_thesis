@@ -41,6 +41,28 @@ def create_frequency_matrix(sequences):
         frequency_matrix.append({key: counts[key] / total for key in counts})
     return pd.DataFrame(frequency_matrix).fillna(0)
 
+def replace_amino_acids_with_properties(df):
+    """
+    replace the sequences in the DataFrame based on their properties.
+    """
+    # Define the mapping of amino acids to properties
+    property_mapping = {
+        'L': 'H', 'F': 'H', 'I': 'H', 'V': 'H', 'W': 'H', 
+        'Y': 'H', 'M': 'H', 'C': 'H', 'A': 'H',
+        'R': 'B', 'K': 'B', 'H': 'B',
+        'S': 'P', 'T': 'P', 'N': 'P', 'Q': 'P',
+        'P': 'X', 
+        'G': 'X',
+        '-': None
+    }
+    # Replace the sequences in the DataFrame based on their properties
+    for index, row in df.iterrows():
+        sequence = row["MTS_Sequence"]
+        new_sequence = "".join([property_mapping[aa] if aa in property_mapping else aa for aa in sequence])
+        df.at[index, "MTS_Sequence"] = new_sequence
+    return df
+
+
 def generate_frequency_matrix(name, start, output_dir_per_organism):
         data = []  # Initialize an empty list to store the data
         with open(output_dir_per_organism + "/" + name + "_filtered_by_GO_cleavable_mts.fasta", "r") as file:
@@ -77,6 +99,8 @@ def generate_frequency_matrix(name, start, output_dir_per_organism):
         # Convert the list of dictionaries into a pandas DataFrame
         df = pd.DataFrame(data)
         # Create a new column for the desired sequence
+        if df.empty:
+            return  # Skip if the DataFrame is empty
         if start == "MTS":
             df["MTS_Sequence"] = df.apply(
             lambda row: row["Sequence"][int(row["start_of_MTS"]) - 1:int(row["start_of_MTS"]) - 1 + int(row["length_of_MTS"])],
@@ -97,14 +121,20 @@ def generate_frequency_matrix(name, start, output_dir_per_organism):
         # Create a color scheme for the logoplot
         # Define a custom color scheme
         return frequency_matrix, df
-custom_color_scheme = {
+custom_color_scheme2 = {
     'L': 'green', 'F': 'green', 'I': 'green', 'V': 'green', 'W': 'green', 'Y': 'green', 'M': 'green', 'C': 'green', 'A': 'green',
     'R': 'blue', 'K': 'blue', 'H': 'blue',
     'S': 'lightblue', 'T': 'lightblue', 'N': 'lightblue', 'Q': 'lightblue',
     'P': 'yellow', 'G': 'yellow',
     'D': 'gray', 'E': 'gray', 'X': 'gray',
     '-': 'white'
-
+}
+# Define a custom color scheme
+custom_color_scheme = {
+    'H': 'green',
+    'B': 'blue',
+    'P': 'lightblue',
+    'X': 'yellow',
 }
 # Create a legend for the color scheme
 legend_elements = [
@@ -121,6 +151,10 @@ def run(organism_names, output_dir):
         # Generate frequency matrices for both MTS and beginning sequences
         frequency_matrix_mts, data = generate_frequency_matrix(name, "MTS", output_dir_per_organism)
         frequency_matrix_beginning, unused = generate_frequency_matrix(name, "beginning", output_dir_per_organism)
+
+        # Replace amino acids with their properties in the frequency matrices
+        frequency_matrix_beginning = replace_amino_acids_with_properties(frequency_matrix_beginning)
+        frequency_matrix_mts = replace_amino_acids_with_properties(frequency_matrix_mts)
 
         # Create a figure with two subplots (one for MTS, one for beginning sequence)
         fig, axes = plt.subplots(2, 1, figsize=(15, 10))  # Two rows, one column
@@ -156,7 +190,7 @@ if __name__ == "__main__":
         "Mus_musculus", "Caenorhabditis_elegans", "Candida_glabrata", "Schizosaccharomyces_pombe", 
         "Debaryomyces_hansenii", "Yarrowia_lipolytica", "Saccharomyces_cerevisiae", 
         "Zygosaccharomyces_rouxii", "Physcomitrium_patens", "Scheffersomyces_stipitis"]
-    output_dir = "pipeline/output/output_20250430_143623"
+    output_dir = "pipeline/output/output_20250506_111626"
 
     run(organism_names, output_dir)
     

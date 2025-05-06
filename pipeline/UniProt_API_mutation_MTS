@@ -69,7 +69,7 @@ def run(organism_name, fasta_file, skip_UniProt, skip_MitoFates):
                 if 'features' in protein_data:
                     variants = protein_data['features']
                     for variant in variants:
-                        if int(variant.get('begin')) == int(start_of_mts):  # Use .get() to avoid KeyError
+                        if int(variant.get('begin')) == int(2):  # Use .get() to avoid KeyError
                             descriptions = variant.get('association', [])  # Default to an empty list if 'descriptions' is missing
                             print("yay")
                             if descriptions:
@@ -96,7 +96,8 @@ def run(organism_name, fasta_file, skip_UniProt, skip_MitoFates):
                                     'Variant_Description': disorders,
                                     'original_sequence': row["Sequence"],
                                     'Mutated_sequence': mutated_sequence,
-                                    'description': variant.get('description', ''),
+                                    'description': variant.get('descriptions', ''),
+                                    'genomic_location': variant.get('genomicLocation', ''),
                                 })
             else:
                 print(f"Failed to retrieve data. HTTP Status Code: {response.status_code}")
@@ -187,7 +188,7 @@ def run(organism_name, fasta_file, skip_UniProt, skip_MitoFates):
 if __name__ == "__main__":
     organism_name = "human"  # Example organism name
     fasta_file = f"pipeline/output/output_20250430_143623/{organism_name}/MTS_sequences_{organism_name}.fasta"
-    skip_UniProt = True
+    skip_UniProt = False
     skip_MitoFates = False
     run(organism_name, fasta_file, skip_UniProt, skip_MitoFates)
     

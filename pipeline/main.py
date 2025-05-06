@@ -125,14 +125,14 @@ def main():
     Heatmap_one_organism_absolute_or_HGT.run(organism_names, input_dir, output_dir, heatmap_type)
     log_message("Heatmap creation for each organism completed.")
     
-    log_message("creating logoplot")
-    logoplot.run(organism_names, output_dir)
-    log_message("Logoplot creation completed.")
-
     log_message("Creating Nat GO term link.")
     Nat_GOterm_link.run(organism_names, input_dir, output_dir)
     log_message("Nat GO term link creation completed.")
     
+    log_message("creating logoplot")
+    logoplot.run(organism_names, output_dir)
+    log_message("Logoplot creation completed.")
+
 
 
     if not save_filtered_proteins:
