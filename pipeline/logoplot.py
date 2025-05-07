@@ -51,14 +51,13 @@ def replace_amino_acids_with_properties(df):
         'Y': 'H', 'M': 'H', 'C': 'H', 'A': 'H',
         'R': 'B', 'K': 'B', 'H': 'B',
         'S': 'P', 'T': 'P', 'N': 'P', 'Q': 'P',
-        'P': 'X', 
-        'G': 'X',
-        '-': None
+        'P': 'X', 'G': 'X', 'E': 'X', 'D': 'X',
+        '-': 'X'
     }
     # Replace the sequences in the DataFrame based on their properties
     for index, row in df.iterrows():
         sequence = row["MTS_Sequence"]
-        new_sequence = "".join([property_mapping[aa] if aa in property_mapping else aa for aa in sequence])
+        new_sequence = "".join([property_mapping.get(aa, aa) for aa in sequence])
         df.at[index, "MTS_Sequence"] = new_sequence
     return df
 
@@ -114,7 +113,7 @@ def generate_frequency_matrix(name, start, output_dir_per_organism):
         else:
             raise ValueError("Invalid start value. Use 'MTS' or 'beginning'.")
 
-
+        df = replace_amino_acids_with_properties(df)
         # Generate the frequency matrix
         frequency_matrix = create_frequency_matrix(df["MTS_Sequence"])
         frequency_matrix = frequency_matrix.fillna(0)
@@ -135,6 +134,7 @@ custom_color_scheme = {
     'B': 'blue',
     'P': 'lightblue',
     'X': 'yellow',
+    '-': 'black'
 }
 # Create a legend for the color scheme
 legend_elements = [
@@ -152,22 +152,24 @@ def run(organism_names, output_dir):
         frequency_matrix_mts, data = generate_frequency_matrix(name, "MTS", output_dir_per_organism)
         frequency_matrix_beginning, unused = generate_frequency_matrix(name, "beginning", output_dir_per_organism)
 
-        # Replace amino acids with their properties in the frequency matrices
-        frequency_matrix_beginning = replace_amino_acids_with_properties(frequency_matrix_beginning)
-        frequency_matrix_mts = replace_amino_acids_with_properties(frequency_matrix_mts)
-
         # Create a figure with two subplots (one for MTS, one for beginning sequence)
         fig, axes = plt.subplots(2, 1, figsize=(15, 10))  # Two rows, one column
 
         # Create the MTS logoplot
         ax_mts = axes[0]
-        logo_mts = Logo(frequency_matrix_mts, color_scheme=custom_color_scheme, ax=ax_mts)
+        frequency_matrix_mts = frequency_matrix_mts.iloc[:9, :]  # Cut after the 10th row
+        logo_mts = Logo(frequency_matrix_mts, color_scheme=custom_color_scheme, ax=ax_mts)  # Limit to first 8 positions
         ax_mts.set_title(f"Logoplot of MTS Sequences for {format_species_name(name)}")
+        ax_mts.set_xticks(range(9))  # Set x-axis ticks for positions 1 to 8
+        ax_mts.set_xticklabels(range(1, 10))  # Set x-axis labels for positions 1 to 8
 
         # Create the beginning sequence logoplot
         ax_beginning = axes[1]
-        logo_beginning = Logo(frequency_matrix_beginning, color_scheme=custom_color_scheme, ax=ax_beginning)
+        frequency_matrix_beginning = frequency_matrix_beginning.iloc[:9, :]  # Limit to first 9 positions
+        logo_beginning = Logo(frequency_matrix_beginning, color_scheme=custom_color_scheme, ax=ax_beginning)  # Limit to first 9 positions
         ax_beginning.set_title(f"Logoplot of Beginning Sequences for {format_species_name(name)}")
+        ax_beginning.set_xticks(range(9))  # Set x-axis ticks for positions 1 to 8
+        ax_beginning.set_xticklabels(range(1, 10))  # Set x-axis labels for positions 1 to 8
 
         # Add a legend to the first subplot
         ax_mts.legend(handles=legend_elements, title="Amino Acid Properties", loc='upper right')
@@ -190,9 +192,9 @@ if __name__ == "__main__":
         "Mus_musculus", "Caenorhabditis_elegans", "Candida_glabrata", "Schizosaccharomyces_pombe", 
         "Debaryomyces_hansenii", "Yarrowia_lipolytica", "Saccharomyces_cerevisiae", 
         "Zygosaccharomyces_rouxii", "Physcomitrium_patens", "Scheffersomyces_stipitis"]
-    output_dir = "pipeline/output/output_20250506_111626"
+    output_dir = "pipeline/output/output_20250507_095928"
 
     run(organism_names, output_dir)
-    
+
 
 

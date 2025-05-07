@@ -104,12 +104,12 @@ def run(organism_name, fasta_file, skip_UniProt, skip_MitoFates):
         # Convert the list of relevant variants to a DataFrame
         df_relevant_variants = pd.DataFrame(relevant_variants)
         # Save the DataFrame to a CSV file
-        output_file = f"pipeline/output/output_20250430_143623/{organism_name}/MTS_variants_cache.csv"
+        output_file = f"pipeline/output/output_20250507_095928/{organism_name}/MTS_variants_cache.csv"
         df_relevant_variants.to_csv(output_file, index=False)
 
 
         # save the relevant variants to a fasta file
-        output_fasta_file = f"pipeline/output/output_20250430_143623/{organism_name}/{organism_name}_pathogen_variants.fasta"
+        output_fasta_file = f"pipeline/output/output_20250507_095928/{organism_name}/{organism_name}_pathogen_variants.fasta"
         with open(output_fasta_file, "w") as fasta_file:
             for variant in relevant_variants:
                 fasta_file.write(f">{variant['Protein_ID']},original\n")
@@ -118,11 +118,11 @@ def run(organism_name, fasta_file, skip_UniProt, skip_MitoFates):
                 fasta_file.write(f"{variant['Mutated_sequence']}\n")
     if not skip_MitoFates:
         if skip_UniProt:
-            output_fasta_file = f"pipeline/output/output_20250430_143623/{organism_name}/{organism_name}_pathogen_variants.fasta"
-            df_relevant_variants = pd.read_csv(f"pipeline/output/output_20250430_143623/{organism_name}/MTS_variants_cache.csv")
+            output_fasta_file = f"pipeline/output/output_20250507_095928/{organism_name}/{organism_name}_pathogen_variants.fasta"
+            df_relevant_variants = pd.read_csv(f"pipeline/output/output_20250507_095928/{organism_name}/MTS_variants_cache.csv")
             relevant_variants = df_relevant_variants.to_dict(orient="records")
         # Run MitoFates as a subprocess to calculate the probability of MTS for the fasta_file
-        mitofates_output_file = f"pipeline/output/output_20250430_143623/{organism_name}/MTS_probabilities.txt"
+        mitofates_output_file = f"pipeline/output/output_20250507_095928/{organism_name}/MTS_probabilities.txt"
         mitofates_path = "/home/abalzer/MitoFates/MitoFates.pl"
         flag = "metazoa"
         run_perl_script(mitofates_path, output_fasta_file, flag, mitofates_output_file)
@@ -164,7 +164,7 @@ def run(organism_name, fasta_file, skip_UniProt, skip_MitoFates):
         # Convert the list of relevant variants to a DataFrame
         df_variants = pd.DataFrame(relevant_variants)
         # Save the DataFrame to a CSV file
-        output_file = f"pipeline/output/output_20250430_143623/{organism_name}/MTS_variants.csv"
+        output_file = f"pipeline/output/output_20250507_095928/{organism_name}/MTS_variants.csv"
         # Move the specified columns to the end of the DataFrame
         columns_to_move = ["original_sequence", "Mutated_sequence", "Identification"]
         df_variants = df_variants[[col for col in df_variants.columns if col not in columns_to_move] + columns_to_move]
@@ -179,7 +179,7 @@ def run(organism_name, fasta_file, skip_UniProt, skip_MitoFates):
         df_variants.to_csv(output_file, index=False)
 
     if skip_MitoFates:
-        df_variants = pd.read_csv(f"pipeline/output/output_20250430_143623/{organism_name}/MTS_variants.csv")
+        df_variants = pd.read_csv(f"pipeline/output/output_20250507_095928/{organism_name}/MTS_variants.csv")
     
 
 
@@ -187,7 +187,7 @@ def run(organism_name, fasta_file, skip_UniProt, skip_MitoFates):
 
 if __name__ == "__main__":
     organism_name = "human"  # Example organism name
-    fasta_file = f"pipeline/output/output_20250430_143623/{organism_name}/MTS_sequences_{organism_name}.fasta"
+    fasta_file = f"pipeline/output/output_20250507_095928/{organism_name}/MTS_sequences_{organism_name}.fasta"
     skip_UniProt = False
     skip_MitoFates = False
     run(organism_name, fasta_file, skip_UniProt, skip_MitoFates)

@@ -46,6 +46,7 @@ def main():
     run_from_scratch = config['DEFAULT'].getboolean('run_from_scratch', False)
     reference = config['DEFAULT'].get('reference', 'subset')
     create_logoplot = config['DEFAULT'].getboolean('create_logoplot', True)
+    not_in_go_term = config['DEFAULT'].get('not_in_GO_term', False)
 
     log_message("Configuration loaded successfully.")
 
@@ -90,7 +91,7 @@ def main():
     amount_of_proteins_per_step = pd.DataFrame(index=["Start", "Mitochondrial", "Mitochondrial with MTS"], columns=organism_names)
 
     # Filter proteins by GO term
-    amount_of_proteins_per_step = go_filter.run(organism_names, input_dir, output_dir, target_go_term, run_from_scratch, amount_of_proteins_per_step, last_run)
+    amount_of_proteins_per_step = go_filter.run(organism_names, input_dir, output_dir, target_go_term, run_from_scratch, amount_of_proteins_per_step, last_run, not_in_go_term)
     log_message("GO term filtering completed.")
 
     #read the flaglist for MitoFates as a dictionairy

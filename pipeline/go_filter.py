@@ -28,20 +28,6 @@ def parse_go_annotations(annotation_file):
             go_annotation[protein_id].append(go_term)
     return go_annotation
 
-def fasta_to_dataframe(fasta_file):
-    headers = []
-    annotations = []
-    sequences = []
-
-    for record in SeqIO.parse(fasta_file, "fasta"):
-        headers.append(record.id)
-        sequences.append(str(record.seq))
-    
-    df = pd.DataFrame({
-        "Header": headers,
-        "GO_Term": [""] * len(headers),    
-        "Sequence": sequences
-    })
 
 def add_go_terms_to_dataframe(df, go_annotation):
     """
@@ -56,10 +42,17 @@ def add_go_terms_to_dataframe(df, go_annotation):
             df.at[index, "GO_Term"] = "No GO term found"
     return df
 
-def filter_proteins_by_go(dataframe, target_go_term):
+def filter_proteins_by_go(dataframe, target_go_term, not_in_go_term):
     logging.info(f"Filtering proteins by GO term: {target_go_term}")
     filtered_proteins = []
+    print(f"Filtering proteins by GO term: {target_go_term}")
+    print(f"leave out GO term: {not_in_go_term}")
     for index, row in dataframe.iterrows():
+        if not_in_go_term is not False:
+            go_terms = str(row["GO_Term"]).split(", ")
+            if str(target_go_term) in go_terms and str(not_in_go_term) not in go_terms:
+                filtered_proteins.append((row["Header"], row["Sequence"]))
+        else:
             go_terms = str(row["GO_Term"]).split(", ")
             if str(target_go_term) in go_terms:
                 filtered_proteins.append((row["Header"], row["Sequence"]))
@@ -92,7 +85,7 @@ def check_file_exists(file_path):
         raise
 
 
-def run(list_of_organisms, input_dir, output_dir, target_go_term, run_from_scratch, amount_of_proteins_per_step, last_run):
+def run(list_of_organisms, input_dir, output_dir, target_go_term, run_from_scratch, amount_of_proteins_per_step, last_run, not_in_go_term):
     """
     Main function to run the pipeline.
     """
@@ -134,7 +127,7 @@ def run(list_of_organisms, input_dir, output_dir, target_go_term, run_from_scrat
             logging.error(f"No proteins found in the FASTA file {fasta_file}.")
             continue
 
-        filtered_proteins = filter_proteins_by_go(proteome_with_go_terms, target_go_term)
+        filtered_proteins = filter_proteins_by_go(proteome_with_go_terms, target_go_term, not_in_go_term)
         if not filtered_proteins:
             logging.error(f"No proteins matched the target GO term {target_go_term} for {name}.")
 

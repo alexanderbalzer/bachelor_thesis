@@ -175,6 +175,9 @@ def run(organism_names, input_dir, ouput_dir):
 
         # Create a heatmap
         plt.figure(figsize=(12, 8))
+        if go_term_summary.empty:
+            print(f"No data available for {name} with filter {filter_by}.")
+            continue
         sns.heatmap(go_term_summary, cmap="YlGnBu", annot=True, fmt="d")
         if name == "human":
             biological_name = "Human"
@@ -199,6 +202,6 @@ if __name__ == "__main__":
         "Mus_musculus", "Caenorhabditis_elegans", "Candida_glabrata", "Schizosaccharomyces_pombe", 
         "Debaryomyces_hansenii", "Yarrowia_lipolytica", "Saccharomyces_cerevisiae", 
         "Zygosaccharomyces_rouxii", "Physcomitrium_patens", "Scheffersomyces_stipitis"]
-    output_dir = "pipeline/output/output_20250430_102406"
+    output_dir = "pipeline/output/output_20250506_171728"
     input_dir = "pipeline/input"
     run(organism_names, input_dir, output_dir)
