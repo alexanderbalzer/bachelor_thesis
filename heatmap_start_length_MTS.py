@@ -23,9 +23,9 @@ def format_species_name(name: str) -> str:
     return formatted
 
 
-name = "human"  # Caenorhabditis_elegans  Saccharomyces_cerevisiae  human
+name = "Saccharomyces_cerevisiae"  # Caenorhabditis_elegans  Saccharomyces_cerevisiae  human
 data = []  # Initialize an empty list to store the data
-with open("pipeline/cache/cache_20250424_104057/" + name + "_filtered_by_go_and_mts.fasta", "r") as file:
+with open("pipeline/output/output_20250507_110227/" + name + "/" + name + "_filtered_by_GO_cleavable_mts.fasta", "r") as file:
     headers = []
     second_as = []
     for protein in SeqIO.parse(file, "fasta"):
@@ -35,7 +35,7 @@ with open("pipeline/cache/cache_20250424_104057/" + name + "_filtered_by_go_and_
     df_headers = pd.DataFrame({"Second_AS": second_as}, index=headers)
     
 
-with open("pipeline/cache/cache_20250424_104057/mitofates_for_" + name + ".cgi", "r") as file:
+with open("pipeline/output/output_20250507_110227/"+ name + "/mitofates_for_" + name + ".cgi", "r") as file:
     lines = file.readlines()
     for i, line in enumerate(lines):
         if line.startswith("!") or i == 0:  # Skip header line
@@ -47,7 +47,7 @@ with open("pipeline/cache/cache_20250424_104057/mitofates_for_" + name + ".cgi",
         start_of_MTS = position_of_MTS.strip().split("-")[0]
         length_of_MTS = float(position_of_MTS.strip().split("-")[1]) - float(position_of_MTS.strip().split("-")[0])
         # Append the data for this line to the list if the probability is above the threshold
-        if float(probability_of_MTS) >= 0.9:
+        if float(probability_of_MTS) >= 0.99:
             second_as = df_headers.loc[protein_id, "Second_AS"] if protein_id in df_headers.index else None
             if second_as is not None:
                 # Append the data to the list
@@ -66,7 +66,7 @@ print(total_sum)
 # Plot the heatmap
 plt.figure(figsize=(10, 8))
 sns.heatmap(heatmap_data, annot=True, fmt="d", cmap="viridis")
-if name == "human":
+if name == "human" or name == "human_with_isoforms":
     biological_name = "Human"
 else:
     biological_name = format_species_name(name)
@@ -76,7 +76,7 @@ colorbar.set_label("Absolute count")
 plt.xlabel("Second amino acid")
 plt.ylabel("start of MTS")
 plt.tight_layout()
-plt.show()
+plt.savefig("pipeline/output/output_20250507_110227/" + name + "/" + name + "_heatmap_start_of_MTS.png", dpi=300)
 
 # Count the occurrences of each "Second_AS" for each "length_of_MTS"
 heatmap_data = df.groupby(["length_of_MTS", "Second_AS"]).size().unstack(fill_value=0)
@@ -89,7 +89,7 @@ print(total_sum)
 # Plot the heatmap
 plt.figure(figsize=(10, 8))
 sns.heatmap(heatmap_data, annot=True, fmt="d", cmap="PuBuGn")
-if name == "human":
+if name == "human" or name == "human_with_isoforms":
     biological_name = "Human"
 else:
     biological_name = format_species_name(name)
@@ -99,5 +99,5 @@ colorbar.set_label("Absolute count")
 plt.xlabel("Second amino acid")
 plt.ylabel("length of MTS")
 plt.tight_layout()
-plt.show()
+plt.savefig("pipeline/output/output_20250507_110227/" + name + "/" + name + "_heatmap_length_of_MTS.png", dpi=300)
 

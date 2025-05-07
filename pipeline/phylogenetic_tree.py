@@ -165,25 +165,28 @@ def run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_alg
 
 if __name__ == "__main__":
     # Example usage
-    organism_names = ["Arabidopsis_thaliana",
-"Caenorhabditis_elegans",
-"Candida_glabrata",
-"Clavispora_lusitaniae",
-"Debaryomyces_hansenii",
-"Drosophila_Melanogaster",
-"Geotrichum_candidum",
-"human",
-"human_with_isoforms",
-"Lachancea_thermotolerans",
-"Mus_musculus",
-"Physcomitrium_patens",
-"Saccharomyces_cerevisiae",
-"Scheffersomyces_stipitis",
-"Schizosaccharomyces_pombe",
-"Yarrowia_lipolytica",
-"Zygosaccharomyces_rouxii"]
-    cache_dir = "pipeline/cache/cache_20250430_113051/"
-    output_dir = "pipeline/output/output_20250430_113051/"
+    organism_names = [
+        "Arabidopsis_thaliana",
+        "Caenorhabditis_elegans",
+        "Candida_glabrata",
+        "Chlamydomonas_reinhardtii",
+        "Clavispora_lusitaniae",
+        "Dario_rerio",
+        "Debaryomyces_hansenii",
+        "Drosophila_Melanogaster",
+        "Geotrichum_candidum",
+        "human",
+        "human_with_isoforms",
+        "Lachancea_thermotolerans",
+        "Mus_musculus",
+        "Physcomitrium_patens",
+        "Saccharomyces_cerevisiae",
+        "Scheffersomyces_stipitis",
+        "Schizosaccharomyces_pombe",
+        "Yarrowia_lipolytica",
+        "Zygosaccharomyces_rouxii"]
+    cache_dir = "pipeline/cache/cache_20250507_110227/"
+    output_dir = "pipeline/output/output_20250507_110227/"
     phylo_tree_method = "pearson"  # or "euclidean" or "cosine"
     phylo_tree_algorithm = "UPGMA"  # or "nj"
     save_newick = True

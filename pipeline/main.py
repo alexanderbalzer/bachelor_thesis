@@ -71,8 +71,8 @@ def main():
         log_message("No previous run timestamp found.")
 
     # Create a folder with a timestamp for the cache and the output files
-    now = datetime.now()
-    timestamp = now.strftime("%Y%m%d_%H%M%S")
+    start_time = datetime.now()
+    timestamp = start_time.strftime("%Y%m%d_%H%M%S")
     cache_dir = os.path.join(cache_dir, f"cache_{timestamp}/")
     with open(last_run_file, "w") as file:
         file.write(cache_dir)
@@ -149,6 +149,8 @@ def main():
 
     # Log the completion of the pipeline
     log_message("Pipeline completed successfully.")
+    end_time = datetime.now()
+    print(f"Pipeline completed in {end_time - start_time}.")
 
 
 

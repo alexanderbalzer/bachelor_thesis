@@ -144,12 +144,11 @@ def run(organism_names, input_dir, ouput_dir):
 
         # Add a column "NatC_Substrate" based on the second amino acid
         df["NatC_Substrate"] = df["2nd_amino_acid"].apply(classify_natc_substrate)
-
         # Add the counts to the original DataFrame
         df = pd.concat([df, go_term_counts], axis=1)
 
         # Group by the second amino acid and sum the counts for each GO term
-        go_term_summary = df.groupby("NatC_Substrate")[go_term_counts.columns].sum()
+        go_term_summary = df.groupby("2nd_amino_acid")[go_term_counts.columns].sum()
         # Remove columns with less than 4 occurrences for any amino acid
         go_term_summary = go_term_summary.loc[:, (go_term_summary >= threshold).any()]
         # transpose the DataFrame for better visualization
@@ -202,6 +201,6 @@ if __name__ == "__main__":
         "Mus_musculus", "Caenorhabditis_elegans", "Candida_glabrata", "Schizosaccharomyces_pombe", 
         "Debaryomyces_hansenii", "Yarrowia_lipolytica", "Saccharomyces_cerevisiae", 
         "Zygosaccharomyces_rouxii", "Physcomitrium_patens", "Scheffersomyces_stipitis"]
-    output_dir = "pipeline/output/output_20250506_171728"
+    output_dir = "pipeline/output/output_20250507_095928"
     input_dir = "pipeline/input"
     run(organism_names, input_dir, output_dir)

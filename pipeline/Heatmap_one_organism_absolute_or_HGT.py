@@ -124,8 +124,8 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
         fig, ax = plt.subplots(ncols= 2)
         fig.subplots_adjust(bottom=0.5)
 
-        ax[0].set_xticks(range(len(position)), labels=position, rotation=0, rotation_mode="anchor")
-        ax[0].set_yticks(range(len(amino_acid)), labels=amino_acid, rotation=0, rotation_mode="anchor")
+        ax[0].set_xticks(range(len(position)), labels=position, rotation=0, rotation_mode="anchor", fontsize=7)
+        ax[0].set_yticks(range(len(amino_acid)), labels=amino_acid, rotation=0, rotation_mode="anchor", fontsize=7)
         ax[0].set_yticklabels(amino_acid)
         ax[0].set_xticklabels(position)
 
