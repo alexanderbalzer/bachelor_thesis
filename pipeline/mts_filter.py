@@ -98,7 +98,7 @@ def fasta_to_dataframe(fasta_file):
 
 
 
-def run(list_of_organisms, output_dir, cleavable, mitofates_path, flagdict, delete_cache, threshold,run_from_scratch, amount_of_proteins_per_step, last_run):
+def run(list_of_organisms, output_dir, cleavable, mitofates_path, flagdict, delete_cache, threshold,run_from_scratch, amount_of_proteins_per_step, last_run, target_go_term):
     """
     Run the MitoFates Perl script and filter proteins by MTS-cleavable probability.
     """

@@ -49,9 +49,6 @@ def main():
     not_in_go_term = config['DEFAULT'].get('not_in_GO_term', False)
 
     log_message("Configuration loaded successfully.")
-
-
-    # Log the start of the pipeline
     log_message("Starting the pipeline...")
 
     # Read organism names from FASTA file names
@@ -66,6 +63,7 @@ def main():
             last_run = file.read().strip()
         log_message(f"Last run timestamp loaded: {last_run}")
     else:
+        # If the file does not exist run the pipeline from scratch
         last_run = None
         run_from_scratch = True
         log_message("No previous run timestamp found.")
@@ -81,6 +79,7 @@ def main():
     log_message(f"Cache directory created: {cache_dir}")
     os.makedirs(output_dir, exist_ok=True)
     log_message(f"Output directory created: {output_dir}")
+
     # copy the config file to the output directory
     config_file_path = "pipeline/config.ini"
     if os.path.exists(config_file_path):
@@ -106,30 +105,53 @@ def main():
             flaglist[key.strip()] = value.strip()
     log_message(f"Flaglist loaded: {flaglist}")
 
-    # Filter proteins by MTS-cleavable probability
-    amount_of_proteins_per_step = mts_filter.run(organism_names, output_dir, cleavable, perl_script_path, flaglist, delete_cache, threshold, run_from_scratch, amount_of_proteins_per_step, last_run)
-    log_message("MitoFates filtering completed.")
+    # Filter proteins by the existence of an MTS, but only if the GO term is mitochondrial
+    mitochondrial_go_terms = ["GO:0005759", "GO:0005741", "GO:0005758", "GO:0005743", "GO:0005739"]
+    if target_go_term in mitochondrial_go_terms:
+        # Filter proteins by MTS-cleavable probability
+        amount_of_proteins_per_step = mts_filter.run(organism_names, output_dir, cleavable, perl_script_path, flaglist, delete_cache, threshold, run_from_scratch, amount_of_proteins_per_step, last_run, target_go_term)
+        log_message("MitoFates filtering completed.")
+    else:
+        # rename the filtered by go file to the filtered by go and mts file
+        for organism in organism_names:
+            output_dir_per_organism = os.path.join(output_dir, organism)
+            input_file = os.path.join(output_dir_per_organism, f"filtered_proteins_by_GO_for_{organism}.fasta")
+            output_file = os.path.join(output_dir_per_organism, f"{organism}_filtered_by_GO_cleavable_mts.fasta")
+            if os.path.exists(input_file):
+                shutil.copy(input_file, output_file)
+                log_message(f"Copied {input_file} to {output_file}")
+            else:
+                log_message(f"File not found: {input_file}")
+                continue
     # save the amount of proteins per step to a file
     amount_of_proteins_per_step.to_csv(os.path.join(output_dir, "amount_of_proteins_per_step.csv"), index=False)
     log_message("Amount of proteins per step saved.")
 
+    # create a heatmap for all organisms
     if create_heatmap or create_phylogenetic_tree:
         heatmap.run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, type, reference)
         if create_heatmap:
             log_message("Heatmap creation completed.")
 
+    # create a phylogenetic tree for all organisms
     if create_phylogenetic_tree:
         phylogenetic_tree.run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_algorithm, save_newick)
         log_message("Phylogenetic tree creation completed.")
     
+    # create a heatmap for each organism
     log_message("Creating heatmaps for each organism.")
     Heatmap_one_organism_absolute_or_HGT.run(organism_names, input_dir, output_dir, heatmap_type)
     log_message("Heatmap creation for each organism completed.")
-    
+    filter = True
+    absolute_threshold = 5
+    relative_threshold = 0.5  # Minimum number of occurrences for a GO term to be included in the heatmap
+    filter_by = "C" 
+    # plot the frequency of each second amino acid for each GO term
     log_message("Creating Nat GO term link.")
-    Nat_GOterm_link.run(organism_names, input_dir, output_dir)
+    Nat_GOterm_link.run(organism_names, input_dir, output_dir, relative_threshold, filter, filter_by, absolute_threshold)
     log_message("Nat GO term link creation completed.")
     
+    # create a logoplot for the beginning sequence and the mts sequence for each organism
     log_message("creating logoplot")
     logoplot.run(organism_names, output_dir)
     log_message("Logoplot creation completed.")

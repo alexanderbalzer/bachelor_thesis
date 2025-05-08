@@ -120,7 +120,7 @@ go_dag = GODag(obo_path)
 
 
 filter = True
-threshold = 5  # Minimum number of occurrences for a GO term to be included in the heatmap
+threshold = 0.5  # Minimum number of occurrences for a GO term to be included in the heatmap
 filter_by = "C"  
 # filter_by = "C"  # Filter for cellular component
 # filter_by = "F"  # Filter for function
@@ -129,7 +129,7 @@ name = "human" # Saccharomyces_cerevisiae Caenorhabditis_elegans human
 
 
 
-def run(organism_names, input_dir, ouput_dir):
+def run(organism_names, input_dir, ouput_dir, relative_threshold, filter, filter_by, absolute_threshold):
     for i, name in enumerate(organism_names, start=1):
         print(f"Processing organism: {name}")
         output_dir_per_organism = ouput_dir + "/" + name
@@ -149,13 +149,30 @@ def run(organism_names, input_dir, ouput_dir):
 
         # Group by the second amino acid and sum the counts for each GO term
         go_term_summary = df.groupby("2nd_amino_acid")[go_term_counts.columns].sum()
-        # Remove columns with less than 4 occurrences for any amino acid
-        go_term_summary = go_term_summary.loc[:, (go_term_summary >= threshold).any()]
+
         # transpose the DataFrame for better visualization
         go_term_summary = go_term_summary.transpose()
+
+
+        # exchange GO terms with their aspects
+        go_term_summary.index = [get_go_aspect(go_id) for go_id in go_term_summary.index]
+
+        # Remove columns with less than 4 proteins
+        for row in go_term_summary.index:
+            if go_term_summary.loc[row].sum() < absolute_threshold:
+                go_term_summary = go_term_summary.drop(row)
+
+        # append the sum of each row to the index
+        go_term_summary.index = go_term_summary.index + ", (n=" + go_term_summary.sum(axis=1).astype(str) + ")"
+
+
+        # normalize the counts per row
+        go_term_summary = go_term_summary.div(go_term_summary.sum(axis=1), axis=0)
+
+        # Remove columns with less than 4 occurrences for any amino acid
+        go_term_summary = go_term_summary.loc[:, (go_term_summary >= relative_threshold).any()]
             # Replace the GO term "GO:0005739" with its sum and move it to the bottom
         if "GO:0005739" in go_term_summary.index:
-            go_term_summary.loc["sum"] = go_term_summary.loc["GO:0005739"]
             go_term_summary = go_term_summary.drop("GO:0005739")
         print(go_term_summary)
         
@@ -167,8 +184,6 @@ def run(organism_names, input_dir, ouput_dir):
             function = "process"
         else:
             function = "all_functions"
-        # exchange GO terms with their aspects
-        go_term_summary.index = [get_go_aspect(go_id) for go_id in go_term_summary.index]
         if "Unknown" in go_term_summary.index:
             go_term_summary = go_term_summary.drop("Unknown")
 
@@ -177,7 +192,7 @@ def run(organism_names, input_dir, ouput_dir):
         if go_term_summary.empty:
             print(f"No data available for {name} with filter {filter_by}.")
             continue
-        sns.heatmap(go_term_summary, cmap="YlGnBu", annot=True, fmt="d")
+        sns.heatmap(go_term_summary, cmap="YlGnBu", annot=True, fmt=".2f")
         if name == "human":
             biological_name = "Human"
         else:
@@ -191,6 +206,8 @@ def run(organism_names, input_dir, ouput_dir):
         plt.tight_layout()
         os.makedirs(output_dir_per_organism, exist_ok=True)
         plt.savefig(os.path.join(output_dir_per_organism, f"heatmap_{name}_{function}.png"))
+        # save the matrix as a csv file
+        go_term_summary.to_csv(os.path.join(output_dir_per_organism, f"heatmap_{name}_{function}.csv"))
         plt.close()
     
 if __name__ == "__main__":
@@ -201,6 +218,10 @@ if __name__ == "__main__":
         "Mus_musculus", "Caenorhabditis_elegans", "Candida_glabrata", "Schizosaccharomyces_pombe", 
         "Debaryomyces_hansenii", "Yarrowia_lipolytica", "Saccharomyces_cerevisiae", 
         "Zygosaccharomyces_rouxii", "Physcomitrium_patens", "Scheffersomyces_stipitis"]
-    output_dir = "pipeline/output/output_20250507_095928"
+    output_dir = "pipeline/output/output_20250508_172729"
     input_dir = "pipeline/input"
-    run(organism_names, input_dir, output_dir)
+    filter = True
+    absolute_threshold = 5
+    relative_threshold = 0.5  # Minimum number of occurrences for a GO term to be included in the heatmap
+    filter_by = "C" 
+    run(organism_names, input_dir, output_dir, relative_threshold, filter, filter_by, absolute_threshold)
