@@ -74,40 +74,41 @@ def generate_frequency_matrix(name, start, output_dir_per_organism):
                 second_as.append(str(protein.seq)[1])
             # Create a pandas DataFrame with headers as the index and second_as as the column
             df_headers = pd.DataFrame({"Second_AS": second_as, "Sequence": sequences}, index=headers)
+            # only include proteins with a G as second amino acid
+            df_headers = df_headers[df_headers["Second_AS"] == "L"]
             
-
-        with open(output_dir_per_organism + "/" + "mitofates_for_" + name + ".cgi", "r") as file:
-            lines = file.readlines()
-            for i, line in enumerate(lines):
-                if line.startswith("!") or i == 0:  # Skip header line
-                    continue
-                fields = line.strip().split("\t")
-                protein_id = fields[0]
-                probability_of_MTS = fields[1]
-                position_of_MTS = fields[6]
-                start_of_MTS = position_of_MTS.strip().split("-")[0]
-                length_of_MTS = float(position_of_MTS.strip().split("-")[1]) - float(position_of_MTS.strip().split("-")[0])
-                
-                # Append the data for this line to the list if the probability is above the threshold
-                if float(probability_of_MTS) >= 0.9:
-                    second_as = df_headers.loc[protein_id, "Second_AS"] if protein_id in df_headers.index else None
-                    sequence = df_headers.loc[protein_id, "Sequence"] if protein_id in df_headers.index else None
-                    if second_as is not None:
-                        # Append the data to the list
-                        data.append({"Protein_ID": protein_id, "Sequence": sequence, "Second_AS": second_as, "start_of_MTS": start_of_MTS, "Probability_of_MTS": probability_of_MTS, "length_of_MTS": length_of_MTS})
-        # Convert the list of dictionaries into a pandas DataFrame
-        df = pd.DataFrame(data)
-        # Create a new column for the desired sequence
-        if df.empty:
-            return  # Skip if the DataFrame is empty
         if start == "MTS":
+            with open(output_dir_per_organism + "/" + "mitofates_for_" + name + ".cgi", "r") as file:
+                lines = file.readlines()
+                for i, line in enumerate(lines):
+                    if line.startswith("!") or i == 0:  # Skip header line
+                        continue
+                    fields = line.strip().split("\t")
+                    protein_id = fields[0]
+                    probability_of_MTS = fields[1]
+                    position_of_MTS = fields[6]
+                    start_of_MTS = position_of_MTS.strip().split("-")[0]
+                    length_of_MTS = float(position_of_MTS.strip().split("-")[1]) - float(position_of_MTS.strip().split("-")[0])
+                    
+                    # Append the data for this line to the list if the probability is above the threshold
+                    if float(probability_of_MTS) >= 0.9:
+                        second_as = df_headers.loc[protein_id, "Second_AS"] if protein_id in df_headers.index else None
+                        sequence = df_headers.loc[protein_id, "Sequence"] if protein_id in df_headers.index else None
+                        if second_as is not None:
+                            # Append the data to the list
+                            data.append({"Protein_ID": protein_id, "Sequence": sequence, "Second_AS": second_as, "start_of_MTS": start_of_MTS, "Probability_of_MTS": probability_of_MTS, "length_of_MTS": length_of_MTS})
+
+        if start == "MTS":
+            # Convert the list of dictionaries into a pandas DataFrame
+            df = pd.DataFrame(data)
             df["MTS_Sequence"] = df.apply(
             lambda row: row["Sequence"][int(row["start_of_MTS"]) - 1:int(row["start_of_MTS"]) - 1 + int(row["length_of_MTS"])],
             axis=1
             )
         elif start == "beginning":
+            df = df_headers
             df["MTS_Sequence"] = df.apply(
-            lambda row: row["Sequence"][1:1 + int(row["length_of_MTS"])],
+            lambda row: row["Sequence"][1:1 + int(9)],
             axis=1
             )
         else:
@@ -144,7 +145,7 @@ legend_elements = [
     Patch(facecolor='yellow', edgecolor='black', label='Secondary Structure Breaker')
 #    Patch(facecolor='gray', edgecolor='black', label='Not Relevant')
 ]
-def run(organism_names, output_dir):
+def run_MTS_and_start(organism_names, output_dir):
     for name in organism_names:
         print(f"Processing organism: {name}")
         output_dir_per_organism = output_dir + "/" + name 
@@ -176,12 +177,32 @@ def run(organism_names, output_dir):
 
         # Adjust layout and save the figure
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir_per_organism, f"logoplot_{name}.png"))
+        plt.savefig(os.path.join(output_dir_per_organism, f"logoplot_{name}_L_both.png"))
         plt.close(fig)
         # save whole data to fasta file
         with open(os.path.join(output_dir_per_organism, f"MTS_sequences_{name}.fasta"), "w") as fasta_file:
             for index, row in data.iterrows():
                 fasta_file.write(f">{row['Protein_ID']}\n+{row['MTS_Sequence']}\n<{row['Sequence']}\n*{row['start_of_MTS']}\n")
+
+
+def run_start(organism_names, output_dir):
+    for name in organism_names:
+        print(f"Processing organism: {name}")
+        output_dir_per_organism = output_dir + "/" + name 
+        # Generate frequency matrix for beginning sequences
+        frequency_matrix_beginning, unused = generate_frequency_matrix(name, "beginning", output_dir_per_organism)
+        # Create a figure for the beginning sequence logoplot
+        fig, ax = plt.subplots(figsize=(15, 5))
+        frequency_matrix_beginning = frequency_matrix_beginning.iloc[:9, :]
+        logo_beginning = Logo(frequency_matrix_beginning, color_scheme=custom_color_scheme, ax=ax)
+        ax.set_title(f"Logoplot of Beginning Sequences for {format_species_name(name)}")
+        ax.set_xticks(range(9))  # Set x-axis ticks for positions 1 to 8
+        ax.set_xticklabels(range(1, 10))
+        ax.legend(handles=legend_elements, title="Amino Acid Properties", loc='upper right')
+        # Adjust layout and save the figure
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir_per_organism, f"logoplot_beginning_{name}.png"))
+        plt.close(fig)
 
 
 if __name__ == "__main__":
@@ -192,9 +213,9 @@ if __name__ == "__main__":
         "Mus_musculus", "Caenorhabditis_elegans", "Candida_glabrata", "Schizosaccharomyces_pombe", 
         "Debaryomyces_hansenii", "Yarrowia_lipolytica", "Saccharomyces_cerevisiae", 
         "Zygosaccharomyces_rouxii", "Physcomitrium_patens", "Scheffersomyces_stipitis"]
-    output_dir = "pipeline/output/output_20250507_095928"
+    output_dir = "pipeline/output/output_20250509_141716"
 
-    run(organism_names, output_dir)
+    run_MTS_and_start(organism_names, output_dir)
 
 
 

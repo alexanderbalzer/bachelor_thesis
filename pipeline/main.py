@@ -123,6 +123,8 @@ def main():
             else:
                 log_message(f"File not found: {input_file}")
                 continue
+        # create a logoplot for the filtered proteins
+        logoplot.run_start(organism_names, output_dir)
     # save the amount of proteins per step to a file
     amount_of_proteins_per_step.to_csv(os.path.join(output_dir, "amount_of_proteins_per_step.csv"), index=False)
     log_message("Amount of proteins per step saved.")
@@ -153,7 +155,7 @@ def main():
     
     # create a logoplot for the beginning sequence and the mts sequence for each organism
     log_message("creating logoplot")
-    logoplot.run(organism_names, output_dir)
+    logoplot.run_MTS_and_start(organism_names, output_dir)
     log_message("Logoplot creation completed.")
 
 
