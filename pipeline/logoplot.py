@@ -64,7 +64,7 @@ def replace_amino_acids_with_properties(df):
 
 def generate_frequency_matrix(name, start, output_dir_per_organism):
         data = []  # Initialize an empty list to store the data
-        with open(output_dir_per_organism + "/" + name + "_filtered_by_GO_cleavable_mts.fasta", "r") as file:
+        with open(output_dir_per_organism + "/" + name + "_filtered_by_GO_cleavable_mts.fasta", "r") as file:  
             headers = []
             second_as = []
             sequences = []
@@ -75,7 +75,7 @@ def generate_frequency_matrix(name, start, output_dir_per_organism):
             # Create a pandas DataFrame with headers as the index and second_as as the column
             df_headers = pd.DataFrame({"Second_AS": second_as, "Sequence": sequences}, index=headers)
             # only include proteins with a G as second amino acid
-            df_headers = df_headers[df_headers["Second_AS"] == "L"]
+#            df_headers = df_headers[df_headers["Second_AS"] == "L"]
             
         if start == "MTS":
             with open(output_dir_per_organism + "/" + "mitofates_for_" + name + ".cgi", "r") as file:
@@ -108,7 +108,7 @@ def generate_frequency_matrix(name, start, output_dir_per_organism):
         elif start == "beginning":
             df = df_headers
             df["MTS_Sequence"] = df.apply(
-            lambda row: row["Sequence"][1:1 + int(9)],
+            lambda row: row["Sequence"][1:1 + int(50)],
             axis=1
             )
         else:
@@ -199,6 +199,9 @@ def run_start(organism_names, output_dir):
         ax.set_xticks(range(9))  # Set x-axis ticks for positions 1 to 8
         ax.set_xticklabels(range(1, 10))
         ax.legend(handles=legend_elements, title="Amino Acid Properties", loc='upper right')
+        # add y axis grid lines
+        ax.yaxis.grid(True, linestyle='--', alpha=0.7)
+
         # Adjust layout and save the figure
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir_per_organism, f"logoplot_beginning_{name}.png"))
@@ -213,9 +216,9 @@ if __name__ == "__main__":
         "Mus_musculus", "Caenorhabditis_elegans", "Candida_glabrata", "Schizosaccharomyces_pombe", 
         "Debaryomyces_hansenii", "Yarrowia_lipolytica", "Saccharomyces_cerevisiae", 
         "Zygosaccharomyces_rouxii", "Physcomitrium_patens", "Scheffersomyces_stipitis"]
-    output_dir = "pipeline/output/output_20250509_141716"
+    output_dir = "pipeline/output/output_20250509_152503"
 
-    run_MTS_and_start(organism_names, output_dir)
+    run_start(organism_names, output_dir)
 
 
 
