@@ -13,12 +13,10 @@ from matplotlib.patches import Patch
 from itertools import islice
 
 def format_species_name(name: str) -> str:
-    if name == "human":
-        return "human"
-    elif name == "human_with_isoforms":
-        return "human with isoforms"
     # Teile den Namen anhand des Unterstrichs
     parts = name.split("_")
+    if name == "Homo_sapiens_isoforms":
+        return "H. Sapiens with isoforms"
     if len(parts) != 2:
         raise ValueError("Name muss genau ein Unterstrich enthalten (Gattung_Art)")
     

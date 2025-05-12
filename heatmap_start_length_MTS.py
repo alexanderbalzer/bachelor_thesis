@@ -101,10 +101,24 @@ def run(organism_list, output_dir):
         plt.xlabel("Second amino acid")
         plt.ylabel("start of MTS")
         plt.tight_layout()
-        plt.savefig(output_dir + "/" + name + "/" + name + "_heatmap_start_of_MTS.png", dpi=300)
+        #plt.savefig(output_dir + "/" + name + "/" + name + "_heatmap_start_of_MTS.png", dpi=300)
+        plt.close()
+
+        # add the info if the MTS length is longer than 60
+        df["length_of_MTS"] = df["length_of_MTS"].astype(int)
+        df["short_MTS"] = df["length_of_MTS"].apply(lambda x: "short" if x <= 60 else "long")
+        df_copy = df.copy()
+        df_grouped_by_length= df_copy.groupby(["short_MTS"])
+        percentage = df_grouped_by_length["length_of_MTS"].count() / len(df) * 100
+        # Print the percentage of short and long MTS
+        print(f"Percentage of MTS<60: {percentage['short']:.2f}%")
+        if "long" in percentage:
+            print(f"Percentage of MTS>60: {percentage['long']:.2f}%")
+
 
         # Count the occurrences of each "Second_AS" for each "length_of_MTS"
         heatmap_data = df.groupby(["length_of_MTS", "Second_AS"]).size().unstack(fill_value=0)
+
         # Convert length_of_MTS to integers for chronological sorting
         heatmap_data.index = heatmap_data.index.astype(int)
         heatmap_data = heatmap_data.sort_index()
@@ -126,7 +140,7 @@ def run(organism_list, output_dir):
         plt.xlabel("Second amino acid")
         plt.ylabel("length of MTS")
         plt.tight_layout()
-        plt.savefig(output_dir + "/" + name + "/" + name + "_heatmap_length_of_MTS_vs_second_AS.png", dpi=300)
+        #plt.savefig(output_dir + "/" + name + "/" + name + "_heatmap_length_of_MTS_vs_second_AS.png", dpi=300)
         plt.close
 
 if __name__ == "__main__":
@@ -151,6 +165,6 @@ if __name__ == "__main__":
         "Schizosaccharomyces_pombe",
         "Yarrowia_lipolytica",
         "Zygosaccharomyces_rouxii"]
-    output_dir = "pipeline/output/output_20250508_175340_length_of_MTS"
+    output_dir = "pipeline/output/output_20250508_175340_length_of_MTS_and_long_logos"
     run(organism_names, output_dir)
 

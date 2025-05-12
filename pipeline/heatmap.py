@@ -7,6 +7,7 @@ import os
 from matplotlib.colors import TwoSlopeNorm
 from scipy.cluster.hierarchy import dendrogram, linkage
 from scipy.spatial.distance import pdist, squareform
+from seaborn import clustermap
 
 def fasta_to_dataframe(fasta_file):
     data = []
@@ -18,13 +19,10 @@ def fasta_to_dataframe(fasta_file):
 def format_species_name(name: str) -> str:
     # Teile den Namen anhand des Unterstrichs
     parts = name.split("_")
-    if name == "human":
-        return "Human"
-    if name == "human_with_isoforms":
-        return "Human with isoforms"
+    if name == "Homo_sapiens_isoforms":
+        return "H. Sapiens with isoforms"
     if len(parts) != 2:
         raise ValueError("Name muss genau ein Unterstrich enthalten (Gattung_Art)")
-    
     genus, species = parts
     # Kürze den Gattungsnamen auf den ersten Buchstaben + Punkt
     short_genus = genus[0] + "."
@@ -39,14 +37,8 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
     amino_acid = np.array(["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "A", "T", "C", "P", "G", "V"])
 
     if create_phylogenetic_tree:
-        if phylo_tree_type == "absolute":
-            save_subset_array_for_phylogenetic_tree = True
-            save_HGT_array_for_phylogenetic_tree = False
-        elif phylo_tree_type == "hgt":
-            save_subset_array_for_phylogenetic_tree = False
-            save_HGT_array_for_phylogenetic_tree = True
-        else:
-            raise ValueError("Invalid phylogenetic tree type. Choose 'absolute' or 'hgt'.")
+        save_HGT_array_for_phylogenetic_tree = True
+        save_subset_array_for_phylogenetic_tree = True
     else:
         save_subset_array_for_phylogenetic_tree = False
         save_HGT_array_for_phylogenetic_tree = False
@@ -147,20 +139,9 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
     # save the visual array as a csv file
     np.savetxt(os.path.join(output_dir, "visual_array.csv"), visual_array, delimiter=",")
 
-    # Perform hierarchical clustering
-    # Calculate the distance matrix
-    distance_matrix = pdist(visual_array, metric='euclidean')
-    # Perform hierarchical clustering
-    Z = linkage(distance_matrix, method='ward')
-    # sort the heatmap according to the clustering
-    dendro = dendrogram(Z, no_plot=True)
-    # Reorder the visual_array based on the clustering
-    sorted_indices = dendro['leaves']
-    visual_array = visual_array[sorted_indices, :]
-    print(sorted_indices)
-    # Reorder the organism names based on the clustering
-    organism_names = [organism_names[i] for i in sorted_indices]
-    print(organism_names)
+    newick = "(((Homo_sapiens, Mus_musculus), (Dario_rerio, Daphnia_magna)), ((Caenorhabditis_elegans, Drosophila_Melanogaster), (Arabidopsis_thaliana, Physcomitrium_patens))), ((Chlamydomonas_reinhardtii, Plasmodium_malariae), (Candida_glabrata, (Saccharomyces_cerevisiae, Zygosaccharomyces_rouxii))));"
+
+    
     # Create the heatmap and add the dendrogram to the plot
     plt.figure(figsize=(12, 8))
     fig, ax = plt.subplots(figsize=(12, 8))
@@ -170,12 +151,11 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
     formated_names = [format_species_name(name) for name in organism_names]
     ax.set_yticklabels(formated_names, fontstyle="italic")
     cmap = 'RdBu_r'
-    pcm = ax.imshow(visual_array, cmap=cmap)
     max = np.max(visual_array)
     max = np.round(max, decimals=0)
     max = 20
     norm = TwoSlopeNorm(vmin=-max, vcenter=0, vmax=max)
-    pcm.set_norm(norm)
+    pcm = ax.imshow(visual_array, cmap=cmap, norm=norm)
     cbar = plt.colorbar(pcm, ax=ax, shrink=0.3, aspect=10, pad=0.01)
     cbar.set_ticks([-max, 0, max])
     cbar.ax.set_title('HGT', fontsize=7)
@@ -185,35 +165,20 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
     plt.tight_layout()
 
     if create_heatmap:
-        plt.savefig(os.path.join(output_dir, "heatmap.png"), dpi=300)
+        plt.savefig(os.path.join(output_dir, "heatmap.pdf"), dpi=300)
     # save the heatmap
     return
 
 if __name__ == "__main__":
     # Example usage
     organism_names = [
-        "Arabidopsis_thaliana",
-        "Caenorhabditis_elegans",
-        "Candida_glabrata",
-        "Chlamydomonas_reinhardtii",
-        "Clavispora_lusitaniae",
-        "Dario_rerio",
-        "Debaryomyces_hansenii",
-        "Drosophila_Melanogaster",
-        "Geotrichum_candidum",
-        "human",
-        "human_with_isoforms",
-        "Lachancea_thermotolerans",
-        "Mus_musculus",
-        "Physcomitrium_patens",
-        "Saccharomyces_cerevisiae",
-        "Scheffersomyces_stipitis",
-        "Schizosaccharomyces_pombe",
-        "Yarrowia_lipolytica",
-        "Zygosaccharomyces_rouxii"]
+    "Homo_sapiens", "Homo_sapiens_isoforms", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
+    "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
+    "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
+    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
     input_dir = "pipeline/input"
-    cache_dir = "pipeline/cache/cache_20250508_175340/"
-    output_dir = "pipeline/output/output_20250508_175340"
+    cache_dir = "pipeline/cache/cache_20250512_171530/"
+    output_dir = "pipeline/output/output_20250512_171530"
     create_heatmap = True
     heatmap_type = "hgt"
     create_phylogenetic_tree = False

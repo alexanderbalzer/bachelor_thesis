@@ -92,10 +92,8 @@ def get_go_aspect(go_id):
 def format_species_name(name: str) -> str:
     # Teile den Namen anhand des Unterstrichs
     parts = name.split("_")
-    if name == "human":
-        return "Human"
-    if name == "human_with_isoforms":
-        return "Human with isoforms"
+    if name == "Homo_sapiens_isoforms":
+        return "H. Sapiens with isoforms"
     if len(parts) != 2:
         raise ValueError("Name muss genau ein Unterstrich enthalten (Gattung_Art)")
     
