@@ -216,7 +216,7 @@ if __name__ == "__main__":
         "Mus_musculus", "Caenorhabditis_elegans", "Candida_glabrata", "Schizosaccharomyces_pombe", 
         "Debaryomyces_hansenii", "Yarrowia_lipolytica", "Saccharomyces_cerevisiae", 
         "Zygosaccharomyces_rouxii", "Physcomitrium_patens", "Scheffersomyces_stipitis"]
-    output_dir = "pipeline/output/output_20250509_152503"
+    output_dir = "pipeline/output/output_20250508_171639_mito_no_MTS_no_cytosol"
 
     run_start(organism_names, output_dir)
 

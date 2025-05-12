@@ -111,12 +111,12 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
                 result = 0
                 if f_obs < f_exp:
                     result = -1 * abs_log_val
-                else:
+                elif f_obs > f_exp:
                     result = abs_log_val
                 visual_array[i, j] = result
     # Save the visual array to a file
     if save_HGT_array_for_phylogenetic_tree:
-        np.save(os.path.join(cache_dir, "phyl_tree_array.npy"), visual_array)
+        np.save(os.path.join(cache_dir, "phyl_tree_array.txt"), visual_array)
 
     # normalize the subset array
     for i in range(len(organism_names)):

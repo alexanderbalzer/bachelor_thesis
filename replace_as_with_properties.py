@@ -23,10 +23,13 @@ def replace_amino_acids_with_properties(df):
     # Replace the sequences in the DataFrame based on their properties
     for index, row in df.iterrows():
         sequence = row["sequence"]
-        new_sequence = "".join([property_mapping.get(aa, aa) for aa in sequence])
+        new_sequence = "".join([property_mapping.get(aa) for aa in list(sequence)])
         # add the new sequence to the DataFrame if the first 5 positions are H
-        if new_sequence[:5] == "HHHHH":
+        first_as = list(new_sequence)[:4]
+        if "".join(first_as) == "HHHH":
             df.at[index, "sequence"] = new_sequence
+        else:
+            df.at[index, "sequence"] = ""
     return df
 
 def fasta_to_dataframe(fasta_file):
@@ -40,6 +43,7 @@ def fasta_to_dataframe(fasta_file):
     # replace the sequences in the DataFrame based on their properties
     df = replace_amino_acids_with_properties(df)
     df["protein_id"] = protein_id
+#    print(df.head)
     return df
 
 def run(organism_list, output_dir):
@@ -49,7 +53,7 @@ def run(organism_list, output_dir):
         with open(output_dir_per_organism + "/" + name + "_filtered_by_GO_cleavable_mts.fasta", "r") as file:
             df = fasta_to_dataframe(file)
         # write the modified DataFrame to a new file
-        output_file = os.path.join(output_dir_per_organism, f"{name}_modified.fasta")
+        output_file = os.path.join(output_dir_per_organism, f"{name}_modified_only_HHHH.fasta")
         with open(output_file, "w") as f:
             for index, row in df.iterrows():
                 f.write(f">{row['protein_id']}\n")

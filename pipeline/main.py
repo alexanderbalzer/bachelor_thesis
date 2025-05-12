@@ -106,7 +106,7 @@ def main():
     log_message(f"Flaglist loaded: {flaglist}")
 
     # Filter proteins by the existence of an MTS, but only if the GO term is mitochondrial
-    mitochondrial_go_terms = ["GO:0005759", "GO:0005741", "GO:0005758", "GO:0005743", "GO:0005739"]
+    mitochondrial_go_terms = ["GO:0005759", "GO:0005741", "GO:0005758", "GO:0005743", "GO:0005739", "GO:0005783"]
     if target_go_term in mitochondrial_go_terms:
         # Filter proteins by MTS-cleavable probability
         amount_of_proteins_per_step = mts_filter.run(organism_names, output_dir, cleavable, perl_script_path, flaglist, delete_cache, threshold, run_from_scratch, amount_of_proteins_per_step, last_run, target_go_term)

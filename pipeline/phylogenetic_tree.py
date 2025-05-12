@@ -77,7 +77,7 @@ def run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_alg
     algorythm = phylo_tree_algorithm
     # Read the organisms list from the file
     labels = organism_names
-    data = np.load(os.path.join(cache_dir, "phyl_tree_array.npy"))
+    data = np.load(os.path.join(cache_dir, "phyl_tree_array.txt"))
     data = np.array(data)
 
 
@@ -128,7 +128,7 @@ def run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_alg
         plt.savefig(os.path.join(output_dir, "phylogenetic_tree.png"), dpi=300)
 
         # delete the cache
-        #os.remove(os.path.join(cache_dir, "phyl_tree_array.npy"))
+        #os.remove(os.path.join(cache_dir, "phyl_tree_array.txt"))
         return
     
     elif algorythm == "nj":
@@ -159,7 +159,7 @@ def run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_alg
         plt.savefig(os.path.join(output_dir, "phylogenetic_tree.png"), dpi=300)
 
         # delete the cache
-        os.remove(os.path.join(cache_dir, "phyl_tree_array.npy"))
+        os.remove(os.path.join(cache_dir, "phyl_tree_array.txt"))
         return
 
 

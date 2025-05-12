@@ -133,11 +133,28 @@ def run(organism_names, input_dir, ouput_dir, relative_threshold, filter, filter
     for i, name in enumerate(organism_names, start=1):
         print(f"Processing organism: {name}")
         output_dir_per_organism = ouput_dir + "/" + name
-        fasta = output_dir_per_organism + "/" + name + "_filtered_by_GO_cleavable_mts.fasta"
+        fasta = output_dir_per_organism + "/filtered_proteins_by_GO_for_" + name + ".fasta"
         goa = os.path.join(input_dir, f"{name}.goa")
         df = fasta_to_dataframe(fasta)
         go_annotation = parse_go_annotations(goa, filter_by, filter)
         df = add_go_terms_to_dataframe(df, go_annotation)
+
+        # exchange the go terms with their aspects
+        df2 = df.copy()
+        df2["GO_Term"] = df2["GO_Term"].apply(lambda x: ", ".join([get_go_aspect(go_id) for go_id in x.split(", ")]))
+        # delte duplicates in the GO_Term column
+        df2["GO_Term"] = df2["GO_Term"].apply(lambda x: ", ".join(sorted(set(x.split(", ")))))
+        # delete the term mitochondrion from the GO_Term column
+        df2["GO_Term"] = df2["GO_Term"].apply(lambda x: ", ".join([term for term in x.split(", ") if "mitochondrion" not in term]))
+        # delete all terms that don't contein "mitochondr"
+        df2["GO_Term"] = df2["GO_Term"].apply(lambda x: ", ".join([term for term in x.split(", ") if "mitochondr" in term]))
+        # delete all terms that are empty
+        df2 = df2[df2["GO_Term"] != ""]
+        print(len(df2))
+        # save the dataframe with the GO terms
+        df2.to_csv(os.path.join(output_dir_per_organism, f"{name}_go_terms.csv"), index=False)
+
+        df = df2
         df = df.drop(columns=["protein_id"])
         # Create a new DataFrame with one-hot encoding for GO terms
         go_term_counts = df["GO_Term"].str.get_dummies(sep=", ")
@@ -147,6 +164,7 @@ def run(organism_names, input_dir, ouput_dir, relative_threshold, filter, filter
         # Add the counts to the original DataFrame
         df = pd.concat([df, go_term_counts], axis=1)
 
+
         # Group by the second amino acid and sum the counts for each GO term
         go_term_summary = df.groupby("2nd_amino_acid")[go_term_counts.columns].sum()
 
@@ -155,9 +173,10 @@ def run(organism_names, input_dir, ouput_dir, relative_threshold, filter, filter
 
 
         # exchange GO terms with their aspects
-        go_term_summary.index = [get_go_aspect(go_id) for go_id in go_term_summary.index]
+        #go_term_summary.index = [get_go_aspect(go_id) for go_id in go_term_summary.index]
 
-        # Remove columns with less than 4 proteins
+
+        # Remove rows with less than 4 proteins
         for row in go_term_summary.index:
             if go_term_summary.loc[row].sum() < absolute_threshold:
                 go_term_summary = go_term_summary.drop(row)
@@ -170,11 +189,10 @@ def run(organism_names, input_dir, ouput_dir, relative_threshold, filter, filter
         go_term_summary = go_term_summary.div(go_term_summary.sum(axis=1), axis=0)
 
         # Remove columns with less than 4 occurrences for any amino acid
-        go_term_summary = go_term_summary.loc[:, (go_term_summary >= relative_threshold).any()]
+        #go_term_summary = go_term_summary.loc[:, (go_term_summary >= relative_threshold).any()]
             # Replace the GO term "GO:0005739" with its sum and move it to the bottom
         if "GO:0005739" in go_term_summary.index:
             go_term_summary = go_term_summary.drop("GO:0005739")
-        print(go_term_summary)
         
         if filter_by == "C":
             function = "cellular component"
@@ -192,20 +210,26 @@ def run(organism_names, input_dir, ouput_dir, relative_threshold, filter, filter
         if go_term_summary.empty:
             print(f"No data available for {name} with filter {filter_by}.")
             continue
-        sns.heatmap(go_term_summary, cmap="YlGnBu", annot=True, fmt=".2f")
+
+        # Reorder the columns to match the specified amino acid order
+        amino_acid_order = ["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "A", "T", "C", "P", "G", "V"]
+        reordered_indices = [go_term_summary.columns.tolist().index(aa) for aa in amino_acid_order if aa in go_term_summary.columns]
+        go_term_summary = go_term_summary.iloc[:, reordered_indices]
+        # Create the heatmap
+        sns.heatmap(go_term_summary, cmap="YlGnBu", annot=False, fmt=".2f")
         if name == "human":
             biological_name = "Human"
         else:
             biological_name = format_species_name(name)
         plt.title(biological_name, fontstyle="italic")
         colorbar = plt.gca().collections[0].colorbar
-        colorbar.set_label("Absolute count")
-        plt.xlabel("Nat substrate")
+        colorbar.set_label("Relative abundance")
+        plt.xlabel("Amino acids")
         plt.ylabel(function)
-        plt.xticks(rotation=90)
+        plt.xticks(rotation=0)
         plt.tight_layout()
         os.makedirs(output_dir_per_organism, exist_ok=True)
-        plt.savefig(os.path.join(output_dir_per_organism, f"heatmap_{name}_{function}.png"))
+        plt.savefig(os.path.join(output_dir_per_organism, f"heatmap_{name}_{function}.pdf"))
         # save the matrix as a csv file
         go_term_summary.to_csv(os.path.join(output_dir_per_organism, f"heatmap_{name}_{function}.csv"))
         plt.close()
@@ -218,7 +242,7 @@ if __name__ == "__main__":
         "Mus_musculus", "Caenorhabditis_elegans", "Candida_glabrata", "Schizosaccharomyces_pombe", 
         "Debaryomyces_hansenii", "Yarrowia_lipolytica", "Saccharomyces_cerevisiae", 
         "Zygosaccharomyces_rouxii", "Physcomitrium_patens", "Scheffersomyces_stipitis"]
-    output_dir = "pipeline/output/output_20250508_172729"
+    output_dir = "pipeline/output/output_20250509_131911_MTS_no_cytosol"
     input_dir = "pipeline/input"
     filter = True
     absolute_threshold = 5
