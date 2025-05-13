@@ -77,7 +77,7 @@ def run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_alg
     algorythm = phylo_tree_algorithm
     # Read the organisms list from the file
     labels = organism_names
-    data = np.load(os.path.join(cache_dir, "phyl_tree_array.txt"))
+    data = np.load(os.path.join(cache_dir, "phyl_tree_array.npy"), allow_pickle=True)
     data = np.array(data)
 
 
@@ -159,34 +159,19 @@ def run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_alg
         plt.savefig(os.path.join(output_dir, "phylogenetic_tree.png"), dpi=300)
 
         # delete the cache
-        os.remove(os.path.join(cache_dir, "phyl_tree_array.txt"))
+        os.remove(os.path.join(cache_dir, "phyl_tree_array.npy"))
         return
 
 
 if __name__ == "__main__":
     # Example usage
     organism_names = [
-        "Arabidopsis_thaliana",
-        "Caenorhabditis_elegans",
-        "Candida_glabrata",
-        "Chlamydomonas_reinhardtii",
-        "Clavispora_lusitaniae",
-        "Dario_rerio",
-        "Debaryomyces_hansenii",
-        "Drosophila_Melanogaster",
-        "Geotrichum_candidum",
-        "human",
-        "human_with_isoforms",
-        "Lachancea_thermotolerans",
-        "Mus_musculus",
-        "Physcomitrium_patens",
-        "Saccharomyces_cerevisiae",
-        "Scheffersomyces_stipitis",
-        "Schizosaccharomyces_pombe",
-        "Yarrowia_lipolytica",
-        "Zygosaccharomyces_rouxii"]
-    cache_dir = "pipeline/cache/cache_20250507_110227/"
-    output_dir = "pipeline/output/output_20250507_110227/"
+    "Homo_sapiens", "Homo_sapiens_isoforms", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
+    "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
+    "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
+    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
+    cache_dir = "pipeline/cache/cache_20250513_105122/"
+    output_dir = "pipeline/output/output_20250513_105122/"
     phylo_tree_method = "pearson"  # or "euclidean" or "cosine"
     phylo_tree_algorithm = "UPGMA"  # or "nj"
     save_newick = True

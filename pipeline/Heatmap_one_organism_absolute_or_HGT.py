@@ -103,6 +103,9 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
                             M = amount_of_proteins[2] #amount of all amino acids in the whole set
                             N = amount_of_proteins[file] #amount of all amino acids in the subset
                             p_value = hypergeom.sf(x, M, n, N)
+                            p_value_over = hypergeom.sf(x, M, n, N)
+                            p_value_under = hypergeom.cdf(x, M, n, N)
+                            p_value = min(p_value_over, p_value_under)
                             if i ==10 and j == 1:
                                 print(p_value)
                             abs_log_val = abs(np.log10(p_value))
@@ -141,16 +144,15 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
         pcm1 = ax[0].imshow(all_arrays[0], cmap=cmap, vmin=-20, vmax=20)
         pcm2 = ax[1].imshow(all_arrays[1], cmap=cmap, vmin=-20, vmax=20)
 
-        ax[0].set_xlabel("Position")
         ax[0].set_ylabel("Amino acids")
         ax[0].set_title("With MTS")
 
-        ax[1].set_xticks(range(len(position)), labels=position, rotation=0, rotation_mode="anchor", fontsize=7)
+        ax[1].set_xticks(range(len(position)), labels=position, rotation=0, rotation_mode="anchor", fontsize=6)
         ax[1].set_yticks(range(len(amino_acid)), labels=amino_acid, rotation=0, rotation_mode="anchor", fontsize=7)
         ax[1].set_title("Without MTS")
-        ax[1].set_ylabel("Amino acids")
-
-
+        ax[1].set_ylabel(" ")
+        ax[0].set_xlabel("Positions")
+        ax[1].set_xlabel("Positions")
 
         fig.tight_layout(pad=3.0)
         max = 20
@@ -159,7 +161,8 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
         pcm1.set_norm(norm)
         pcm2.set_norm(norm)
         cbar = plt.colorbar(pcm1, ax=ax, shrink=0.3, aspect=10, pad=0.01)
-        cbar.set_ticks(np.linspace(-max, max, num=5))
+        cbar.set_ticks(np.linspace(-max, max, num=3))
+        cbar.set_ticklabels([str(-max), "0", str(max)], fontsize=7)
         cbar.ax.set_title('HGT', pad=5, fontsize=7)
         plt.savefig(os.path.join(output_dir_per_organism, f"heatmap_{name}_{wanted_result}.png"), dpi=300)
         plt.close(fig)
@@ -167,13 +170,12 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
 if __name__ == "__main__":
     # Define the names of the organisms
     organism_names = [
-        "Geotrichum_candidum", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
-        "Lachancea_thermotolerans", "human_with_isoforms", "human", "Clavispora_lusitaniae", 
-        "Mus_musculus", "Caenorhabditis_elegans", "Candida_glabrata", "Schizosaccharomyces_pombe", 
-        "Debaryomyces_hansenii", "Yarrowia_lipolytica", "Saccharomyces_cerevisiae", 
-        "Zygosaccharomyces_rouxii", "Physcomitrium_patens", "Scheffersomyces_stipitis"]
+    "Homo_sapiens", "Homo_sapiens_isoforms", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
+    "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
+    "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
+    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
     input_dir = "pipeline/input"
-    output_dir = "pipeline/output/output_20250430_102406"
+    output_dir = "pipeline/output/output_20250513_133508"
     heatmap_type = "hgt"  # or "hgt"
 
     run(organism_names, input_dir, output_dir, heatmap_type)

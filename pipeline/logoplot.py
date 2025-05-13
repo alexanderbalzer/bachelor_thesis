@@ -72,7 +72,7 @@ def generate_frequency_matrix(name, start, output_dir_per_organism):
                 second_as.append(str(protein.seq)[1])
             # Create a pandas DataFrame with headers as the index and second_as as the column
             df_headers = pd.DataFrame({"Second_AS": second_as, "Sequence": sequences}, index=headers)
-            # only include proteins with a G as second amino acid
+            # only include proteins with a specific second amino acid
 #            df_headers = df_headers[df_headers["Second_AS"] == "L"]
             
         if start == "MTS":
@@ -175,7 +175,7 @@ def run_MTS_and_start(organism_names, output_dir):
 
         # Adjust layout and save the figure
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir_per_organism, f"logoplot_{name}_L_both.png"))
+        plt.savefig(os.path.join(output_dir_per_organism, f"logoplot_{name}.png"))
         plt.close(fig)
         # save whole data to fasta file
         with open(os.path.join(output_dir_per_organism, f"MTS_sequences_{name}.fasta"), "w") as fasta_file:

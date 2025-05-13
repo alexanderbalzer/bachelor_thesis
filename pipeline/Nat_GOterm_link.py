@@ -6,6 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from goatools.obo_parser import GODag
 from goatools.base import download_go_basic_obo
+from time import sleep
 
 
 # parse the fasta file and create a dataframe
@@ -131,7 +132,7 @@ def run(organism_names, input_dir, ouput_dir, relative_threshold, filter, filter
     for i, name in enumerate(organism_names, start=1):
         print(f"Processing organism: {name}")
         output_dir_per_organism = ouput_dir + "/" + name
-        fasta = output_dir_per_organism + "/filtered_proteins_by_GO_for_" + name + ".fasta"
+        fasta = output_dir_per_organism + "/" + name + "_filtered_proteins_by_GO_noncleavable_mts.fasta"
         goa = os.path.join(input_dir, f"{name}.goa")
         df = fasta_to_dataframe(fasta)
         go_annotation = parse_go_annotations(goa, filter_by, filter)
@@ -143,7 +144,7 @@ def run(organism_names, input_dir, ouput_dir, relative_threshold, filter, filter
         # delte duplicates in the GO_Term column
         df2["GO_Term"] = df2["GO_Term"].apply(lambda x: ", ".join(sorted(set(x.split(", ")))))
         # delete the term mitochondrion from the GO_Term column
-        df2["GO_Term"] = df2["GO_Term"].apply(lambda x: ", ".join([term for term in x.split(", ") if "mitochondrion" not in term]))
+        #df2["GO_Term"] = df2["GO_Term"].apply(lambda x: ", ".join([term for term in x.split(", ") if "mitochondrion" not in term]))
         # delete all terms that don't contein "mitochondr"
         df2["GO_Term"] = df2["GO_Term"].apply(lambda x: ", ".join([term for term in x.split(", ") if "mitochondr" in term]))
         # delete all terms that are empty
@@ -153,6 +154,17 @@ def run(organism_names, input_dir, ouput_dir, relative_threshold, filter, filter
         df2.to_csv(os.path.join(output_dir_per_organism, f"{name}_go_terms.csv"), index=False)
 
         df = df2
+
+        # Explode GO_Term so each row has one GO term, then group
+        df_exploded = df.copy()
+        df_exploded = df_exploded.assign(GO_Term=df_exploded["GO_Term"].str.split(", ")).explode("GO_Term")
+        go_term_protein_ids = df_exploded.groupby("GO_Term")["protein_id"].apply(list).reset_index()
+        go_term_protein_ids.columns = ["GO_Term", "Protein_IDs"]
+        # add the number of proteins per go term
+        go_term_protein_ids["Number_of_Proteins"] = go_term_protein_ids["Protein_IDs"].apply(lambda x: len(x))
+        # Save the DataFrame to a CSV file
+        go_term_protein_ids.to_csv(os.path.join(output_dir_per_organism, f"{name}_go_term_protein_ids.csv"), index=False)
+ 
         df = df.drop(columns=["protein_id"])
         # Create a new DataFrame with one-hot encoding for GO terms
         go_term_counts = df["GO_Term"].str.get_dummies(sep=", ")
@@ -165,6 +177,7 @@ def run(organism_names, input_dir, ouput_dir, relative_threshold, filter, filter
 
         # Group by the second amino acid and sum the counts for each GO term
         go_term_summary = df.groupby("2nd_amino_acid")[go_term_counts.columns].sum()
+        
 
         # transpose the DataFrame for better visualization
         go_term_summary = go_term_summary.transpose()
@@ -227,20 +240,19 @@ def run(organism_names, input_dir, ouput_dir, relative_threshold, filter, filter
         plt.xticks(rotation=0)
         plt.tight_layout()
         os.makedirs(output_dir_per_organism, exist_ok=True)
-        plt.savefig(os.path.join(output_dir_per_organism, f"heatmap_{name}_{function}.pdf"))
+        plt.savefig(os.path.join(output_dir_per_organism, f"heatmap_{name}_{function}_noncleavable.pdf"))
         # save the matrix as a csv file
-        go_term_summary.to_csv(os.path.join(output_dir_per_organism, f"heatmap_{name}_{function}.csv"))
+        go_term_summary.to_csv(os.path.join(output_dir_per_organism, f"heatmap_{name}_{function}_noncleavable.csv"))
         plt.close()
     
 if __name__ == "__main__":
     # Define the names of the organisms
     organism_names = [
-        "Geotrichum_candidum", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
-        "Lachancea_thermotolerans", "human_with_isoforms", "human", "Clavispora_lusitaniae", 
-        "Mus_musculus", "Caenorhabditis_elegans", "Candida_glabrata", "Schizosaccharomyces_pombe", 
-        "Debaryomyces_hansenii", "Yarrowia_lipolytica", "Saccharomyces_cerevisiae", 
-        "Zygosaccharomyces_rouxii", "Physcomitrium_patens", "Scheffersomyces_stipitis"]
-    output_dir = "pipeline/output/output_20250509_131911_MTS_no_cytosol"
+    "Homo_sapiens", "Homo_sapiens_isoforms", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
+    "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
+    "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
+    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
+    output_dir = "pipeline/output/output_20250513_105122"
     input_dir = "pipeline/input"
     filter = True
     absolute_threshold = 5

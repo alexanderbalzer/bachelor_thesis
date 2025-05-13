@@ -38,9 +38,9 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
 
     if create_phylogenetic_tree:
         save_HGT_array_for_phylogenetic_tree = True
-        save_subset_array_for_phylogenetic_tree = True
-    else:
         save_subset_array_for_phylogenetic_tree = False
+    else:
+        save_subset_array_for_phylogenetic_tree = True
         save_HGT_array_for_phylogenetic_tree = False
 
     dictlist = []
@@ -96,7 +96,9 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
             for j in range(len(amino_acid)):
                 x = subset_array[i, j]
                 n = reference_array[i, j]
-                p_value = hypergeom.sf(x, M, n, N)
+                p_value_over = hypergeom.sf(x, M, n, N)
+                p_value_under = hypergeom.cdf(x, M, n, N)
+                p_value = min(p_value_over, p_value_under)
                 abs_log_val = abs(np.log10(p_value))
                 f_obs = x / N if N != 0 else 0
                 f_exp = n / M if M != 0 else 0
@@ -108,7 +110,7 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
                 visual_array[i, j] = result
     # Save the visual array to a file
     if save_HGT_array_for_phylogenetic_tree:
-        np.save(os.path.join(cache_dir, "phyl_tree_array.txt"), visual_array)
+        np.save(os.path.join(cache_dir, "phyl_tree_array.npy"), visual_array)
 
     # normalize the subset array
     for i in range(len(organism_names)):
@@ -153,19 +155,20 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
     cmap = 'RdBu_r'
     max = np.max(visual_array)
     max = np.round(max, decimals=0)
-    max = 20
+    max = 10
     norm = TwoSlopeNorm(vmin=-max, vcenter=0, vmax=max)
     pcm = ax.imshow(visual_array, cmap=cmap, norm=norm)
     cbar = plt.colorbar(pcm, ax=ax, shrink=0.3, aspect=10, pad=0.01)
     cbar.set_ticks([-max, 0, max])
-    cbar.ax.set_title('HGT', fontsize=7)
+    cbar.ax.set_title('HGT', fontsize=12)
+    # annotate the heatmap 
 
     # Adjust the layout to prevent labels from being cut off
     plt.subplots_adjust(left=0.3)  # Increase the left margin
     plt.tight_layout()
 
     if create_heatmap:
-        plt.savefig(os.path.join(output_dir, "heatmap.pdf"), dpi=300)
+        plt.savefig(os.path.join(output_dir, "heatmap3.pdf"), dpi=300)
     # save the heatmap
     return
 
@@ -177,8 +180,8 @@ if __name__ == "__main__":
     "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
     "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
     input_dir = "pipeline/input"
-    cache_dir = "pipeline/cache/cache_20250512_171530/"
-    output_dir = "pipeline/output/output_20250512_171530"
+    cache_dir = "pipeline/cache/cache_20250513_133508/"
+    output_dir = "pipeline/output/output_20250513_133508"
     create_heatmap = True
     heatmap_type = "hgt"
     create_phylogenetic_tree = False
