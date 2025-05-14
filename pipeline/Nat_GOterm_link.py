@@ -9,8 +9,10 @@ from goatools.base import download_go_basic_obo
 from time import sleep
 
 
-# parse the fasta file and create a dataframe
 def fasta_to_dataframe(fasta_file):
+    """
+    Parse a FASTA file and extract the second amino acid and protein ID.
+    """
     data = []
     second_as = []
     protein_id = []
@@ -21,10 +23,6 @@ def fasta_to_dataframe(fasta_file):
     second_as = [seq[1] for seq in data]
     df = pd.DataFrame(second_as, columns=["2nd_amino_acid"])
     df["protein_id"] = protein_id
-    os.makedirs("pipeline/protein_ids", exist_ok=True)
-    with open("pipeline/protein_ids/protein_ids2.txt", "w") as f:
-        for id in protein_id:
-            f.write(f"{id}\n")
     return df
 
 def parse_go_annotations(annotation_file, filter_by, filter):
@@ -80,9 +78,9 @@ def classify_natc_substrate(second_as):
     else:
         return "Other"
     
-def get_go_aspect(go_id):
+def get_go_aspect(go_id, go_dag):
     """
-    Get the aspect of a GO term (biological process, molecular function, or cellular component).
+    Get the aspect of a GO term.
     """
     if go_id in go_dag:
         go_term = go_dag[go_id]
@@ -96,64 +94,67 @@ def format_species_name(name: str) -> str:
     if name == "Homo_sapiens_isoforms":
         return "H. Sapiens with isoforms"
     if len(parts) != 2:
-        raise ValueError("Name muss genau ein Unterstrich enthalten (Gattung_Art)")
-    
+        raise ValueError("Name has to contain two words.")
     genus, species = parts
-    # Kürze den Gattungsnamen auf den ersten Buchstaben + Punkt
     short_genus = genus[0] + "."
-    
-    # Setze alles in kursiv (z. B. für Markdown oder HTML)
     formatted = f"{short_genus} {species}"
     return formatted
 
 
-    
-obo_path = "pipeline/go.obo"
-if not os.path.exists(obo_path):
-    # Download the latest OBO file
-    obo_path = download_go_basic_obo()  # Downloads the latest OBO file
-
-# Load the GO DAG
-go_dag = GODag(obo_path)
-
-
-
-filter = True
-threshold = 0.5  # Minimum number of occurrences for a GO term to be included in the heatmap
-filter_by = "C"  
-# filter_by = "C"  # Filter for cellular component
-# filter_by = "F"  # Filter for function
-# filter_by = "P"  # Filter for process
-name = "human" # Saccharomyces_cerevisiae Caenorhabditis_elegans human
+def load_obo():
+    '''
+    load the latest obo file to exchange the GO terms with their aspects
+    '''
+    obo_path = "pipeline/go.obo"
+    if not os.path.exists(obo_path):
+        obo_path = download_go_basic_obo()  
+    # Load the GO DAG
+    go_dag = GODag(obo_path)
+    return go_dag
 
 
 
-def run(organism_names, input_dir, ouput_dir, relative_threshold, filter, filter_by, absolute_threshold):
+def run(organism_names, input_dir, ouput_dir):
+    """
+    # plot the frequency of the Nat substrates for each GO term inside the mitochondria for each organism
+    # and save the heatmap as a pdf file
+    Args:
+        organism_names (list): List of organism names.
+        input_dir (str): Directory containing the input files.
+        ouput_dir (str): Directory to save the output files.
+    """
+    filter = True
+    absolute_threshold = 5
+    filter_by = "C" 
+    nat_or_aa = "aa" # nat or aa
+    # Load the GO DAG
+    go_dag = load_obo()
     for i, name in enumerate(organism_names, start=1):
-        print(f"Processing organism: {name}")
+        print(f"Creating Nat - GO term heatmap for organism: {name}")
+
+        # specify the input files for cleavable MTS
         output_dir_per_organism = ouput_dir + "/" + name
-        fasta = output_dir_per_organism + "/" + name + "_filtered_proteins_by_GO_noncleavable_mts.fasta"
+        fasta = output_dir_per_organism + "/" + name + "_filtered_by_GO_cleavable_mts.fasta"
         goa = os.path.join(input_dir, f"{name}.goa")
+
+        # parse the fasta file and the goa file and create a dataframe
         df = fasta_to_dataframe(fasta)
         go_annotation = parse_go_annotations(goa, filter_by, filter)
         df = add_go_terms_to_dataframe(df, go_annotation)
 
         # exchange the go terms with their aspects
-        df2 = df.copy()
-        df2["GO_Term"] = df2["GO_Term"].apply(lambda x: ", ".join([get_go_aspect(go_id) for go_id in x.split(", ")]))
+        df["GO_Term"] = df["GO_Term"].apply(lambda x: ", ".join([get_go_aspect(go_id, go_dag) for go_id in x.split(", ")]))
         # delte duplicates in the GO_Term column
-        df2["GO_Term"] = df2["GO_Term"].apply(lambda x: ", ".join(sorted(set(x.split(", ")))))
+        df["GO_Term"] = df["GO_Term"].apply(lambda x: ", ".join(sorted(set(x.split(", ")))))
         # delete the term mitochondrion from the GO_Term column
-        #df2["GO_Term"] = df2["GO_Term"].apply(lambda x: ", ".join([term for term in x.split(", ") if "mitochondrion" not in term]))
-        # delete all terms that don't contein "mitochondr"
-        df2["GO_Term"] = df2["GO_Term"].apply(lambda x: ", ".join([term for term in x.split(", ") if "mitochondr" in term]))
+        df["GO_Term"] = df["GO_Term"].apply(lambda x: ", ".join([term for term in x.split(", ") if "mitochondrion" not in term]))
+        # delete all terms that don't contain "mitochondr"
+        df["GO_Term"] = df["GO_Term"].apply(lambda x: ", ".join([term for term in x.split(", ") if "mitochondr" in term]))
         # delete all terms that are empty
-        df2 = df2[df2["GO_Term"] != ""]
-        print(len(df2))
+        df = df[df["GO_Term"] != ""]
+        print(len(df))
         # save the dataframe with the GO terms
-        df2.to_csv(os.path.join(output_dir_per_organism, f"{name}_go_terms.csv"), index=False)
-
-        df = df2
+        df.to_csv(os.path.join(output_dir_per_organism, f"{name}_go_terms.csv"), index=False)
 
         # Explode GO_Term so each row has one GO term, then group
         df_exploded = df.copy()
@@ -176,16 +177,14 @@ def run(organism_names, input_dir, ouput_dir, relative_threshold, filter, filter
 
 
         # Group by the second amino acid and sum the counts for each GO term
-        go_term_summary = df.groupby("2nd_amino_acid")[go_term_counts.columns].sum()
+        if nat_or_aa == "nat":
+            go_term_summary = df.groupby("NatC_Substrate")[go_term_counts.columns].sum()
+        else:
+            go_term_summary = df.groupby("2nd_amino_acid")[go_term_counts.columns].sum()
         
 
         # transpose the DataFrame for better visualization
         go_term_summary = go_term_summary.transpose()
-
-
-        # exchange GO terms with their aspects
-        #go_term_summary.index = [get_go_aspect(go_id) for go_id in go_term_summary.index]
-
 
         # Remove rows with less than 4 proteins
         for row in go_term_summary.index:
@@ -196,14 +195,8 @@ def run(organism_names, input_dir, ouput_dir, relative_threshold, filter, filter
         go_term_summary.index = go_term_summary.index + ", (n=" + go_term_summary.sum(axis=1).astype(str) + ")"
 
 
-        # normalize the counts per row
+        # normalize the counts rowwise
         go_term_summary = go_term_summary.div(go_term_summary.sum(axis=1), axis=0)
-
-        # Remove columns with less than 4 occurrences for any amino acid
-        #go_term_summary = go_term_summary.loc[:, (go_term_summary >= relative_threshold).any()]
-            # Replace the GO term "GO:0005739" with its sum and move it to the bottom
-        if "GO:0005739" in go_term_summary.index:
-            go_term_summary = go_term_summary.drop("GO:0005739")
         
         if filter_by == "C":
             function = "cellular component"
@@ -222,10 +215,11 @@ def run(organism_names, input_dir, ouput_dir, relative_threshold, filter, filter
             print(f"No data available for {name} with filter {filter_by}.")
             continue
 
-        # Reorder the columns to match the specified amino acid order
-        amino_acid_order = ["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "A", "T", "C", "P", "G", "V"]
-        reordered_indices = [go_term_summary.columns.tolist().index(aa) for aa in amino_acid_order if aa in go_term_summary.columns]
-        go_term_summary = go_term_summary.iloc[:, reordered_indices]
+        # Reorder the columns to match the specified amino acid order if the x axis is amino acids
+        if nat_or_aa == "aa":
+            amino_acid_order = ["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "A", "T", "C", "P", "G", "V"]
+            reordered_indices = [go_term_summary.columns.tolist().index(aa) for aa in amino_acid_order if aa in go_term_summary.columns]
+            go_term_summary = go_term_summary.iloc[:, reordered_indices]
         # Create the heatmap
         sns.heatmap(go_term_summary, cmap="YlGnBu", annot=False, fmt=".2f")
         if name == "human":
@@ -235,7 +229,10 @@ def run(organism_names, input_dir, ouput_dir, relative_threshold, filter, filter
         plt.title(biological_name, fontstyle="italic")
         colorbar = plt.gca().collections[0].colorbar
         colorbar.set_label("Relative abundance")
-        plt.xlabel("Amino acids")
+        if nat_or_aa == "nat":
+            plt.xlabel("NatC Substrates")
+        else:
+            plt.xlabel("Amino acids")
         plt.ylabel(function)
         plt.xticks(rotation=0)
         plt.tight_layout()
@@ -258,4 +255,4 @@ if __name__ == "__main__":
     absolute_threshold = 5
     relative_threshold = 0.5  # Minimum number of occurrences for a GO term to be included in the heatmap
     filter_by = "C" 
-    run(organism_names, input_dir, output_dir, relative_threshold, filter, filter_by, absolute_threshold)
+    run(organism_names, input_dir, output_dir)

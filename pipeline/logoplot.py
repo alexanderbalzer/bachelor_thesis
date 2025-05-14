@@ -144,8 +144,16 @@ legend_elements = [
 #    Patch(facecolor='gray', edgecolor='black', label='Not Relevant')
 ]
 def run_MTS_and_start(organism_names, output_dir):
+    """
+    Generate logoplots for MTS and beginning sequences for each organism.
+    Args:
+        organism_names (list): List of organism names.
+        output_dir (str): Output directory for logoplots.
+    Outputs:
+        Generates logoplots for MTS and beginning sequences for each organism and saves them in the specified output directory.
+    """
     for name in organism_names:
-        print(f"Processing organism: {name}")
+        print(f"Creating a Logoplot for organism: {name}")
         output_dir_per_organism = output_dir + "/" + name 
         # Generate frequency matrices for both MTS and beginning sequences
         frequency_matrix_mts, data = generate_frequency_matrix(name, "MTS", output_dir_per_organism)
@@ -184,6 +192,14 @@ def run_MTS_and_start(organism_names, output_dir):
 
 
 def run_start(organism_names, output_dir):
+    """
+    Generate logoplots for beginning sequences for each organism.
+    Args:
+        organism_names (list): List of organism names.
+        output_dir (str): Output directory for logoplots.
+    Outputs:
+        Generates logoplots for beginning sequences for each organism and saves them in the specified output directory.
+    """
     for name in organism_names:
         print(f"Processing organism: {name}")
         output_dir_per_organism = output_dir + "/" + name 

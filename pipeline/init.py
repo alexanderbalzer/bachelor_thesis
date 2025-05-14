@@ -16,7 +16,7 @@ def check_config():
         section = "DEFAULT"
         required_sections = ["DEFAULT"]
         required_keys = ["input_dir", "output_dir", "cache_dir", "target_GO_term", 
-                         "mitofates_path", "cleavable", "threshold", "save_filtered_proteins", 
+                         "mitofates_path", "threshold", "save_filtered_proteins", 
                          "delete_cache", "create_heatmap", "create_phylogenetic_tree", 
                          "type", "phylo_tree_method", "phylo_tree_algorithm", "save_newick",
                          "run_from_scratch"]

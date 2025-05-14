@@ -22,17 +22,17 @@ def parse_mts_cleavable_annotations(mts_file):
 
 def parse_probability_of_mts (mts_file):
     """
-    Parse probability of MTS-cleavable annotations from a file.
+    Parse probability of MTS-cleavable annotations from the MitoFates output file.
     """
     probability = {}
     with open(mts_file, "r") as file:
-        file_without_header = file.readlines()[1:]  
+        file_without_header = file.readlines()[1:]   # skip the first line as it is a header
         for line in file_without_header:
             fields = line.strip().split("\t")
             if len(fields) < 3:
                 continue
             protein_id = fields[0]
-            probability[protein_id] = float(fields[1])
+            probability[protein_id] = float(fields[1])  
     return probability
 
 
@@ -67,7 +67,18 @@ def check_file_exists(file_path):
         raise
 
 def run_perl_script(mitofates_path, input_file, flag, output_file):
-
+    """
+    Run the MitoFates Perl script with the specified input file and flag.
+    Args:
+        mitofates_path (str): Path to the MitoFates Perl script.
+        input_file (str): Path to the input FASTA file.
+        flag (str): Flag for the organism.
+        output_file (str): Path to the output file.
+    """
+    # sets the PATH variable to include /usr/bin
+    # this is needed for the perl script to run
+    # because the script uses the perl interpreter
+    # and the perl interpreter with the needed modules cannot be installed in the conda environment
     env = os.environ.copy()
     env["PATH"] = "/usr/bin:" + env["PATH"]  
     with open(output_file, "w") as output_handle:
@@ -88,7 +99,6 @@ def fasta_to_dataframe(fasta_file):
     
     df = pd.DataFrame({
         "Header": headers,
-        "threshold": [""] * len(headers),
         "MTS-cleavable?": [""] * len(headers),
         "Sequence": sequences
     })
@@ -98,13 +108,25 @@ def fasta_to_dataframe(fasta_file):
 
 
 
-def run(list_of_organisms, output_dir, cleavable, mitofates_path, flagdict, delete_cache, threshold,run_from_scratch, amount_of_proteins_per_step, last_run, target_go_term):
+def run(list_of_organisms, output_dir, mitofates_path, flagdict, delete_cache, threshold,run_from_scratch, amount_of_proteins_per_step, last_run):
     """
-    Run the MitoFates Perl script and filter proteins by MTS-cleavable probability.
+    Run the MitoFates Perl script and filter proteins by specified MTS-cleavable probability.
+    Args:
+        list_of_organisms (list): List of organism names.
+        output_dir (str): Output directory for filtered proteins.
+        cleavable (str): Cleavable status to filter by ("Yes" or "No").
+        mitofates_path (str): Path to the MitoFates Perl script.
+        flagdict (dict): Dictionary of flags for each organism.
+        delete_cache (str): Whether to delete cache files ("yes" or "no").
+        threshold (float): Probability threshold for MTS-cleavable.
+        run_from_scratch (bool): Whether to run from scratch or use cached files.
+        amount_of_proteins_per_step (pd.DataFrame): DataFrame to keep track of protein counts.
+        last_run (str): Directory of the last run to check for cached results.
+    Returns:
+        amount_of_proteins_per_step (pd.DataFrame): Updated DataFrame with protein counts.
+    Outputs:
+        Separately writes proteins with and without MTS to new FASTA files in the output directory.
     """
-    # Check if the Perl script exists
-    check_file_exists(mitofates_path)
-    logging.info(f"Perl script found at {mitofates_path}")
 
     # Run the Perl script for each organism
     for organism in list_of_organisms:
@@ -114,14 +136,10 @@ def run(list_of_organisms, output_dir, cleavable, mitofates_path, flagdict, dele
             if os.path.exists(os.path.join(last_run, f"{organism}_filtered_by_go_and_mts.fasta")):
                 # copy the file to the new cache directory
                 shutil.copy(os.path.join(last_run, f"{organism}_filtered_by_go_and_mts.fasta"), os.path.join(output_dir_per_organism, f"{organism}_filtered_by_go_and_mts.fasta"))
-                logging.info(f"File already exists for {organism}: {os.path.join(last_run, f'{organism}_filtered_by_go_and_mts.fasta')}")
+                logging.info(f"Use cached file from last run for {organism}: {os.path.join(last_run, f'{organism}_filtered_by_go_and_mts.fasta')}")
                 continue
 
-            # check if the output file already exists and skip if it does
-            output_file = os.path.join(output_dir_per_organism, f"{organism}_filtered_by_go_and_mts.fasta")
-            if os.path.exists(output_file):
-                logging.info(f"Output file already exists for {organism}: {output_file}")
-                continue
+        # Define the input and output files and run the Perl script
         try:
             input_file = os.path.join(output_dir_per_organism, f"filtered_proteins_by_GO_for_{organism}.fasta")
             output_mitofates_file = os.path.join(output_dir_per_organism, f"mitofates_for_{organism}.cgi")
@@ -133,12 +151,18 @@ def run(list_of_organisms, output_dir, cleavable, mitofates_path, flagdict, dele
         except FileNotFoundError:
             logging.error(f"Input file not found for {organism}: {input_file}")
             continue
+
+        # Parse the filtered_by_GO output file and filter proteins by MTS-cleavable probability
         proteome = fasta_to_dataframe(input_file)
         probability_of_mts = parse_probability_of_mts(output_mitofates_file)
         proteome = add_mts_cleavable_to_dataframe(proteome, probability_of_mts, threshold)
         filtered_proteins_cleavable = filter_proteins_by_mts(proteome, cleavable="Yes")
         filtered_proteins_non_cleavable = filter_proteins_by_mts(proteome, cleavable="No")
+
+        # Save the amount of proteins after filtering
         amount_of_proteins_per_step.at["Mitochondrial with MTS", organism] = len(filtered_proteins_cleavable)
+
+        # Write the filtered proteins to new FASTA files
         with open(output_dir_per_organism + "/" + organism + "_filtered_by_GO_cleavable_mts.fasta", "w") as output_handle:
             for header, sequence in filtered_proteins_cleavable:
                 output_handle.write(f">{header}\n{sequence}\n")
@@ -147,8 +171,6 @@ def run(list_of_organisms, output_dir, cleavable, mitofates_path, flagdict, dele
                 output_handle.write(f">{header}\n{sequence}\n")
 
         if delete_cache == "yes":
-            os.remove(input_file)
-            os.remove(output_file)
             os.remove(os.path.join(output_dir_per_organism, f"filtered_proteins_by_GO_for_{organism}.fasta"))
             logging.info(f"Deleted cache files for {organism}")
 

@@ -15,9 +15,8 @@ def fasta_to_dataframe(fasta_file):
 
 def count_instances_at_positions(array):
     rows, cols = array.shape
-    print("amount of proteins: ", rows)
     dictlist = []
-    for col in range(0,20): ######
+    for col in range(0,20): 
         count_dict = {}
         for row in range(rows):
             value = array[row, col]
@@ -26,53 +25,67 @@ def count_instances_at_positions(array):
             else:
                 count_dict[value] = 1
         dictlist.append(count_dict)
-    #print(dictlist)
     return dictlist
 
 
 
 def run(organism_names, input_dir, output_dir, heatmap_type):
-    wanted_result = heatmap_type
+    """
+    Main function to run the pipeline. Takes a list of organisms, loads their fasta files, counts instances of amino acids at each position,
+    and generates heatmaps based on the specified heatmap type (absolute or HGT).
+    Args:
+        organism_names (list): List of organism names.
+        input_dir (str): Directory containing the input FASTA files.
+        output_dir (str): Directory to save the output heatmaps.
+        heatmap_type (str): Type of heatmap to generate ("absolute" or "hgt").
+    Outputs:
+        Generates heatmaps for each organism and saves them in the specified output directory.
+    """
     for i, name in enumerate(organism_names, start=1):
         print(f"Processing organism: {name}")
         output_dir_per_organism = output_dir + "/" + name 
         position = np.array(["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"])
         amino_acid = np.array(["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "A", "T", "C", "P", "G", "V"])
 
-        #input= ["output files/filtered_proteins_cleavable_mts_for_" + str(name) + "_2.fasta", 
-        #       "output files/filtered_proteins_no_cleavable_mts_for_" + str(name) + "_2.fasta",
-        #      "output files/filtered_proteins_by_GO_for_" + str(name) +".fasta"]
+        # Specify the input files for cleavable, non-cleavable MTS and reference
         input = [
             output_dir_per_organism + "/" + name + "_filtered_by_GO_cleavable_mts.fasta",
             output_dir_per_organism + "/" + name + "_filtered_proteins_by_GO_noncleavable_mts.fasta",
             os.path.join(input_dir, f"{name}.fasta")
             ]
-
+        # Check if the input files exist
+        for file in input:
+            if not os.path.exists(file):
+                print(f"Input file not found: {file}")
+                continue
+        # setup the arrays
         all_arrays = [0, 0]
         all_counted_instances = [0, 0, 0]
         amount_of_proteins = [0, 0, 0]
+
+        # run the three input files
         for file in range(len(input)):
             panda_df = fasta_to_dataframe(input[file])
-            proteomes = list(panda_df['sequence'])
-            #print(proteomes)
+            proteins = list(panda_df['sequence'])
 
-            proteome_array = np.zeros((len(proteomes), 20), dtype=object)
-            for i, proteome in enumerate(proteomes):
-                proteome = proteome[1:21] 
+            # Create a 2D array to store the first 20 amino acids of each protein
+            proteome_array = np.zeros((len(proteins), 20), dtype=object)
+            for i, protein in enumerate(proteins):
+                protein = protein[1:21] 
                 for j in range(20):
-                    if j < len(proteome):
-                        proteome_array[i, j] = proteome[j]
+                    if j < len(protein):
+                        proteome_array[i, j] = protein[j]
                     else:
                         proteome_array[i, j] = 'X'
-        #  print(proteome_array)
 
+            # Count the instances of each amino acid at each position and store in a dictionary
             counted_instances = count_instances_at_positions(proteome_array)
             rows, cols = proteome_array.shape
             amount_of_proteins[file] = rows
             all_counted_instances[file] = counted_instances
-            #print(counted_instances)
 
-        if wanted_result == "absolute":
+        # Count the instances of each amino acid at each position in the two subsets
+        if heatmap_type == "absolute":
             for file in range(2):
                 counted_instances = all_counted_instances[file]
                 cols = len(amino_acid)
@@ -84,79 +97,62 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
                             visual_array[j, i] = counted_instances[i][amino_acid[j]]
                 all_arrays[file]= visual_array
                 
-                #print(visual_array)
-
-        if wanted_result == "hgt":
+        # Calculate the HGT score for each amino acid in the two subsets 
+        if heatmap_type == "hgt":
             whole_set = all_counted_instances[2]
             for file in range(2):
                 counted_instances = all_counted_instances[file]
-        #     print(counted_instances)
                 cols = len(amino_acid)
                 rows = len(position)
                 visual_array = np.zeros((cols, rows))
-            #    print(visual_array)
                 for i in range(rows):
                     for j in range(cols):
+                        # Calculate the HGT score for each amino acid at each position using the hypergeometric distribution                        
                         if amino_acid[j] in counted_instances[i]:
                             x = counted_instances[i][amino_acid[j]] #amount of amino acid in the subset
                             n = whole_set[i][amino_acid[j]] #amount of amino acid in the whole set
                             M = amount_of_proteins[2] #amount of all amino acids in the whole set
                             N = amount_of_proteins[file] #amount of all amino acids in the subset
                             p_value = hypergeom.sf(x, M, n, N)
-                            p_value_over = hypergeom.sf(x, M, n, N)
-                            p_value_under = hypergeom.cdf(x, M, n, N)
-                            p_value = min(p_value_over, p_value_under)
-                            if i ==10 and j == 1:
-                                print(p_value)
+                            p_value_over = hypergeom.sf(x, M, n, N) # p-value for the upper tail
+                            p_value_under = hypergeom.cdf(x, M, n, N) # p-value for the lower tail
+                            p_value = min(p_value_over, p_value_under) # take the lower value
                             abs_log_val = abs(np.log10(p_value))
                             f_obs = x / N
                             f_exp = n / M
-        #                   print(f_obs, f_exp)
                             result = 0
                             if f_obs < f_exp:
                                 result = -1 * abs_log_val
                             else:
                                 result = abs_log_val
                             visual_array[j, i] = result
-        #       print(visual_array)
                 all_arrays[file]= visual_array
-        #       print(visual_array)
-        #       print(visual_array.shape)
 
 
+        # Create the heatmap
+        # Set the color map based on the heatmap type
+        if heatmap_type == "absolute":
+            cmap = "Blues" 
+        if heatmap_type == "hgt":
+            cmap = "RdBu_r" 
         fig, ax = plt.subplots(ncols= 2)
         fig.subplots_adjust(bottom=0.5)
-
         ax[0].set_xticks(range(len(position)), labels=position, rotation=0, rotation_mode="anchor", fontsize=7)
         ax[0].set_yticks(range(len(amino_acid)), labels=amino_acid, rotation=0, rotation_mode="anchor", fontsize=7)
         ax[0].set_yticklabels(amino_acid)
         ax[0].set_xticklabels(position)
-
-        # Normalize the colormap across both graphs
-        #vmin = min(np.min(all_arrays[0]), np.min(all_arrays[1]))
-        #vmax = max(np.max(all_arrays[0]), np.max(all_arrays[1]))
-
-        if wanted_result == "absolute":
-            cmap = "Blues" #Blues or coolwarm
-
-        if wanted_result == "hgt":
-            cmap = "RdBu_r" #Blues or coolwarm
-        pcm1 = ax[0].imshow(all_arrays[0], cmap=cmap, vmin=-20, vmax=20)
-        pcm2 = ax[1].imshow(all_arrays[1], cmap=cmap, vmin=-20, vmax=20)
-
+        pcm1 = ax[0].imshow(all_arrays[0], cmap=cmap)
+        pcm2 = ax[1].imshow(all_arrays[1], cmap=cmap)
         ax[0].set_ylabel("Amino acids")
         ax[0].set_title("With MTS")
-
         ax[1].set_xticks(range(len(position)), labels=position, rotation=0, rotation_mode="anchor", fontsize=6)
         ax[1].set_yticks(range(len(amino_acid)), labels=amino_acid, rotation=0, rotation_mode="anchor", fontsize=7)
         ax[1].set_title("Without MTS")
         ax[1].set_ylabel(" ")
         ax[0].set_xlabel("Positions")
         ax[1].set_xlabel("Positions")
-
         fig.tight_layout(pad=3.0)
         max = 20
-        #vmax = np.round(vmax, decimals=0)
         norm = TwoSlopeNorm(vmin=-max, vcenter=0, vmax=max)
         pcm1.set_norm(norm)
         pcm2.set_norm(norm)
@@ -164,7 +160,7 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
         cbar.set_ticks(np.linspace(-max, max, num=3))
         cbar.set_ticklabels([str(-max), "0", str(max)], fontsize=7)
         cbar.ax.set_title('HGT', pad=5, fontsize=7)
-        plt.savefig(os.path.join(output_dir_per_organism, f"heatmap_{name}_{wanted_result}.png"), dpi=300)
+        plt.savefig(os.path.join(output_dir_per_organism, f"heatmap_{name}_{heatmap_type}.png"), dpi=300)
         plt.close(fig)
 
 if __name__ == "__main__":

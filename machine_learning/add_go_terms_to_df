@@ -1,0 +1,47 @@
+import os
+import pandas as pd
+
+def parse_go_annotations(annotation_file):
+    """
+    Parse a GO annotation file to create a dictionary
+    mapping protein IDs and their associated GO terms.
+    """
+    go_annotation = {}
+    with open(annotation_file, "r") as file:
+        for line in file:
+            if line.startswith("!"):  
+                continue
+            fields = line.strip().split("\t")
+            protein_id = fields[1]  #protein ID (column 2 in GAF)
+            function = fields[8]  #function type (column 9 in GAF)
+            if function != "C":  #filter for location information
+                continue
+            go_term = fields[4]     #GO term (column 5 in GAF)
+            if protein_id not in go_annotation:
+                go_annotation[protein_id] = []
+            go_annotation[protein_id].append(go_term)
+    return go_annotation
+
+
+name = "Homo_sapiens" 
+# Set the working directory
+working_dir = os.path.dirname("pipeline/output/output_20250514_134354/" + name + "/")
+feature_matrix_path = working_dir + "/feature_matrix.csv"
+# Read the feature matrix from the CSV file
+feature_matrix = pd.read_csv(feature_matrix_path, index_col=0)
+# Add GO terms to the feature matrix
+go_annotation_file = "pipeline/input/" + name + ".goa"
+go_annotations = parse_go_annotations(go_annotation_file)
+printer = pd.DataFrame.from_dict(go_annotations, orient='index')
+printer.dropna(axis=1, inplace=True)
+print(printer)
+
+for i, row in feature_matrix.iterrows():
+    protein_id = row['protein_id']  # Assuming 'protein_id' is a column in the feature matrix
+    go_terms = go_annotations.get(protein_id, [])
+    for go_term in go_terms:
+        column_name = f"go_term_{go_terms.index(go_term)}"
+        feature_matrix.at[i, column_name] = go_term
+print(feature_matrix.head())
+
+

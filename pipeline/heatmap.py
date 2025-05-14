@@ -32,7 +32,9 @@ def format_species_name(name: str) -> str:
     return formatted
 
 
-def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, phylo_tree_type, reference):
+def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, reference):
+    
+
 
     amino_acid = np.array(["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "A", "T", "C", "P", "G", "V"])
 
@@ -42,6 +44,9 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
     else:
         save_subset_array_for_phylogenetic_tree = True
         save_HGT_array_for_phylogenetic_tree = False
+
+    # Create the cache directory if it doesn't exist
+    os.makedirs(cache_dir, exist_ok=True)
 
     dictlist = []
     reference_array = np.zeros((len(organism_names), len(amino_acid)), dtype=float)
