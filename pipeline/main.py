@@ -54,10 +54,11 @@ def main():
     # Read organism names from FASTA file names
     fasta_files = [f for f in os.listdir(input_dir) if f.endswith(".fasta")]
     organism_names = [os.path.splitext(f)[0] for f in fasta_files]
-    '''organism_names = [
+    organism_names = [
          "Zygosaccharomyces_rouxii", "Saccharomyces_cerevisiae", "Candida_glabrata",
         "Chlamydomonas_reinhardtii", "Physcomitrium_patens", "Arabidopsis_thaliana", "Drosophila_Melanogaster",
-        "Caenorhabditis_elegans", "Daphnia_magna", "Dario_rerio", "Mus_musculus", "Homo_sapiens", "Homo_sapiens_isoforms"]'''
+        "Caenorhabditis_elegans", "Daphnia_magna", "Dario_rerio", "Mus_musculus", "Homo_sapiens", "Homo_sapiens_isoforms"]
+    '''organism_names = ["Homo_sapiens"]'''
     log_message(f"Organism names extracted: {', '.join(organism_names)}")
 
     # Read the last run timestamp from the file cache_of_last_run.txt
@@ -111,7 +112,7 @@ def main():
     log_message(f"Flaglist loaded: {flaglist}")
 
     # Filter proteins by the existence of an MTS, but only if the GO term is mitochondrial
-    mitochondrial_go_terms = ["GO:0005759", "GO:0005741", "GO:0005758", "GO:0005743", "GO:0005739"]
+    mitochondrial_go_terms = ["GO:0005759", "GO:0005741", "GO:0005758", "GO:0005743", "GO:0005739", "False"]
     if target_go_term in mitochondrial_go_terms:
         # Filter proteins by specified MTS-cleavable probability
         amount_of_proteins_per_step = mts_filter.run(organism_names, output_dir, perl_script_path, flaglist, delete_cache, threshold, run_from_scratch, amount_of_proteins_per_step, last_run)

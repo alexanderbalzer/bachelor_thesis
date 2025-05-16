@@ -104,6 +104,7 @@ def run(organism_names, input_dir, working_dir):
     # create a list of all the proteins in the input directory
     protein_list = []
     for organism in organism_names:
+        invalid_count = 0
         working_dir_per_organism = working_dir + "/" + organism 
         fasta = working_dir_per_organism + "/" + "filtered_proteins_by_GO_for_" + organism + ".fasta"
         fasta_file = os.path.join(fasta)
@@ -131,6 +132,23 @@ def run(organism_names, input_dir, working_dir):
             # mts sequence is the sequence specified by start and length of alpha helix
             start_of_alpha_helix = int(start_of_alpha_helix) -1
             length_of_alpha_helix = int(length_of_alpha_helix)
+            if not protein_sequence.startswith("M"):
+                invalid_count += 1
+                continue
+            try:
+                length_of_MTS = float(length_of_MTS)
+            except ValueError:
+                continue
+            # check if the mts sequence only contains valid amino acids
+            valid_amino_acids = set("ACDEFGHIKLMNPQRSTVWY")
+            if not all(aa in valid_amino_acids for aa in protein_sequence):
+                print(f"Skipping protein {protein_id} due to invalid amino acids")
+                invalid_count += 1
+                continue
+            if len(protein_sequence) < int(length_of_MTS):
+                print(f"Skipping protein {protein_id} due to length of MTS")
+                invalid_count += 1
+                continue
             #mts_sequence = protein_sequence[start_of_alpha_helix:start_of_alpha_helix + length_of_alpha_helix]
             mts_sequence = protein_sequence[0:int(length_of_MTS)]
             # calculate the hydrophobic moment of the mts sequence
@@ -159,15 +177,17 @@ def run(organism_names, input_dir, working_dir):
         output_file = os.path.join(working_dir_per_organism, "feature_matrix.csv")
         all_proteins_df.to_csv(output_file, index=False)
         print(f"Feature matrix saved to {output_file}")
+        print(f"Invalid proteins skipped: {invalid_count}")
     
 if __name__ == "__main__":
     # Example usage
-    organism_names = [
+    '''organism_names = [
     "Homo_sapiens", "Homo_sapiens_isoforms", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
-    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
-    working_dir = "pipeline/output/output_20250514_134354"
+    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]'''
+    organism_names = ["Homo_sapiens"]
+    working_dir = "pipeline/output/output_20250515_105213"
     input_dir = "pipeline/input"
     start_time = datetime.now()
     run(organism_names, input_dir, working_dir)

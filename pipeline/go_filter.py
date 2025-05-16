@@ -122,7 +122,12 @@ def run(list_of_organisms, input_dir, output_dir, target_go_term, run_from_scrat
                 shutil.copy(last_run_output_file, output_filtered_by_GO_file)
                 logging.info(f"Output file {output_filtered_by_GO_file} already exists. Skipping.")
                 continue
-
+        if target_go_term == "False":
+            # parse the input file and write the protein id and sequence to the output file
+            with open(fasta_file, "r") as input_handle, open(output_filtered_by_GO_file, "w") as output_handle:
+                for record in SeqIO.parse(input_handle, "fasta"):
+                    output_handle.write(f">{record.id}\n{record.seq}\n")
+            continue
         # Check if the input files exist
         check_file_exists(annotation_file)
 
