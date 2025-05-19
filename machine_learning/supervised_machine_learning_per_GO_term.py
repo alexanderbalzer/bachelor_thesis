@@ -7,6 +7,7 @@ from goatools.obo_parser import GODag
 from goatools.base import download_go_basic_obo
 import statsmodels.api as sm
 from sklearn.preprocessing import StandardScaler
+import re
 
 def load_obo():
     '''
@@ -29,6 +30,9 @@ def get_go_aspect(go_id, go_dag):
     else:
         return "Unknown"
     
+def sanitize_filename(name):
+    # Replace any character that is not alphanumeric, underscore, or slash with underscore
+    return re.sub(r'[^A-Za-z0-9_\/]', '_', name)
 
 name = "Homo_sapiens"  # Example organism name
 
@@ -56,11 +60,11 @@ if "Sequence" in df.columns:
 print(df.head(10))
 
 # Create output directory for results
-general_output_dir = os.path.join(working_dir, "go_term_rf_results2")
+general_output_dir = os.path.join(working_dir, "go_term_rf_results3")
 os.makedirs(general_output_dir, exist_ok=True)
 
 for go_term in valid_go_terms:
-    output_dir = os.path.join(general_output_dir, get_go_aspect(go_term, go_dag))
+    output_dir = os.path.join(general_output_dir, sanitize_filename(get_go_aspect(go_term, go_dag)))
     os.makedirs(output_dir, exist_ok=True)
     # Filter for current GO term (binary classification: this term vs. all others)
     df_filtered = df.copy()
@@ -88,27 +92,18 @@ for go_term in valid_go_terms:
     except Exception as e:
         print(f"Skipping {go_term} due to fitting error: {e}")
         continue
-    go_term = get_go_aspect(go_term, go_dag)
+    #go_term = sanitize_filename(get_go_aspect(go_term, go_dag))
     # Get coefficients (excluding intercept)
     coefs = result.params.drop("const")
     feature_importance_df = pd.DataFrame({
         'Feature': coefs.index,
         'Coefficient': coefs.values,
-        'AbsCoefficient': np.abs(coefs.values)
+        'AbsCoefficient': np.abs(coefs.values),
+        'Significance': result.pvalues[coefs.index]
     }).sort_values(by='AbsCoefficient', ascending=False)
 
-    # Save top feature to file
-    top_feature = feature_importance_df.iloc[0]
-    with open(os.path.join(output_dir, f"{go_term}_top_feature.txt"), "w") as f:
-        f.write(f"Top Feature: {top_feature['Feature']}\nCoefficient: {top_feature['Coefficient']}\n")
-
-    # Get top 10 features by absolute coefficient
-    top_10_features = feature_importance_df.head(10)
-
-    # Save top 10 features to file
-    with open(os.path.join(output_dir, f"{go_term}_top_10_features.txt"), "w") as f:
-        for idx, row in top_10_features.iterrows():
-            f.write(f"{row['Feature']}\tCoefficient: {row['Coefficient']}\n")
+    # Save features with their significance to file
+    feature_importance_df.to_csv(os.path.join(output_dir, f"{go_term}_logreg_coefficients.csv"), index=False)
 
     # Plot and save feature importances
     '''plt.figure(figsize=(10, 6))
@@ -119,9 +114,32 @@ for go_term in valid_go_terms:
     plt.close()'''
 
     plt.figure(figsize=(10, 6))
-    sns.barplot(x='Coefficient', y='Feature', data=top_10_features)
+    sns.barplot(x='Coefficient', y='Feature', data=feature_importance_df.head(10))
     plt.title(f"Top 10 Logistic Regression Coefficients for GO Term: {go_term}")
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, f"{go_term}_logreg_coefficients_top10.png"))
     plt.close()
-    
+
+    # plot a vulcano plot
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(x='AbsCoefficient', y=-np.log10(feature_importance_df['Significance']), data=feature_importance_df, color='grey')
+    plt.title(f"Vulcano Plot for GO Term: {go_term}")
+    plt.xlabel("Absolute Coefficient")
+    plt.ylabel("-log10(Significance)")
+    plt.axhline(y=-np.log10(0.05), color='r', linestyle='--')
+    plt.axvline(x=0, color='g', linestyle='--')
+    # Highlight significant features
+    significant_features = feature_importance_df[feature_importance_df['Significance'] < 0.05]
+    plt.scatter(significant_features['AbsCoefficient'], -np.log10(significant_features['Significance']), color='red', label='Significant')
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, f"{go_term}_vulcano_plot.png"))
+    plt.close()
+
+if __name__ == "__main__":
+# delete empty directories
+    for root, dirs, files in os.walk(general_output_dir, topdown=False):
+        for name in dirs:
+            dir_path = os.path.join(root, name)
+            if not os.listdir(dir_path):
+                os.rmdir(dir_path)
+                print(f"Deleted empty directory: {dir_path}")

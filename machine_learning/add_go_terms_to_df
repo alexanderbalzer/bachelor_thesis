@@ -5,6 +5,7 @@ import os
 from goatools.obo_parser import GODag
 from goatools.base import download_go_basic_obo
 
+
 def parse_go_annotations(annotation_file):
     """
     Parse a GO annotation file to create a dictionary
@@ -40,7 +41,7 @@ def load_obo():
 # Load the GO ontology file (e.g., gene_ontology.obo)
 go_obo = load_obo()
 
-
+go_dag = GODag("go-basic.obo")  
 
 name = "Homo_sapiens" 
 
@@ -53,7 +54,7 @@ print(feature_matrix.head())
 # Add GO terms to the feature matrix
 
 #valid_go_term_file = "pipeline/output/output_20250515_105213/Homo_sapiens/child_terms.txt"
-valid_go_term_file = "pipeline/output/output_20250519_142700_machine_learning_human/Homo_sapiens/membrane_bound_organelle_child_terms_names.txt"
+valid_go_term_file = "pipeline/output/output_20250519_142700_machine_learning_human/Homo_sapiens/targeting_anchoring_targeting_transport.txt"
 # Parse the valid GO terms from the file
 with open(valid_go_term_file, "r") as file:
     valid_go_terms = set(line.strip().split("_")[0] for line in file)
@@ -65,9 +66,20 @@ go_annotations = parse_go_annotations(annotation_file)
 # Add filtered GO terms rowwise to the feature matrix
 filtered_go_annotations = {}
 
-for protein_id, row in feature_matrix.iterrows():
+'''for protein_id, row in feature_matrix.iterrows():
     if protein_id in go_annotations:
         filtered_terms = [term for term in go_annotations[protein_id] if term in valid_go_terms]
+        feature_matrix.at[protein_id, "GO_Term"] = ",".join(filtered_terms)'''
+
+for protein_id, row in feature_matrix.iterrows():
+    filtered_terms = []
+    if protein_id in go_annotations:
+        for term in go_annotations[protein_id]:
+            # test if term has any children terms
+            if term in go_dag:
+                children = go_dag[term].children
+                if not children:
+                    filtered_terms.append(term)
         feature_matrix.at[protein_id, "GO_Term"] = ",".join(filtered_terms)
 
 # Filter rows to keep only those containing the GO term GO:0005739

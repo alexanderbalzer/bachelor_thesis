@@ -4,7 +4,7 @@ from goatools.obo_parser import GODag
 go_dag = GODag("go-basic.obo")  # Adjust the path to the correct OBO file
 
 # Define the GO term for 'cellular anatomical structure'
-cellular_anatomical_structure_id = "GO:0043231"
+cellular_anatomical_structure_id = "GO:0008104"
 
 # Get the term from the GO DAG
 cellular_anatomical_structure_term = go_dag[cellular_anatomical_structure_id]
@@ -32,7 +32,7 @@ for go_id in child_terms:
     term = go_dag[go_id]
     print(f"{go_id}: {term.name}")
 # save the sorted child_terms
-with open("pipeline/output/output_20250519_142700_machine_learning_human/Homo_sapiens/membrane_bound_organelle_child_terms_names.txt", "w") as file:
+with open("pipeline/output/output_20250519_142700_machine_learning_human/Homo_sapiens/targeting_anchoring_targeting_transport.txt", "w") as file:
     for go_id in sorted(child_terms):
         term = go_dag[go_id]
         file.write(f"{go_id}_{term.name}\n")
