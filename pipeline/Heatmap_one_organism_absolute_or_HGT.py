@@ -143,14 +143,14 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
         ax[0].set_xticklabels(position)
         pcm1 = ax[0].imshow(all_arrays[0], cmap=cmap)
         pcm2 = ax[1].imshow(all_arrays[1], cmap=cmap)
-        ax[0].set_ylabel("Amino acids")
-        ax[0].set_title("With MTS")
-        ax[1].set_xticks(range(len(position)), labels=position, rotation=0, rotation_mode="anchor", fontsize=6)
+        ax[0].set_ylabel("")
+        ax[0].set_title("Mitochondrial proteins with MTS", fontsize=7)
+        ax[1].set_xticks(range(len(position)), labels=position, rotation=0, rotation_mode="anchor", fontsize=7)
         ax[1].set_yticks(range(len(amino_acid)), labels=amino_acid, rotation=0, rotation_mode="anchor", fontsize=7)
-        ax[1].set_title("Without MTS")
+        ax[1].set_title("Mitochondrial proteins without MTS", fontsize=7)
         ax[1].set_ylabel(" ")
-        ax[0].set_xlabel("Positions")
-        ax[1].set_xlabel("Positions")
+        ax[0].set_xlabel("Position in N-terminal sequences", fontsize=7)
+        ax[1].set_xlabel("Position in N-terminal sequences", fontsize=7)
         fig.tight_layout(pad=3.0)
         max = 20
         norm = TwoSlopeNorm(vmin=-max, vcenter=0, vmax=max)
@@ -171,7 +171,7 @@ if __name__ == "__main__":
     "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
     "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
     input_dir = "pipeline/input"
-    output_dir = "pipeline/output/output_20250513_133508"
+    output_dir = "pipeline/output/output_20250519_101903"
     heatmap_type = "hgt"  # or "hgt"
 
     run(organism_names, input_dir, output_dir, heatmap_type)

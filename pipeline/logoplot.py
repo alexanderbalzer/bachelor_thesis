@@ -72,6 +72,9 @@ def generate_frequency_matrix(name, start, output_dir_per_organism):
                 second_as.append(str(protein.seq)[1])
             # Create a pandas DataFrame with headers as the index and second_as as the column
             df_headers = pd.DataFrame({"Second_AS": second_as, "Sequence": sequences}, index=headers)
+            if df_headers.empty:
+                print(f"No data found in {output_dir_per_organism}/{name}_filtered_by_GO_cleavable_mts.fasta")
+                return None, None
             # only include proteins with a specific second amino acid
 #            df_headers = df_headers[df_headers["Second_AS"] == "L"]
             
@@ -105,8 +108,9 @@ def generate_frequency_matrix(name, start, output_dir_per_organism):
             )
         elif start == "beginning":
             df = df_headers
+            print(df)
             df["MTS_Sequence"] = df.apply(
-            lambda row: row["Sequence"][1:1 + int(50)],
+            lambda row: row["Sequence"][1:50],
             axis=1
             )
         else:
@@ -157,6 +161,10 @@ def run_MTS_and_start(organism_names, output_dir):
         output_dir_per_organism = output_dir + "/" + name 
         # Generate frequency matrices for both MTS and beginning sequences
         frequency_matrix_mts, data = generate_frequency_matrix(name, "MTS", output_dir_per_organism)
+        if frequency_matrix_mts is None:
+            # Skip the organism if no MTS data is found
+            print(f"Skipping {name} due to missing MTS data.")
+            continue
         frequency_matrix_beginning, unused = generate_frequency_matrix(name, "beginning", output_dir_per_organism)
 
         # Create a figure with two subplots (one for MTS, one for beginning sequence)
@@ -225,14 +233,12 @@ def run_start(organism_names, output_dir):
 if __name__ == "__main__":
     # Define the names of the organisms
     organism_names = [
-        "Geotrichum_candidum", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
-        "Lachancea_thermotolerans", "human_with_isoforms", "human", "Clavispora_lusitaniae", 
-        "Mus_musculus", "Caenorhabditis_elegans", "Candida_glabrata", "Schizosaccharomyces_pombe", 
-        "Debaryomyces_hansenii", "Yarrowia_lipolytica", "Saccharomyces_cerevisiae", 
-        "Zygosaccharomyces_rouxii", "Physcomitrium_patens", "Scheffersomyces_stipitis"]
-    output_dir = "pipeline/output/output_20250508_171639_mito_no_MTS_no_cytosol"
+         "Zygosaccharomyces_rouxii", "Saccharomyces_cerevisiae", "Candida_glabrata",
+        "Chlamydomonas_reinhardtii", "Physcomitrium_patens", "Arabidopsis_thaliana", "Drosophila_Melanogaster",
+        "Caenorhabditis_elegans", "Daphnia_magna", "Dario_rerio", "Mus_musculus", "Homo_sapiens", "Homo_sapiens_isoforms"]
+    output_dir = "pipeline/output/output_20250519_114531"
 
-    run_start(organism_names, output_dir)
+    run_MTS_and_start(organism_names, output_dir)
 
 
 

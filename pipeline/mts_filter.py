@@ -151,28 +151,28 @@ def run(list_of_organisms, output_dir, mitofates_path, flagdict, delete_cache, t
         except FileNotFoundError:
             logging.error(f"Input file not found for {organism}: {input_file}")
             continue
-
+        else:
         # Parse the filtered_by_GO output file and filter proteins by MTS-cleavable probability
-        proteome = fasta_to_dataframe(input_file)
-        probability_of_mts = parse_probability_of_mts(output_mitofates_file)
-        proteome = add_mts_cleavable_to_dataframe(proteome, probability_of_mts, threshold)
-        filtered_proteins_cleavable = filter_proteins_by_mts(proteome, cleavable="Yes")
-        filtered_proteins_non_cleavable = filter_proteins_by_mts(proteome, cleavable="No")
+            proteome = fasta_to_dataframe(input_file)
+            probability_of_mts = parse_probability_of_mts(output_mitofates_file)
+            proteome = add_mts_cleavable_to_dataframe(proteome, probability_of_mts, threshold)
+            filtered_proteins_cleavable = filter_proteins_by_mts(proteome, cleavable="Yes")
+            filtered_proteins_non_cleavable = filter_proteins_by_mts(proteome, cleavable="No")
 
-        # Save the amount of proteins after filtering
-        amount_of_proteins_per_step.at["Mitochondrial with MTS", organism] = len(filtered_proteins_cleavable)
+            # Save the amount of proteins after filtering
+            amount_of_proteins_per_step.at["Mitochondrial with MTS", organism] = len(filtered_proteins_cleavable)
 
-        # Write the filtered proteins to new FASTA files
-        with open(output_dir_per_organism + "/" + organism + "_filtered_by_GO_cleavable_mts.fasta", "w") as output_handle:
-            for header, sequence in filtered_proteins_cleavable:
-                output_handle.write(f">{header}\n{sequence}\n")
-        with open(output_dir_per_organism + "/" + organism + "_filtered_proteins_by_GO_noncleavable_mts.fasta", "w") as output_handle:
-            for header, sequence in filtered_proteins_non_cleavable:
-                output_handle.write(f">{header}\n{sequence}\n")
+            # Write the filtered proteins to new FASTA files
+            with open(output_dir_per_organism + "/" + organism + "_filtered_by_GO_cleavable_mts.fasta", "w") as output_handle:
+                for header, sequence in filtered_proteins_cleavable:
+                    output_handle.write(f">{header}\n{sequence}\n")
+            with open(output_dir_per_organism + "/" + organism + "_filtered_proteins_by_GO_noncleavable_mts.fasta", "w") as output_handle:
+                for header, sequence in filtered_proteins_non_cleavable:
+                    output_handle.write(f">{header}\n{sequence}\n")
 
-        if delete_cache == "yes":
-            os.remove(os.path.join(output_dir_per_organism, f"filtered_proteins_by_GO_for_{organism}.fasta"))
-            logging.info(f"Deleted cache files for {organism}")
+            if delete_cache == "yes":
+                os.remove(os.path.join(output_dir_per_organism, f"filtered_proteins_by_GO_for_{organism}.fasta"))
+                logging.info(f"Deleted cache files for {organism}")
 
     logging.info("MitoFates filtering completed.")
     return amount_of_proteins_per_step

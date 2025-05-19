@@ -173,23 +173,22 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
     plt.tight_layout()
 
     if create_heatmap:
-        plt.savefig(os.path.join(output_dir, "heatmap3.pdf"), dpi=300)
+        plt.savefig(os.path.join(output_dir, "heatmap.pdf"), dpi=300)
     # save the heatmap
     return
 
 if __name__ == "__main__":
     # Example usage
     organism_names = [
-    "Homo_sapiens", "Homo_sapiens_isoforms", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
-    "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
-    "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
-    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
+         "Zygosaccharomyces_rouxii", "Saccharomyces_cerevisiae", "Candida_glabrata",
+        "Chlamydomonas_reinhardtii", "Physcomitrium_patens", "Arabidopsis_thaliana", "Drosophila_Melanogaster",
+        "Caenorhabditis_elegans", "Daphnia_magna", "Dario_rerio", "Mus_musculus", "Homo_sapiens", "Homo_sapiens_isoforms"]
     input_dir = "pipeline/input"
     cache_dir = "pipeline/cache/cache_20250513_133508/"
-    output_dir = "pipeline/output/output_20250513_133508"
+    output_dir = "pipeline/output/output_20250519_101903"
     create_heatmap = True
     heatmap_type = "hgt"
     create_phylogenetic_tree = False
     phylo_tree_type = "hgt"
     reference = "proteome"
-    run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, phylo_tree_type, reference)
+    run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, reference)

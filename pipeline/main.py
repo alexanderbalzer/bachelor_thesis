@@ -127,7 +127,7 @@ def main():
         log_message("Logoplot creation completed.")
         # plot the frequency of the Nat substrates for each GO term inside the mitochondria
         log_message("Creating Nat GO term link.")
-        Nat_GOterm_link.run(organism_names, input_dir, output_dir)
+        #Nat_GOterm_link.run(organism_names, input_dir, output_dir)
         log_message("Nat GO term link creation completed.")
     
 

@@ -1,11 +1,9 @@
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider, Button
 import seaborn as sns
 import pandas as pd
 import os
-from sklearn.cluster import KMeans
 import umap
 
 name = "Homo_sapiens"  # Example organism name
@@ -20,6 +18,8 @@ print(feature_matrix.head(10))
 # Save the original cleavable_mts info (optional, not needed for GO_term coloring)
 # cleavable_values = feature_matrix["cleavable_mts"].values
 #feature_matrix = feature_matrix.drop(columns=["cleavable_mts"])
+# Remove rows with duplicate protein IDs
+feature_matrix = feature_matrix[~feature_matrix.index.duplicated(keep=False)]
 
 # Save the GO_term column for later use
 go_term_values = feature_matrix["GO_Term"].values
