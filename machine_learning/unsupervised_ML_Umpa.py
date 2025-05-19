@@ -9,7 +9,7 @@ import umap
 name = "Homo_sapiens"  # Example organism name
 # Set the working directory
 #working_dir = os.path.dirname("pipeline/output/output_20250514_134354/" + name + "/")
-working_dir = os.path.dirname("pipeline/output/output_20250515_105213/" + name + "/")
+working_dir = os.path.dirname("pipeline/output/output_20250519_142700_machine_learning_human/" + name + "/")
 
 feature_matrix_path = working_dir + "/feature_matrix_with_go_terms.csv"
 # Read the feature matrix from the CSV file
@@ -49,6 +49,12 @@ plt.title('UMAP: Visualization colored by GO_term')
 plt.xlabel('UMAP1')
 plt.ylabel('UMAP2')
 plt.legend(title="GO_term", bbox_to_anchor=(1.05, 1), loc='upper left')
+# Save legend content to a text file
+legend_labels = [text.get_text() for text in plt.gca().get_legend().get_texts()]
+legend_file_path = os.path.join(working_dir, "legend_content.txt")
+with open(legend_file_path, "w") as f:
+    for label in legend_labels:
+        f.write(label + "\n")
 plt.grid(True)
-plt.tight_layout()
+plt.tight_layout(rect=[0, 0, 0.85, 1])  # Adjust the right margin to fit the legend
 plt.show()

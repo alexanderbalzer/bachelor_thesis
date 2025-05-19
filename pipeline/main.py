@@ -54,11 +54,11 @@ def main():
     # Read organism names from FASTA file names
     fasta_files = [f for f in os.listdir(input_dir) if f.endswith(".fasta")]
     organism_names = [os.path.splitext(f)[0] for f in fasta_files]
-    organism_names = [
+    '''organism_names = [
          "Zygosaccharomyces_rouxii", "Saccharomyces_cerevisiae", "Candida_glabrata",
         "Chlamydomonas_reinhardtii", "Physcomitrium_patens", "Arabidopsis_thaliana", "Drosophila_Melanogaster",
-        "Caenorhabditis_elegans", "Daphnia_magna", "Dario_rerio", "Mus_musculus", "Homo_sapiens", "Homo_sapiens_isoforms"]
-    '''organism_names = ["Homo_sapiens"]'''
+        "Caenorhabditis_elegans", "Daphnia_magna", "Dario_rerio", "Mus_musculus", "Homo_sapiens", "Homo_sapiens_isoforms"]'''
+    organism_names = ["Homo_sapiens"]
     log_message(f"Organism names extracted: {', '.join(organism_names)}")
 
     # Read the last run timestamp from the file cache_of_last_run.txt

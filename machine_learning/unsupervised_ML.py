@@ -10,7 +10,7 @@ from sklearn.cluster import KMeans
 
 name = "Homo_sapiens"  # Example organism name
 # Set the working directory
-working_dir = os.path.dirname("pipeline/output/output_20250515_105213/" + name + "/")
+working_dir = os.path.dirname("pipeline/output/output_20250519_142700_machine_learning_human/" + name + "/")
 feature_matrix_path = working_dir + "/feature_matrix.csv"
 # Read the feature matrix from the CSV file
 feature_matrix = pd.read_csv(feature_matrix_path, index_col=0)

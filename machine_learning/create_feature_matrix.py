@@ -47,7 +47,8 @@ def fasta_to_dataframe(fasta_file):
     protein_id = []
     for record in SeqIO.parse(fasta_file, "fasta"):
         sequences.append(str(record.seq))
-        protein_id.append(str(record.id))
+        protein_id_uniprot = record.id.split("|")[1]
+        protein_id.append(str(protein_id_uniprot))
     
     df = pd.DataFrame({
         "Sequence": sequences,
@@ -65,7 +66,7 @@ def get_mitoFates_infos(working_dir, name, wanted_id):
             if line.startswith("!") or i == 0:  # Skip header line
                 continue
             fields = line.strip().split("\t")
-            protein_id = fields[0]
+            protein_id = fields[0].strip().split("|")[1]  # protein ID (column 1 in MitoFates)
             if protein_id != wanted_id:
                 continue
             position_of_MTS = fields[6]
@@ -99,7 +100,7 @@ def parse_go_annotations(annotation_file):
 
 def run(organism_names, input_dir, working_dir):
     '''
-    creates a Feature Matrix for the given Organism
+    creates a Feature Matrix for the given organism
     '''
     # create a list of all the proteins in the input directory
     protein_list = []
@@ -187,7 +188,7 @@ if __name__ == "__main__":
     "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
     "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]'''
     organism_names = ["Homo_sapiens"]
-    working_dir = "pipeline/output/output_20250515_105213"
+    working_dir = "pipeline/output/output_20250519_142700_machine_learning_human"
     input_dir = "pipeline/input"
     start_time = datetime.now()
     run(organism_names, input_dir, working_dir)
