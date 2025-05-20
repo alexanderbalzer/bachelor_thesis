@@ -94,12 +94,12 @@ feature_matrix["GO_Term"] = feature_matrix["GO_Term"].apply(
 feature_matrix["GO_Term"] = feature_matrix["GO_Term"].apply(
     lambda x: ",".join(term for term in x.split(",") if term != "GO:0005739") if pd.notna(x) else x
 )'''
-
+'''
 # if a protein has multiple go terms, copy the row and assign the go term to the new row
 # and remove the go term from the original row
 feature_matrix["GO_Term"] = feature_matrix["GO_Term"].apply(
     lambda x: x.split(",") if pd.notna(x) else x
-)
+)'''
 
 feature_matrix = feature_matrix.explode("GO_Term")
 
