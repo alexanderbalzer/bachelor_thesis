@@ -4,7 +4,7 @@ import go_filter
 import mts_filter
 import heatmap
 import logging
-import phylogenetic_tree
+#import phylogenetic_tree
 import Nat_GOterm_link
 import logoplot
 import Heatmap_one_organism_absolute_or_HGT
@@ -54,11 +54,11 @@ def main():
     # Read organism names from FASTA file names
     fasta_files = [f for f in os.listdir(input_dir) if f.endswith(".fasta")]
     organism_names = [os.path.splitext(f)[0] for f in fasta_files]
-    '''organism_names = [
+    organism_names = [
          "Zygosaccharomyces_rouxii", "Saccharomyces_cerevisiae", "Candida_glabrata",
         "Chlamydomonas_reinhardtii", "Physcomitrium_patens", "Arabidopsis_thaliana", "Drosophila_Melanogaster",
-        "Caenorhabditis_elegans", "Daphnia_magna", "Dario_rerio", "Mus_musculus", "Homo_sapiens", "Homo_sapiens_isoforms"]'''
-    organism_names = ["Homo_sapiens"]
+        "Caenorhabditis_elegans", "Daphnia_magna", "Dario_rerio", "Mus_musculus", "Homo_sapiens", "Homo_sapiens_isoforms"]
+    #organism_names = ["Homo_sapiens"]
     log_message(f"Organism names extracted: {', '.join(organism_names)}")
 
     # Read the last run timestamp from the file cache_of_last_run.txt
@@ -155,10 +155,10 @@ def main():
         if create_heatmap:
             log_message("Heatmap creation completed.")
 
-    # create a phylogenetic tree for all organisms
+    '''# create a phylogenetic tree for all organisms
     if create_phylogenetic_tree:
         phylogenetic_tree.run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_algorithm, save_newick)
-        log_message("Phylogenetic tree creation completed.")
+        log_message("Phylogenetic tree creation completed.")'''
 
 
 

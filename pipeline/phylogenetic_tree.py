@@ -144,14 +144,19 @@ def run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_alg
         plt.figure(figsize=(10, 7))
 
         # transform the organism names to biologically correct names
-        italic_labels = [f"$\\mathit{{{name.replace(' ', '\\ ')}}}$" for name in transform_labels_to_names(organism_names)]
+        # FIX: Avoid backslash in f-string expression by precomputing the replacement
+        def to_italic_label(name):
+            # Replace spaces with '\ ' for LaTeX mathit, then wrap in mathit
+            safe_name = name.replace(' ', r'\ ')
+            return f"$\\mathit{{{safe_name}}}$"
+        italic_labels = [to_italic_label(name) for name in transform_labels_to_names(organism_names)]
 
         dendrogram(
             linkage_matrix, 
-            organism_names= italic_labels, 
-            orientation = 'left', 
+            organism_names=italic_labels, 
+            orientation='left', 
             leaf_font_size=10
-            )
+        )
         plt.title("Phylogenetic Tree (UPGMA) - Pearson Correlation")
         plt.xlabel("Samples")
         plt.ylabel("Distance")
@@ -171,7 +176,7 @@ def run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_alg
         lower_triangle = []
         for i in range(len(distance_matrix)):
             lower_triangle.append(distance_matrix[i][:i + 1])  # Include only elements up to the diagonal
-        italic_labels = [f"$\\mathit{{{name.replace(' ', '\\ ')}}}$" for name in transform_labels_to_names(organism_names)]
+        italic_labels = [f"$\\mathit{{{name.replace(' ', r'\ ')}}}$" for name in transform_labels_to_names(organism_names)]
         distance_matrix = DistanceMatrix(names=organism_names, matrix=lower_triangle)
         tree = constructor.nj(distance_matrix)
 

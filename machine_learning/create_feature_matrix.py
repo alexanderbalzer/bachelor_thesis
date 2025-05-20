@@ -73,8 +73,32 @@ def get_mitoFates_infos(working_dir, name, wanted_id):
             start_of_alpha_helix = position_of_MTS.strip().split("-")[0]
             length_of_alpha_helix = float(position_of_MTS.strip().split("-")[1]) - float(position_of_MTS.strip().split("-")[0])
             length_of_MTS = fields[3].split("(")[0]
-            cleavage_probability = fields[1]
-            return start_of_alpha_helix, length_of_alpha_helix, length_of_MTS, cleavage_probability
+            if length_of_MTS.isnumeric():
+                length_of_MTS = float(length_of_MTS)
+            else:
+                length_of_MTS = None
+            mitofates_cleavage_probability = fields[1]
+            return float(start_of_alpha_helix), float(length_of_alpha_helix), length_of_MTS, float(mitofates_cleavage_probability)
+        
+def get_signalP_infos(working_dir, name, wanted_id):
+    with open(working_dir + "/"+ name + "/processed_signalp_results.txt", "r") as file:
+        lines = file.readlines()
+        for i, line in enumerate(lines):
+            if line.startswith("#") or i == 0:
+                continue
+            fields = line.strip().split("\t")
+            protein_id = fields[0]  # protein ID (column 1 in SignalP)
+            if protein_id != wanted_id:
+                continue
+            if len(fields) > 4:
+                predicted_cleavage_position = fields[4].strip().split(":")[1].split("-")[0].strip()
+            else:
+                predicted_cleavage_position = None
+            signalP_cleavage_probability = fields[3]
+            if predicted_cleavage_position == None:
+                return None, float(signalP_cleavage_probability)
+            else:
+                return float(predicted_cleavage_position), float(signalP_cleavage_probability)
 
 def parse_go_annotations(annotation_file):
     """
@@ -125,11 +149,23 @@ def run(organism_names, input_dir, working_dir):
             # add the protein id to the DataFrame
             feature_matrix["protein_id"] = [protein_id]
             protein_id = row["protein_id"]
-            start_of_alpha_helix, length_of_alpha_helix, length_of_MTS, cleavage_probability = get_mitoFates_infos(working_dir, organism, protein_id)
+            start_of_alpha_helix, length_of_alpha_helix, length_of_MTS, mitofates_cleavage_probability = get_mitoFates_infos(working_dir, organism, protein_id)
             feature_matrix["start_of_alpha_helix"] = start_of_alpha_helix
             feature_matrix["length_of_alpha_helix"] = length_of_alpha_helix
-            feature_matrix["length_of_MTS"] = length_of_MTS
-            feature_matrix["cleavable_mts"] = cleavage_probability
+            feature_matrix["cleavable_mts"] = mitofates_cleavage_probability
+            # get the signalP information
+            predicted_cleavage_position, signalP_cleavage_probability = get_signalP_infos(working_dir, organism, protein_id)
+            if predicted_cleavage_position is None and mitofates_cleavage_probability > 0.5:
+                feature_matrix["predicted_cleavage_position"] = length_of_MTS
+            elif predicted_cleavage_position is None and mitofates_cleavage_probability < 0.5:
+                feature_matrix["predicted_cleavage_position"] = 28.59
+            elif predicted_cleavage_position is not None:
+                feature_matrix["predicted_cleavage_position"] = predicted_cleavage_position
+            elif predicted_cleavage_position is None and length_of_MTS is None:
+                print(f"Skipping protein {protein_id} due to missing predicted cleavage position and length of MTS")
+                invalid_count += 1
+                continue
+            feature_matrix["signalP_cleavage_probability"] = signalP_cleavage_probability
             # mts sequence is the sequence specified by start and length of alpha helix
             start_of_alpha_helix = int(start_of_alpha_helix) -1
             length_of_alpha_helix = int(length_of_alpha_helix)
@@ -169,6 +205,7 @@ def run(organism_names, input_dir, working_dir):
             feature_matrix2 = feature_matrix_per_protein(protein_sequence)
             # add the feature matrix to the feature matrix
             feature_matrix = pd.concat([feature_matrix, feature_matrix2], axis=1)
+            feature_matrix['Molecular Weight'] = feature_matrix['Molecular Weight']/ length_of_MTS
 
             # append the feature matrix to the list of proteins
             protein_list.append(feature_matrix)
