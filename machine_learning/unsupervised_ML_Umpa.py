@@ -14,12 +14,14 @@ working_dir = os.path.dirname("pipeline/output/output_20250519_142700_machine_le
 feature_matrix_path = working_dir + "/feature_matrix_with_go_terms.csv"
 # Read the feature matrix from the CSV file
 feature_matrix = pd.read_csv(feature_matrix_path, index_col=0)
-print(feature_matrix.head(10))
 # Save the original cleavable_mts info (optional, not needed for GO_term coloring)
 # cleavable_values = feature_matrix["cleavable_mts"].values
 #feature_matrix = feature_matrix.drop(columns=["cleavable_mts"])
 # Remove rows with duplicate protein IDs
 feature_matrix = feature_matrix[~feature_matrix.index.duplicated(keep=False)]
+
+# Filter out rows with missing or empty GO_Term
+feature_matrix = feature_matrix[feature_matrix["GO_Term"].notnull() & (feature_matrix["GO_Term"] != "")]
 
 # Save the GO_term column for later use
 go_term_values = feature_matrix["GO_Term"].values

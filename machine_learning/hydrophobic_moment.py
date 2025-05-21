@@ -143,8 +143,8 @@ def analyze_sequence(name=None, sequence=None, window=18, verbose=False):
 
     # Processing...
     seq_len = len(sequence)
-    print('[+] Analysing sequence {} ({} aa.)'.format(name, seq_len))
-    print('[+] Using a window of {} aa.'.format(w))
+    #print('[+] Analysing sequence {} ({} aa.)'.format(name, seq_len))
+    #print('[+] Using a window of {} aa.'.format(w))
     for seq_range in range(0, seq_len):
 
         seq_w = sequence[seq_range:seq_range+w]
@@ -206,13 +206,14 @@ def read_fasta_file(afile):
 
     return sequences
 
-def run(sequence):
-    data = analyze_sequence(sequence=sequence, window=len(sequence), verbose=False)
-    hydrophobic_moment = data[0][7]  # Extract the hydrophobic moment from the first entry
-    return hydrophobic_moment
+def run(sequence, verbose):
+    data = analyze_sequence(sequence=sequence, verbose=verbose)
+    hydrophobic_moments = [row[7] for row in data]
+    max_hydrophobic_moment = max(hydrophobic_moments)
+    return max_hydrophobic_moment
 
 if __name__ == '__main__':
-    print(run("LLRLLLRLLRRLL"))
+    print(run("ACDEFGHIKLMNPQRSTVWA"))  # Example sequence
 
 
 '''

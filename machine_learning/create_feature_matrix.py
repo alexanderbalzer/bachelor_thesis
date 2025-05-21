@@ -4,7 +4,10 @@ import os
 from Bio import SeqIO
 import hydrophobic_moment
 from datetime import datetime
-
+from tqdm import tqdm
+import add_go_terms_to_df
+from goatools.obo_parser import GODag
+from goatools.base import download_go_basic_obo
 
 def feature_matrix_per_protein(protein_sequence):
     '''
@@ -13,7 +16,6 @@ def feature_matrix_per_protein(protein_sequence):
     X = ProteinAnalysis(protein_sequence)
     # create a dictionary with the features
     features = {
-        'Amino Acids Percent': X.get_amino_acids_percent(),
         'molecular_weight': X.molecular_weight(),
         'Aromaticity': X.aromaticity(),
         'Instability Index': X.instability_index(),
@@ -25,7 +27,6 @@ def feature_matrix_per_protein(protein_sequence):
     # create a DataFrame with the features
     # Flatten
     flat = {}
-    flat.update({f'AA_{k}': v for k, v in features['Amino Acids Percent'].items()})
     flat['Molecular Weight'] = features['molecular_weight']
     flat['Aromaticity'] = features['Aromaticity']
     flat['Instability Index'] = features['Instability Index']
@@ -34,7 +35,6 @@ def feature_matrix_per_protein(protein_sequence):
     flat['Molecular Weight'] = features['Molecular Weight']
     flat['SecStr_Helix'] = features['Secondary Structure Fraction'][0]
     flat['SecStr_Sheet'] = features['Secondary Structure Fraction'][1]
-    flat['SecStr_Turn'] = features['Secondary Structure Fraction'][2]
     flat['Hydrophobicity'] = features['Hydrophobicity']
 
     # Store as DataFrame
@@ -128,11 +128,36 @@ def run(organism_names, input_dir, working_dir):
     '''
     # create a list of all the proteins in the input directory
     protein_list = []
+    go_ids = [
+            #Go terms for: ER, Golgi, Ribosome, Mitochondria, Nucleus, Lysosome, Cell membrane, Cytoplasm
+            "GO:0005783",
+            "GO:0005794",
+            "GO:0005840",
+            "GO:0005739",
+            "GO:0005634",
+            "GO:0005764",
+            "GO:0005886",
+            "GO:0005737"
+            ]
+
     for organism in organism_names:
         invalid_count = 0
         working_dir_per_organism = working_dir + "/" + organism 
         fasta = working_dir_per_organism + "/" + "filtered_proteins_by_GO_for_" + organism + ".fasta"
         fasta_file = os.path.join(fasta)
+        go_child_dir = working_dir_per_organism + "/go_childs/"
+        # load the go_ids
+        child_dict = {}
+        for go_id in go_ids:
+            with open(f"{go_child_dir}{go_id}.txt", "r") as file:
+                for line in file:
+                    child = line.strip().split("_")[0]
+                    child_dict[child] = go_id
+
+        # Parse GO annotations
+        annotation_file = "pipeline/input/Homo_sapiens.goa"
+        go_annotations = parse_go_annotations(annotation_file)
+
         # check if the file exists
         if not os.path.exists(fasta_file):
             print(f"File not found: {fasta_file}")
@@ -140,8 +165,7 @@ def run(organism_names, input_dir, working_dir):
         # read the fasta file and create a DataFrame
         df = fasta_to_dataframe(fasta_file)
         # create a list of all the proteins in the fasta file
-        for index, row in df.iterrows():
-            print(f"Processing protein: {index+1}/{len(df)}")
+        for index, row in tqdm(df.iterrows(), total=len(df), desc=f"Processing proteins for {organism}"):
             protein_sequence = row["Sequence"]
             protein_id = row["protein_id"]
             # turn protein id and sequence into a DataFrame
@@ -149,22 +173,16 @@ def run(organism_names, input_dir, working_dir):
             # add the protein id to the DataFrame
             feature_matrix["protein_id"] = [protein_id]
             protein_id = row["protein_id"]
-            start_of_alpha_helix, length_of_alpha_helix, length_of_MTS, mitofates_cleavage_probability = get_mitoFates_infos(working_dir, organism, protein_id)
+            start_of_alpha_helix, length_of_alpha_helix, mpp_cleavage_pos, mitofates_cleavage_probability = get_mitoFates_infos(working_dir, organism, protein_id)
             feature_matrix["start_of_alpha_helix"] = start_of_alpha_helix
             feature_matrix["length_of_alpha_helix"] = length_of_alpha_helix
             feature_matrix["cleavable_mts"] = mitofates_cleavage_probability
+            feature_matrix["MPP_cleavage_position"] = mpp_cleavage_pos
             # get the signalP information
-            predicted_cleavage_position, signalP_cleavage_probability = get_signalP_infos(working_dir, organism, protein_id)
-            if predicted_cleavage_position is None and mitofates_cleavage_probability > 0.5:
-                feature_matrix["predicted_cleavage_position"] = length_of_MTS
-            elif predicted_cleavage_position is None and mitofates_cleavage_probability < 0.5:
-                feature_matrix["predicted_cleavage_position"] = 28.59
-            elif predicted_cleavage_position is not None:
-                feature_matrix["predicted_cleavage_position"] = predicted_cleavage_position
-            elif predicted_cleavage_position is None and length_of_MTS is None:
-                print(f"Skipping protein {protein_id} due to missing predicted cleavage position and length of MTS")
-                invalid_count += 1
-                continue
+            spi_cleavage_pos, signalP_cleavage_probability = get_signalP_infos(working_dir, organism, protein_id)
+            if spi_cleavage_pos == None:
+                spi_cleavage_pos = 1000
+            feature_matrix["sp1_cleavage_position"] = spi_cleavage_pos
             feature_matrix["signalP_cleavage_probability"] = signalP_cleavage_probability
             # mts sequence is the sequence specified by start and length of alpha helix
             start_of_alpha_helix = int(start_of_alpha_helix) -1
@@ -172,24 +190,18 @@ def run(organism_names, input_dir, working_dir):
             if not protein_sequence.startswith("M"):
                 invalid_count += 1
                 continue
-            try:
-                length_of_MTS = float(length_of_MTS)
-            except ValueError:
-                continue
             # check if the mts sequence only contains valid amino acids
             valid_amino_acids = set("ACDEFGHIKLMNPQRSTVWY")
             if not all(aa in valid_amino_acids for aa in protein_sequence):
-                print(f"Skipping protein {protein_id} due to invalid amino acids")
                 invalid_count += 1
                 continue
-            if len(protein_sequence) < int(length_of_MTS):
-                print(f"Skipping protein {protein_id} due to length of MTS")
+            if len(protein_sequence) < int(mpp_cleavage_pos):
                 invalid_count += 1
                 continue
             #mts_sequence = protein_sequence[start_of_alpha_helix:start_of_alpha_helix + length_of_alpha_helix]
-            mts_sequence = protein_sequence[0:int(length_of_MTS)]
+            mts_sequence = protein_sequence[0:int(mpp_cleavage_pos)]
             # calculate the hydrophobic moment of the mts sequence
-            hydrophobic_moment_value = hydrophobic_moment.run(mts_sequence)
+            hydrophobic_moment_value = hydrophobic_moment.run(mts_sequence, verbose=False)
             # add the hydrophobic moment to the DataFrame
             feature_matrix["Hydrophobic Moment"] = hydrophobic_moment_value
             # One-hot encode the second amino acid
@@ -198,24 +210,47 @@ def run(organism_names, input_dir, working_dir):
             one_hot_encoded = {f"Second_AA_{aa}": 1 if second_amino_acid == aa else 0 for aa in amino_acids}
             feature_matrix = feature_matrix.assign(**one_hot_encoded)
             # cut the protein sequence to the length of the MTS
-            protein_sequence = protein_sequence[:int(length_of_MTS)]
+            protein_sequence = protein_sequence[:90]
             # add the protein sequence to the DataFrame
             feature_matrix["Sequence"] = [protein_sequence]
             # create a feature matrix for the protein
             feature_matrix2 = feature_matrix_per_protein(protein_sequence)
             # add the feature matrix to the feature matrix
             feature_matrix = pd.concat([feature_matrix, feature_matrix2], axis=1)
-            feature_matrix['Molecular Weight'] = feature_matrix['Molecular Weight']/ length_of_MTS
+            feature_matrix['Molecular Weight'] = feature_matrix['Molecular Weight']/ mpp_cleavage_pos
+
+            # add the GO terms to the feature matrix
+
+            # Add filtered GO terms rowwise to the feature matrix
+            filtered_terms = []
+            if protein_id in go_annotations:
+                for term in go_annotations[protein_id]:
+                    if term in child_dict:
+                        filtered_terms.append(child_dict[term])
+                # Remove duplicate GO terms in each row
+                filtered_terms = list(set(filtered_terms))
+                # if a protein has multiple go terms, set filtered_terms to empty
+                if len(filtered_terms) > 1:
+                    filtered_terms = []
+                terms = ",".join(filtered_terms)
+                feature_matrix['GO_Term'] = terms
+            else:
+                feature_matrix['GO_Term'] = ""
+            if "GO:0005739" in terms:
+                if int(mitofates_cleavage_probability) < 0.5:
+                    feature_matrix['GO_Term'] = "GO:0005739_no_cleavable_mts"
+                elif int(mitofates_cleavage_probability) >= 0.5:
+                    feature_matrix['GO_Term'] = "GO:0005739_cleavable_mts"
 
             # append the feature matrix to the list of proteins
             protein_list.append(feature_matrix)
-        # create a DataFrame with all the proteins
         all_proteins_df = pd.concat(protein_list, ignore_index=True)
         # save the DataFrame to a csv file
-        output_file = os.path.join(working_dir_per_organism, "feature_matrix.csv")
+        output_file = os.path.join(working_dir_per_organism, "feature_matrix_with_go_terms.csv")
         all_proteins_df.to_csv(output_file, index=False)
         print(f"Feature matrix saved to {output_file}")
         print(f"Invalid proteins skipped: {invalid_count}")
+
     
 if __name__ == "__main__":
     # Example usage
