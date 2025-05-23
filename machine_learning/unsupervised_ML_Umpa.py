@@ -27,6 +27,9 @@ feature_matrix = feature_matrix[feature_matrix["GO_Term"].notnull() & (feature_m
 go_term_values = feature_matrix["GO_Term"].values
 # Drop non-numeric columns if any, but keep GO_term for coloring
 feature_matrix_numeric = feature_matrix.select_dtypes(include=[np.number])
+# drop all columns except the specified ones
+columns_to_keep = ["Hydrophobic Moment", "Hydrophobicity", "Isoelectric Point"]  # Replace with the actual column names you want to keep
+feature_matrix_numeric = feature_matrix_numeric[columns_to_keep]
 
 scaler = StandardScaler()
 data_scaled = scaler.fit_transform(feature_matrix_numeric)

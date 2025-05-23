@@ -17,6 +17,8 @@ def feature_matrix_per_protein(protein_sequence):
     # create a dictionary with the features
     features = {
         'molecular_weight': X.molecular_weight(),
+        'L and A percentage': X.amino_acids_percent['L'] if 'L' in X.amino_acids_percent else 0 + X.amino_acids_percent['A'] if 'A' in X.amino_acids_percent else 0,
+        'R percentage': X.amino_acids_percent['R'] if 'R' in X.amino_acids_percent else 0,
         'Aromaticity': X.aromaticity(),
         'Instability Index': X.instability_index(),
         'Isoelectric Point': X.isoelectric_point(),
@@ -28,6 +30,8 @@ def feature_matrix_per_protein(protein_sequence):
     # Flatten
     flat = {}
     flat['Molecular Weight'] = features['molecular_weight']
+    flat['Leucine_and_Alanine_percentage'] = features['L and A percentage']
+    flat['Arginine_percentage'] = features['R percentage']
     flat['Aromaticity'] = features['Aromaticity']
     flat['Instability Index'] = features['Instability Index']
     flat['Instability Index'] = features['Instability Index']
@@ -70,6 +74,11 @@ def get_mitoFates_infos(working_dir, name, wanted_id):
             if protein_id != wanted_id:
                 continue
             position_of_MTS = fields[6]
+            tom20_motive = fields[7]
+            if tom20_motive == "-":
+                tom20_motive = 0
+            else:
+                tom20_motive = tom20_motive.split("-")[0]
             start_of_alpha_helix = position_of_MTS.strip().split("-")[0]
             length_of_alpha_helix = float(position_of_MTS.strip().split("-")[1]) - float(position_of_MTS.strip().split("-")[0])
             length_of_MTS = fields[3].split("(")[0]
@@ -78,7 +87,7 @@ def get_mitoFates_infos(working_dir, name, wanted_id):
             else:
                 length_of_MTS = None
             mitofates_cleavage_probability = fields[1]
-            return float(start_of_alpha_helix), float(length_of_alpha_helix), length_of_MTS, float(mitofates_cleavage_probability)
+            return float(start_of_alpha_helix), float(length_of_alpha_helix), length_of_MTS, float(mitofates_cleavage_probability), float(tom20_motive)
         
 def get_signalP_infos(working_dir, name, wanted_id):
     with open(working_dir + "/"+ name + "/processed_signalp_results.txt", "r") as file:
@@ -137,15 +146,16 @@ def run(organism_names, input_dir, working_dir):
             "GO:0005634",
             "GO:0005764",
             "GO:0005886",
-            "GO:0005737"
+            "GO:0005829"
             ]
+    go_ids = ["GO:0005739", "GO:0005783"]
 
     for organism in organism_names:
         invalid_count = 0
         working_dir_per_organism = working_dir + "/" + organism 
         fasta = working_dir_per_organism + "/" + "filtered_proteins_by_GO_for_" + organism + ".fasta"
         fasta_file = os.path.join(fasta)
-        go_child_dir = working_dir_per_organism + "/go_childs/"
+        go_child_dir = working_dir_per_organism + "/go_childs_reduced/"
         # load the go_ids
         child_dict = {}
         for go_id in go_ids:
@@ -173,11 +183,12 @@ def run(organism_names, input_dir, working_dir):
             # add the protein id to the DataFrame
             feature_matrix["protein_id"] = [protein_id]
             protein_id = row["protein_id"]
-            start_of_alpha_helix, length_of_alpha_helix, mpp_cleavage_pos, mitofates_cleavage_probability = get_mitoFates_infos(working_dir, organism, protein_id)
+            start_of_alpha_helix, length_of_alpha_helix, mpp_cleavage_pos, mitofates_cleavage_probability, tom20_motive = get_mitoFates_infos(working_dir, organism, protein_id)
             feature_matrix["start_of_alpha_helix"] = start_of_alpha_helix
             feature_matrix["length_of_alpha_helix"] = length_of_alpha_helix
-            feature_matrix["cleavable_mts"] = mitofates_cleavage_probability
             feature_matrix["MPP_cleavage_position"] = mpp_cleavage_pos
+            feature_matrix["mitofates_cleavage_probability"] = mitofates_cleavage_probability
+            feature_matrix["tom20_motive"] = tom20_motive
             # get the signalP information
             spi_cleavage_pos, signalP_cleavage_probability = get_signalP_infos(working_dir, organism, protein_id)
             if spi_cleavage_pos == None:
@@ -229,21 +240,32 @@ def run(organism_names, input_dir, working_dir):
                         filtered_terms.append(child_dict[term])
                 # Remove duplicate GO terms in each row
                 filtered_terms = list(set(filtered_terms))
-                # if a protein has multiple go terms, set filtered_terms to empty
-                if len(filtered_terms) > 1:
-                    filtered_terms = []
-                terms = ",".join(filtered_terms)
-                feature_matrix['GO_Term'] = terms
+                # if a protein has multiple go terms, set the filtered terms empty
+                terms = filtered_terms
             else:
                 feature_matrix['GO_Term'] = ""
-            if "GO:0005739" in terms:
-                if int(mitofates_cleavage_probability) < 0.5:
-                    feature_matrix['GO_Term'] = "GO:0005739_no_cleavable_mts"
-                elif int(mitofates_cleavage_probability) >= 0.5:
-                    feature_matrix['GO_Term'] = "GO:0005739_cleavable_mts"
+            '''if "GO:0005739" in terms:
+                if mitofates_cleavage_probability < 0.5:
+                    terms = ["GO:0005739_no_cleavable_mts" if t == "GO:0005739" else t for t in terms]
+                elif mitofates_cleavage_probability >= 0.5:
+                    terms = ["GO:0005739_cleavable_mts" if t == "GO:0005739" else t for t in terms]'''
+            if len(terms) > 1:
+                '''for term in terms:
+                    feature_matrix_temp = feature_matrix.copy()
+                    feature_matrix_temp['GO_Term'] = term
+                    protein_list.append(feature_matrix_temp)'''
+                terms = "Multiple"
+                feature_matrix['GO_Term'] = terms
+                protein_list.append(feature_matrix)
+            else:
+                # if the protein has no GO terms, set the GO term to cyto_nuclear
+                if len(terms) == 0:
+                    terms = "cyto_nuclear"
+                feature_matrix['GO_Term'] = terms
+                # append the feature matrix to the list of proteins
+                protein_list.append(feature_matrix)
 
             # append the feature matrix to the list of proteins
-            protein_list.append(feature_matrix)
         all_proteins_df = pd.concat(protein_list, ignore_index=True)
         # save the DataFrame to a csv file
         output_file = os.path.join(working_dir_per_organism, "feature_matrix_with_go_terms.csv")

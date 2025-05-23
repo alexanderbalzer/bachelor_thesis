@@ -77,7 +77,7 @@ with open(valid_go_term_file, "r") as file:
     valid_go_terms = set(line.strip() for line in file)
 
 # Read the feature matrix from the CSV file
-feature_matrix_path = working_dir + "/feature_matrix_with_go_terms.csv"
+feature_matrix_path = working_dir + "/feature_matrix_with_go_terms_mito.csv"
 df = pd.read_csv(feature_matrix_path, index_col=0)
 
 # Drop the "Sequence" column if it exists
@@ -85,28 +85,43 @@ if "Sequence" in df.columns:
     df = df.drop(columns=["Sequence"])
 
 # Create output directory for results
-general_output_dir = os.path.join(working_dir, "go_term_rf_results10")
+general_output_dir = os.path.join(working_dir, "go_term_rf_results_mito_and_ER")
 os.makedirs(general_output_dir, exist_ok=True)
-
+'''
 go_ids = [
         #Go terms for: ER, Golgi, Ribosome, Mitochondria, Nucleus, Lysosome, Cell membrane, Cytoplasm
         "GO:0005783",
         "GO:0005794",
         "GO:0005840",
         "GO:0005739_no_cleavable_mts",
-        "GO:0005739_cleavable_mts"
+        "GO:0005739_cleavable_mts",
         "GO:0005634",
         "GO:0005764",
         "GO:0005886",
-        "GO:0005737"
+        "GO:0005737",
+        "Multiple",
+        "no_GO_term_found"
     ]
-valid_go_terms = go_ids
-
+valid_go_terms = [
+        "GO:0005740",
+        "GO:0005743",
+        "GO:0005741",
+        "GO:0005758",
+        "GO:0005759",
+        "GO:0005746",
+        "GO:0031966",
+        "Multiple"
+    ]
+#valid_go_terms = go_ids
+'''
+valid_go_terms = ['GO:0005783', 'GO:0005739']
 for go_term in valid_go_terms:
     output_dir = os.path.join(general_output_dir, sanitize_filename(get_go_aspect(go_term, go_dag)))
     os.makedirs(output_dir, exist_ok=True)
     # Filter for current GO term (binary classification: this term vs. all others)
     df_filtered = df.copy()
+    # remove the rows that dont contain the go_term or the go term cyto_nuclear
+    df_filtered = df_filtered[df_filtered["GO_Term"].str.contains(go_term, na=False) | df_filtered["GO_Term"].str.contains("cyto_nuclear", na=False)]
     df_filtered["GO_Term_Binary"] = (df_filtered["GO_Term"] == go_term).astype(int)
     # Skip if not enough samples for both classes
     if df_filtered["GO_Term_Binary"].sum() < 5 or (df_filtered["GO_Term_Binary"] == 0).sum() < 5:
