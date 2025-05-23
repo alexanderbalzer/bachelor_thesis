@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 # Load the CSV file
-file_path = 'pipeline/output/output_20250519_142700_machine_learning_human/Homo_sapiens/feature_matrix_with_go_terms2.csv'  # Replace with your CSV file path
+file_path = 'pipeline/output/output_20250519_142700_machine_learning_human/Homo_sapiens/feature_matrix_with_go_terms.csv'  # Replace with your CSV file path
 data = pd.read_csv(file_path, index_col=0)
 
 # Define the conditions for splitting
@@ -11,18 +11,15 @@ cytosol_protein = []
 somethings_wrong = []
 
 for i, row in data.iterrows():
-    hydrophobic_moment = row['Hydrophobic Moment'] 
-    er = row['signalP_cleavage_probability'] 
-    isoelectric_point = row['Isoelectric Point']
-    hydrophobicity = row['Hydrophobicity']
-    if hydrophobic_moment >= 0.4 and er < 0.3 and isoelectric_point > 7 and hydrophobicity < 0:
+    if row['GO_Term'] == 'GO:0005739':
         mito_protein.append(row)
-    elif hydrophobicity > 0:
+    elif row['GO_Term'] == 'GO:0005783':
         er_protein.append(row)
-    elif hydrophobic_moment >= 0.4 and hydrophobicity > 0:
-        somethings_wrong.append(row)
-    else:
+    elif row['GO_Term'] == 'cyto_nuclear':
         cytosol_protein.append(row)
+    else:
+        somethings_wrong.append(row)
+
 
 # Convert the lists to DataFrames
 df1 = pd.DataFrame(mito_protein)

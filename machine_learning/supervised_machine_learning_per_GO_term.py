@@ -77,7 +77,7 @@ with open(valid_go_term_file, "r") as file:
     valid_go_terms = set(line.strip() for line in file)
 
 # Read the feature matrix from the CSV file
-feature_matrix_path = working_dir + "/feature_matrix_with_go_terms_mito.csv"
+feature_matrix_path = working_dir + "/feature_matrix_with_go_terms.csv"
 df = pd.read_csv(feature_matrix_path, index_col=0)
 
 # Drop the "Sequence" column if it exists
@@ -206,7 +206,7 @@ for go_term in valid_go_terms:
     plt.axhline(y=-np.log10(0.05), color='r', linestyle='--')
     plt.axvline(x=0, color='g', linestyle='--')
     # Highlight significant features
-    significant_features = feature_importance_df[feature_importance_df['FDR'] < 0.1]
+    significant_features = feature_importance_df[(feature_importance_df['FDR'] < 0.1)]
     plt.scatter(significant_features['Coefficient'], -np.log10(significant_features['Significance']), color='red', label='Significant')
 
     # Use adjustText for non-overlapping labels
@@ -218,16 +218,14 @@ for go_term in valid_go_terms:
     adjust_text(texts, arrowprops=dict(arrowstyle='->', color='black', lw=0.5))
 
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f"{go_term}_volcano_plot.png"))
+    plt.savefig(os.path.join(output_dir, f"{go_term}_volcano_plot.pdf"))
     plt.close()
     
 
-if __name__ == "__main__":
-# delete empty directories
-    for root, dirs, files in os.walk(general_output_dir, topdown=False):
-        for name in dirs:
-            dir_path = os.path.join(root, name)
-            if not os.listdir(dir_path):
-                os.rmdir(dir_path)
-                print(f"Deleted empty directory: {dir_path}")
+for root, dirs, files in os.walk(general_output_dir, topdown=False):
+    for name in dirs:
+        dir_path = os.path.join(root, name)
+        if not os.listdir(dir_path):
+            os.rmdir(dir_path)
+            print(f"Deleted empty directory: {dir_path}")
 

@@ -191,9 +191,8 @@ def run(organism_names, input_dir, working_dir):
             feature_matrix["tom20_motive"] = tom20_motive
             # get the signalP information
             spi_cleavage_pos, signalP_cleavage_probability = get_signalP_infos(working_dir, organism, protein_id)
-            if spi_cleavage_pos == None:
-                spi_cleavage_pos = 1000
-            feature_matrix["sp1_cleavage_position"] = spi_cleavage_pos
+            if spi_cleavage_pos != None:
+                signalP_cleavage_probability = signalP_cleavage_probability * 2
             feature_matrix["signalP_cleavage_probability"] = signalP_cleavage_probability
             # mts sequence is the sequence specified by start and length of alpha helix
             start_of_alpha_helix = int(start_of_alpha_helix) -1
