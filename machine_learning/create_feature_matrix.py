@@ -8,6 +8,12 @@ from tqdm import tqdm
 import add_go_terms_to_df
 from goatools.obo_parser import GODag
 from goatools.base import download_go_basic_obo
+import numpy as np
+import re
+import warnings
+from sklearn.preprocessing import OneHotEncoder
+warnings.filterwarnings("ignore", category=UserWarning, module='Bio.SeqUtils.ProtParam')
+
 
 def feature_matrix_per_protein(protein_sequence):
     '''
@@ -49,14 +55,17 @@ def feature_matrix_per_protein(protein_sequence):
 def fasta_to_dataframe(fasta_file):
     sequences = []
     protein_id = []
+    protein_id_human = []
     for record in SeqIO.parse(fasta_file, "fasta"):
         sequences.append(str(record.seq))
         protein_id_uniprot = record.id.split("|")[1]
+        protein_id_human.append(record.id.split("|")[2])
         protein_id.append(str(protein_id_uniprot))
     
     df = pd.DataFrame({
         "Sequence": sequences,
-        "protein_id": protein_id
+        "protein_id": protein_id,
+        "protein_id_human": protein_id_human
     })
     return df
 
@@ -78,7 +87,7 @@ def get_mitoFates_infos(working_dir, name, wanted_id):
             if tom20_motive == "-":
                 tom20_motive = 0
             else:
-                tom20_motive = tom20_motive.split("-")[0]
+                tom20_motive = 1
             start_of_alpha_helix = position_of_MTS.strip().split("-")[0]
             length_of_alpha_helix = float(position_of_MTS.strip().split("-")[1]) - float(position_of_MTS.strip().split("-")[0])
             length_of_MTS = fields[3].split("(")[0]
@@ -131,13 +140,43 @@ def parse_go_annotations(annotation_file):
     return go_annotation
 
 
+helix_propensity = {
+    'A': 1.45, 'C': 0.77, 'D': 0.98, 'E': 1.53,
+    'F': 1.12, 'G': 0.53, 'H': 1.24, 'I': 1.00,
+    'K': 1.07, 'L': 1.34, 'M': 1.20, 'N': 0.73,
+    'P': 0.59, 'Q': 1.17, 'R': 0.79, 'S': 0.79,
+    'T': 0.82, 'V': 1.14, 'W': 1.14, 'Y': 0.61
+}
+
+def helix_score(seq):
+    if len(seq) < 10:
+        return 0  # Return 0 if the sequence is shorter than the frame length
+    max_score = 0
+    for i in range(len(seq) - 9):  # Iterate over all possible frames of length 10
+        frame = seq[i:i + 10]
+        frame_score = sum(helix_propensity.get(res.upper(), 0) for res in frame) / len(frame)
+        max_score = max(max_score, frame_score)
+    return max_score
+
+def classify_natc_substrate(second_as):
+    if second_as in ["A", "C", "T", "S", "V", "G"]:
+        return "NatA/D"
+    elif second_as in ["D", "E", "N", "Q"]:
+        return "NatB"
+    elif second_as in ["L", "I", "F", "Y", "K"]:
+        return "NatC/E"
+    else:
+        return "Other"
+    
+
+
 def run(organism_names, input_dir, working_dir):
     '''
     creates a Feature Matrix for the given organism
     '''
     # create a list of all the proteins in the input directory
     protein_list = []
-    go_ids = [
+    go_ids2 = [
             #Go terms for: ER, Golgi, Ribosome, Mitochondria, Nucleus, Lysosome, Cell membrane, Cytoplasm
             "GO:0005783",
             "GO:0005794",
@@ -178,10 +217,12 @@ def run(organism_names, input_dir, working_dir):
         for index, row in tqdm(df.iterrows(), total=len(df), desc=f"Processing proteins for {organism}"):
             protein_sequence = row["Sequence"]
             protein_id = row["protein_id"]
+            protein_id_human = row["protein_id_human"]
             # turn protein id and sequence into a DataFrame
             feature_matrix = pd.DataFrame()
             # add the protein id to the DataFrame
             feature_matrix["protein_id"] = [protein_id]
+            feature_matrix["protein_id_human"] = protein_id_human
             protein_id = row["protein_id"]
             start_of_alpha_helix, length_of_alpha_helix, mpp_cleavage_pos, mitofates_cleavage_probability, tom20_motive = get_mitoFates_infos(working_dir, organism, protein_id)
             feature_matrix["start_of_alpha_helix"] = start_of_alpha_helix
@@ -191,8 +232,10 @@ def run(organism_names, input_dir, working_dir):
             feature_matrix["tom20_motive"] = tom20_motive
             # get the signalP information
             spi_cleavage_pos, signalP_cleavage_probability = get_signalP_infos(working_dir, organism, protein_id)
-            if spi_cleavage_pos != None:
-                signalP_cleavage_probability = signalP_cleavage_probability * 2
+            if spi_cleavage_pos == None:
+                signalP_cleavage_probability = 0
+            else:
+                signalP_cleavage_probability = 1
             feature_matrix["signalP_cleavage_probability"] = signalP_cleavage_probability
             # mts sequence is the sequence specified by start and length of alpha helix
             start_of_alpha_helix = int(start_of_alpha_helix) -1
@@ -205,11 +248,12 @@ def run(organism_names, input_dir, working_dir):
             if not all(aa in valid_amino_acids for aa in protein_sequence):
                 invalid_count += 1
                 continue
-            if len(protein_sequence) < int(mpp_cleavage_pos):
+            cleavage_pos = np.min([mpp_cleavage_pos, spi_cleavage_pos]) if spi_cleavage_pos is not None else mpp_cleavage_pos
+            if len(protein_sequence) < int(cleavage_pos):
                 invalid_count += 1
                 continue
             #mts_sequence = protein_sequence[start_of_alpha_helix:start_of_alpha_helix + length_of_alpha_helix]
-            mts_sequence = protein_sequence[0:int(mpp_cleavage_pos)]
+            mts_sequence = protein_sequence[0:int(cleavage_pos)]
             # calculate the hydrophobic moment of the mts sequence
             hydrophobic_moment_value = hydrophobic_moment.run(mts_sequence, verbose=False)
             # add the hydrophobic moment to the DataFrame
@@ -217,8 +261,14 @@ def run(organism_names, input_dir, working_dir):
             # One-hot encode the second amino acid
             second_amino_acid = protein_sequence[1] if len(protein_sequence) > 1 else None
             amino_acids = "ACDEFGHIKLMNPQRSTVWY"
-            one_hot_encoded = {f"Second_AA_{aa}": 1 if second_amino_acid == aa else 0 for aa in amino_acids}
-            feature_matrix = feature_matrix.assign(**one_hot_encoded)
+            # Classify the NAT substrate
+            natc_substrate = classify_natc_substrate(second_amino_acid)
+            #feature_matrix["NAT_Substrate"] = natc_substrate
+
+            # One-hot encode the NAT substrate classification
+            natc_classes = ["NatA/D", "NatB", "NatC/E", "Other"]
+            one_hot_encoded_natc = {f"NAT_{cls}": 1 if natc_substrate == cls else 0 for cls in natc_classes}
+            feature_matrix = feature_matrix.assign(**one_hot_encoded_natc)
             # cut the protein sequence to the length of the MTS
             protein_sequence = protein_sequence[:90]
             # add the protein sequence to the DataFrame
@@ -227,7 +277,8 @@ def run(organism_names, input_dir, working_dir):
             feature_matrix2 = feature_matrix_per_protein(protein_sequence)
             # add the feature matrix to the feature matrix
             feature_matrix = pd.concat([feature_matrix, feature_matrix2], axis=1)
-            feature_matrix['Molecular Weight'] = feature_matrix['Molecular Weight']/ mpp_cleavage_pos
+            feature_matrix['Molecular Weight'] = feature_matrix['Molecular Weight']/ cleavage_pos
+            feature_matrix['helix_score'] = helix_score(mts_sequence)
 
             # add the GO terms to the feature matrix
 
