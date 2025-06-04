@@ -49,7 +49,7 @@ aa_charge = {'E': -1, 'D': -1, 'K': 1, 'R': 1}
 #
 # Functions
 #
-def assign_hydrophobicity(sequence, scale='Fauchere-Pliska'):  # noqa: E302
+def assign_hydrophobicity(sequence, scale='Eisenberg'):  # noqa: E302
     """Assigns a hydrophobicity value to each amino acid in the sequence"""
 
     hscale = scales.get(scale, None)
@@ -146,7 +146,6 @@ def analyze_sequence(name=None, sequence=None, window=18, verbose=False):
     #print('[+] Analysing sequence {} ({} aa.)'.format(name, seq_len))
     #print('[+] Using a window of {} aa.'.format(w))
     for seq_range in range(0, seq_len):
-
         seq_w = sequence[seq_range:seq_range+w]
         if seq_range and len(seq_w) < w:
             break
@@ -208,12 +207,13 @@ def read_fasta_file(afile):
 
 def run(sequence, verbose):
     data = analyze_sequence(sequence=sequence, verbose=verbose)
+    print(data)
     hydrophobic_moments = [row[7] for row in data]
     max_hydrophobic_moment = max(hydrophobic_moments)
     return max_hydrophobic_moment
 
 if __name__ == '__main__':
-    print(run("ACDEFGHIKLMNPQRSTVWA"))  # Example sequence
+    print(run("ACDEFGHIKLMNPQRSTVWA", verbose=False))  # Example sequence
 
 
 '''

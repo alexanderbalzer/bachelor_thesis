@@ -83,9 +83,11 @@ df = pd.read_csv(feature_matrix_path, index_col=0)
 # Drop the "Sequence" column if it exists
 if "Sequence" in df.columns:
     df = df.drop(columns=["Sequence"])
+if "protein_id_human" in df.columns:
+    df = df.drop(columns=["protein_id_human"])
 
 # Create output directory for results
-general_output_dir = os.path.join(working_dir, "go_term_rf_results_mito_and_ER")
+general_output_dir = os.path.join(working_dir, "go_term_rf_results_mito_and_ER_2")
 os.makedirs(general_output_dir, exist_ok=True)
 '''
 go_ids = [

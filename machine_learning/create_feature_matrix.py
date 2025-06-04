@@ -253,11 +253,6 @@ def run(organism_names, input_dir, working_dir):
                 invalid_count += 1
                 continue
             #mts_sequence = protein_sequence[start_of_alpha_helix:start_of_alpha_helix + length_of_alpha_helix]
-            mts_sequence = protein_sequence[0:int(cleavage_pos)]
-            # calculate the hydrophobic moment of the mts sequence
-            hydrophobic_moment_value = hydrophobic_moment.run(mts_sequence, verbose=False)
-            # add the hydrophobic moment to the DataFrame
-            feature_matrix["Hydrophobic Moment"] = hydrophobic_moment_value
             # One-hot encode the second amino acid
             second_amino_acid = protein_sequence[1] if len(protein_sequence) > 1 else None
             amino_acids = "ACDEFGHIKLMNPQRSTVWY"
@@ -269,6 +264,34 @@ def run(organism_names, input_dir, working_dir):
             natc_classes = ["NatA/D", "NatB", "NatC/E", "Other"]
             one_hot_encoded_natc = {f"NAT_{cls}": 1 if natc_substrate == cls else 0 for cls in natc_classes}
             feature_matrix = feature_matrix.assign(**one_hot_encoded_natc)
+            mts_sequence = protein_sequence[0:int(cleavage_pos)]
+            # if the second amino acid is A, C, T, S, V, P or G, delete the first amino acid
+            if second_amino_acid in ["A", "C", "T", "S", "V", "G", "P"]:
+                mts_when_huntington = mts_sequence[1:]
+                # if the new first amino acid is A, C, T, S, V or G, add X as first amino acid
+                if second_amino_acid in ["A", "C", "T", "S", "V", "G"]:
+                    mod_mts_sequence = "ACE " + mts_when_huntington
+                    alternative_mts_sequence = "ACE ML" + mts_sequence[2:]
+                else: 
+                    mod_mts_sequence = mts_sequence[1:]
+                    alternative_mts_sequence = mts_sequence[1:]
+            # if the second amino acid is D, E, N or Q, L, I, F, Y, add X as first amino acid
+            elif second_amino_acid in ["D", "E", "N", "Q", "L", "I", "F", "Y"]:
+                mod_mts_sequence = "ACE " + mts_sequence
+                alternative_mts_sequence = "ACE A" + mts_sequence[2:]
+                mts_when_huntington = mod_mts_sequence
+            else:
+                mod_mts_sequence = mts_sequence
+                alternative_mts_sequence = mts_sequence
+                mts_when_huntington = mts_sequence
+            # calculate the hydrophobic moment of the mts sequence
+            hydrophobic_moment_value_mod_mts = hydrophobic_moment.run(mod_mts_sequence, verbose=False)
+            hydrophobic_moment_value_alternative = hydrophobic_moment.run(alternative_mts_sequence, verbose=False)
+            hydrophobic_moment_value_mts_when_huntington = hydrophobic_moment.run(mts_when_huntington, verbose=False)
+            # add the hydrophobic moment to the DataFrame
+            feature_matrix["Hydrophobic Moment"] = hydrophobic_moment_value_mod_mts
+            feature_matrix["diff_if_not_that_nat_substrate"] = hydrophobic_moment_value_mod_mts - hydrophobic_moment_value_alternative
+            feature_matrix["diff_if_huntington"] = hydrophobic_moment_value_mod_mts - hydrophobic_moment_value_mts_when_huntington
             # cut the protein sequence to the length of the MTS
             protein_sequence = protein_sequence[:90]
             # add the protein sequence to the DataFrame

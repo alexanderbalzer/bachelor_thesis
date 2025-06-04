@@ -1,0 +1,7 @@
+integrator = md
+nsteps = 50000000 ; 100 ns
+dt = 0.002
+tcoupl = V-rescale
+pcoupl = Parrinello-Rahman
+gen_vel = yes
+ref_t = 300
