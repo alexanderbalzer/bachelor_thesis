@@ -22,6 +22,7 @@ import csv
 import math
 import os
 import time
+import numpy as np
 
 #
 # Definitions
@@ -44,7 +45,7 @@ scales = {'Fauchere-Pliska': {'A':  0.31, 'R': -1.01, 'N': -0.60,
           }
 _supported_scales = list(scales.keys())
 
-aa_charge = {'E': -1, 'D': -1, 'K': 1, 'R': 1}
+aa_charge = {'E': 1, 'D': 1, 'K': 1, 'R': 1}
 
 #
 # Functions
@@ -90,17 +91,17 @@ def calculate_charge(sequence, charge_dict=aa_charge):
     sc_charges = [charge_dict.get(aa, 0) for aa in sequence]
     return sum(sc_charges)
 
-def assign_charge(sequence, acetylated):
+def assign_charge(sequence, acetylated, seq_range):
     """Assigns charge values to each amino acid in the sequence"""
     charges = []
     for i, aa in enumerate(sequence):
-        if i == 0 and not acetylated:
+        if i == 0 and seq_range == 0 and not acetylated:
             charges.append(1)  # if the first amino acid is not acetylated and NatA/D, it has a positive charge
-        elif i == 0 and acetylated:
+        elif i == 0 and seq_range == 0 and acetylated:
             charges.append(0)
-        elif i == 0 and len(sequence) > 1 and sequence[1] in {'D', 'E', 'N', 'K', 'L', 'I', 'F', 'W'} and not acetylated:
+        elif i == 0 and seq_range == 0 and len(sequence) > 1 and sequence[1] in {'D', 'E', 'N', 'K', 'L', 'I', 'F', 'W'} and not acetylated:
             charges.append(1)
-        elif i == 0 and len(sequence) > 1 and sequence[1] in {'D', 'E', 'N', 'K', 'L', 'I', 'F', 'W'} and acetylated:
+        elif i == 0 and seq_range == 0 and len(sequence) > 1 and sequence[1] in {'D', 'E', 'N', 'K', 'L', 'I', 'F', 'W'} and acetylated:
             charges.append(0)
         elif aa == 'H':
             charges.append(0.1)  # Approximate partial charge at pH 7.4
@@ -116,7 +117,7 @@ def calculate_vector_moment(values, angle=100):
         rad_inc = ((i * angle) * math.pi) / 180.0
         sum_cos += val * math.cos(rad_inc)
         sum_sin += val * math.sin(rad_inc)
-    return sum_cos, sum_sin
+    return sum_cos, sum_sin / len(values)
 
 
 def calculate_alignment(hvec, qvec):
@@ -165,7 +166,7 @@ def calculate_composition(sequence):
             'apolar': n_a, 'charged': n_c, 'aromatic': n_ar}
 
 
-def analyze_sequence(name=None, sequence=None, window=9, verbose=False):
+def analyze_sequence(name=None, sequence=None, window=9, verbose=False, w_h = 0.944 / (0.944 + 0.33), w_q = 0.33 / (0.944 + 0.33)):
     """Runs all the above on a sequence. Pretty prints the results"""
 
     if not sequence:
@@ -199,16 +200,17 @@ def analyze_sequence(name=None, sequence=None, window=9, verbose=False):
         av_h = sum(seq_h)/len(seq_h)
         
         h_cos, h_sin = calculate_vector_moment(seq_h)
-        av_uH = math.sqrt(h_cos**2 + h_sin**2) / len(seq_h)
+        av_uH = math.sqrt(h_cos**2 + h_sin**2)
         
-        seq_q = assign_charge(seq_w, acetylated)
+        seq_q = assign_charge(seq_w, acetylated, seq_range)
+        seq_q = - np.abs(np.array(seq_q))
         q_cos, q_sin = calculate_vector_moment(seq_q)
-        av_uQ = math.sqrt(q_cos**2 + q_sin**2) / len(seq_q)
+        av_uQ = math.sqrt(q_cos**2 + q_sin**2)
 
+        # Calculate the keller weighted linear combination of the two vectors
+        combined_magnitude = w_h * av_uH + w_q * av_uQ  
         alignment = calculate_alignment((h_cos, h_sin), (q_cos, q_sin))
-        combined_cos = h_cos + q_cos
-        combined_sin = h_sin + q_sin
-        combined_magnitude = math.sqrt(combined_cos**2 + combined_sin**2)
+        alignment = np.abs(alignment)  # Ensure non-negative value
 
         d = calculate_discrimination(av_uH, z)
 
@@ -264,18 +266,26 @@ def read_fasta_file(afile):
 
 def run(sequence, verbose):
     data = []
+    w_h = 0.944 #/ (0.944 + 0.33) # weight for hydrophobic vector
+    w_q = 0.33 #/ (0.944 + 0.33) # weight for charge vector
     for i in range(7, 30):
-        temp_data = analyze_sequence(sequence=sequence, verbose=verbose, window=i)
+        temp_data = analyze_sequence(sequence=sequence, verbose=verbose, window=i, w_h=w_h, w_q=w_q)
         data.extend(temp_data)
-    combined_magnitudes = [row[15] for row in data]  # Assuming it's the 16th element
-    max_combined = max(combined_magnitudes)
-    max_index = combined_magnitudes.index(max_combined)
+    # _t = [name, sequence, seq_range+1, w, seq_w, z, av_h, av_uH, av_uQ, alignment, d,
+    #  n_tot_pol, n_tot_apol, n_charged, n_aromatic, combined_magnitude]
+    av_uH = [row[7] for row in data]  # This is the average hydrophobic moment
+    max_av_uH = max(av_uH)
+    max_index = av_uH.index(max_av_uH)
     start_best_window = data[max_index][2]  # This is the start index of the best window
     length_best_window = data[max_index][3]  # This is the length of the best window
-    return max_combined, start_best_window, length_best_window
+    av_uQ = data[max_index][8] # This is the average electrostatic moment
+    alignment = data[max_index][9]  # This is the alignment value
+    electrostatic_help = alignment * av_uQ  # This is the electrostatic help
+    discrimination_factor = data[max_index][10]
+    return max_av_uH, start_best_window, length_best_window, electrostatic_help, discrimination_factor
 
 if __name__ == '__main__':
-    print(run("ACDEFGHIKLMNPQRSTVWA", verbose=False))  # Example sequence
+    print(run("GIGAVLKVLTTGLPALI", verbose=False))  # Example sequence
 
 
 '''

@@ -285,15 +285,17 @@ def run(organism_names, input_dir, working_dir):
                 alternative_mts_sequence = mts_sequence
                 mts_when_huntington = mts_sequence
             # calculate the hydrophobic moment of the mts sequence
-            hydrophobic_moment_value_mod_mts, start_best_window, length_best_window = hydrophobic_moment.run(mod_mts_sequence, verbose=False)
-            hydrophobic_moment_value_alternative, unused, unused = hydrophobic_moment.run(alternative_mts_sequence, verbose=False)
-            hydrophobic_moment_value_mts_when_huntington, unused, unused = hydrophobic_moment.run(mts_when_huntington, verbose=False)
+            hydrophobic_moment_value_mod_mts, start_best_window, length_best_window, electrostatic_help, discrimination_factor = hydrophobic_moment.run(mod_mts_sequence, verbose=False)
+            hydrophobic_moment_value_alternative, unused, unused, electrostatic_help_diff_nat, unused = hydrophobic_moment.run(alternative_mts_sequence, verbose=False)
+            hydrophobic_moment_value_mts_when_huntington, unused, unused, electrostatic_help_huntington, unused = hydrophobic_moment.run(mts_when_huntington, verbose=False)
             # add the hydrophobic moment to the DataFrame
             feature_matrix["Hydrophobic Moment"] = hydrophobic_moment_value_mod_mts
-            feature_matrix["start_of_alpha_helix"] = start_of_alpha_helix
-            feature_matrix["length_of_alpha_helix"] = length_of_alpha_helix
-            feature_matrix["Hydrophobic Moment if diff nat"] = hydrophobic_moment_value_mod_mts - hydrophobic_moment_value_alternative
-            feature_matrix["Hydrophobic Moment if huntington"] = hydrophobic_moment_value_mod_mts - hydrophobic_moment_value_mts_when_huntington
+            feature_matrix["start_of_alpha_helix"] = start_best_window
+            feature_matrix["length_of_alpha_helix"] = length_best_window
+            feature_matrix["Electrostatic Help"] = electrostatic_help
+            feature_matrix["Discrimination Factor"] = discrimination_factor
+            feature_matrix["electrostatic help if diff nat"] = electrostatic_help_diff_nat
+            feature_matrix["electrostatic help if huntington"] = electrostatic_help_huntington
             # cut the protein sequence to the length of the MTS
             protein_sequence = protein_sequence[:90]
             # add the protein sequence to the DataFrame

@@ -76,9 +76,52 @@ output_file = 'pipeline/output/output_20250519_142700_machine_learning_human/Hom
 df = pd.read_csv(csv_file_path)
 
 # Specify the column you want to process
-diff_if_not_that_nat_substrate = df["diff_alignment_if_not_that_nat_substrate"]
-diff_if_huntington = pd.Series([value if go_term == "GO:0005739" else None for value, go_term in zip(df["Hydrophobic Moment if huntington"], df['GO_Term'])])
+diff_if_not_that_nat_substrate = df["Diff in electrostatic help if diff nat"]
+diff_if_huntington = pd.Series([value if go_term == "GO:0005739" else None for value, go_term in zip(df["Diff in electrostatic help if huntington"], df['GO_Term'])])
+
+df = df[(df['GO_Term'] == "GO:0005739")]
 sequence = df['Sequence']
+start_of_alpha_helix = df['start_of_alpha_helix']
+length_of_alpha_helix = df['length_of_alpha_helix']
+end_of_alpha_helix = start_of_alpha_helix + length_of_alpha_helix - 1
+df['end_of_alpha_helix'] = end_of_alpha_helix
+# Count how often each position is part of an alpha helix
+sequence_length = sequence.str.len().max()
+position_counts = [0] * sequence_length
+start_counts = [0] * sequence_length
+end_counts = [0] * sequence_length
+
+for start, end in zip(start_of_alpha_helix, end_of_alpha_helix):
+    for pos in range(start, end + 1):
+        if pos < sequence_length:
+            position_counts[pos] += 1
+    if start < sequence_length:
+        start_counts[start] += 1
+    if end < sequence_length:
+        end_counts[end] += 1
+
+# Plot the data
+plt.figure(figsize=(12, 6))
+positions = range(sequence_length)
+
+# Blue histogram for positions part of an alpha helix
+plt.bar(positions, position_counts, color='blue', alpha=0.6, label='Part of Alpha Helix')
+
+# Green scatter plot for start of alpha helix
+plt.scatter(positions, start_counts, color='green', label='Start of Alpha Helix')
+
+# Red scatter plot for end of alpha helix
+plt.scatter(positions, end_counts, color='red', label='End of Alpha Helix')
+
+plt.xlabel('Position in Sequence')
+plt.ylabel('Frequency')
+plt.title('Alpha Helix Position Analysis')
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+
+import sys; sys.exit()
 
 # Extract the second amino acid from each sequence
 second_aa = sequence.str[1]
@@ -86,10 +129,10 @@ second_aa = sequence.str[1]
 positive_diff_proteins = df[
     (df['GO_Term'] == "GO:0005739") & 
     (df['NAT_NatA/D'] == 1) & 
-    (df['Hydrophobic Moment'] < 0.5) & 
-    (df['Hydrophobic Moment'] > 0.3) & 
-    (df['alignment_of_charges_and_hydrophobic_moment'] > 0) &
-    (df['Hydrophobic Moment if huntington'] > 0)
+    (df['Hydrophobic Moment'] < 0.4) &
+    (df['Hydrophobic Moment'] > 0.3) &
+    (df['Electrostatic Help'] > 0) &
+    (df['Diff in electrostatic help if huntington'] > 0)
     ]
 
 for i, row in tqdm(positive_diff_proteins.iterrows(), total=len(positive_diff_proteins)):
