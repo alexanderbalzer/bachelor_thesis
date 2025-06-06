@@ -90,6 +90,45 @@ def calculate_charge(sequence, charge_dict=aa_charge):
     sc_charges = [charge_dict.get(aa, 0) for aa in sequence]
     return sum(sc_charges)
 
+def assign_charge(sequence, acetylated):
+    """Assigns charge values to each amino acid in the sequence"""
+    charges = []
+    for i, aa in enumerate(sequence):
+        if i == 0 and not acetylated:
+            charges.append(1)  # if the first amino acid is not acetylated and NatA/D, it has a positive charge
+        elif i == 0 and acetylated:
+            charges.append(0)
+        elif i == 0 and len(sequence) > 1 and sequence[1] in {'D', 'E', 'N', 'K', 'L', 'I', 'F', 'W'} and not acetylated:
+            charges.append(1)
+        elif i == 0 and len(sequence) > 1 and sequence[1] in {'D', 'E', 'N', 'K', 'L', 'I', 'F', 'W'} and acetylated:
+            charges.append(0)
+        elif aa == 'H':
+            charges.append(0.1)  # Approximate partial charge at pH 7.4
+        else:
+            charges.append(aa_charge.get(aa, 0))
+    return charges
+
+
+def calculate_vector_moment(values, angle=100):
+    """Generic vector moment calculator (used for hydrophobic or electrostatic)"""
+    sum_cos, sum_sin = 0.0, 0.0
+    for i, val in enumerate(values):
+        rad_inc = ((i * angle) * math.pi) / 180.0
+        sum_cos += val * math.cos(rad_inc)
+        sum_sin += val * math.sin(rad_inc)
+    return sum_cos, sum_sin
+
+
+def calculate_alignment(hvec, qvec):
+    """Compute cosine similarity between hydrophobic and electrostatic vectors"""
+    hmag = math.sqrt(hvec[0]**2 + hvec[1]**2)
+    qmag = math.sqrt(qvec[0]**2 + qvec[1]**2)
+    if hmag == 0 or qmag == 0:
+        return 0.0  # Avoid division by zero
+    dot = hvec[0]*qvec[0] + hvec[1]*qvec[1]
+    return dot / (hmag * qmag)
+
+
 
 def calculate_discrimination(mean_uH, total_charge):
     """Returns a discrimination factor according to Rob Keller (IJMS, 2011)
@@ -126,7 +165,7 @@ def calculate_composition(sequence):
             'apolar': n_a, 'charged': n_c, 'aromatic': n_ar}
 
 
-def analyze_sequence(name=None, sequence=None, window=18, verbose=False):
+def analyze_sequence(name=None, sequence=None, window=9, verbose=False):
     """Runs all the above on a sequence. Pretty prints the results"""
 
     if not sequence:
@@ -134,7 +173,11 @@ def analyze_sequence(name=None, sequence=None, window=18, verbose=False):
 
     if not name:
         name = 'Unnamed'
-
+    if sequence.startswith('X'):
+        acetylated = True
+        sequence = sequence[1:]  # remove the acetylation prefix
+    else:
+        acetylated = False
     w = window
     if w < 0:
         w = len(sequence)  # automatically set
@@ -154,8 +197,21 @@ def analyze_sequence(name=None, sequence=None, window=18, verbose=False):
         z = calculate_charge(seq_w)
         seq_h = assign_hydrophobicity(seq_w)
         av_h = sum(seq_h)/len(seq_h)
-        av_uH = calculate_moment(seq_h)
+        
+        h_cos, h_sin = calculate_vector_moment(seq_h)
+        av_uH = math.sqrt(h_cos**2 + h_sin**2) / len(seq_h)
+        
+        seq_q = assign_charge(seq_w, acetylated)
+        q_cos, q_sin = calculate_vector_moment(seq_q)
+        av_uQ = math.sqrt(q_cos**2 + q_sin**2) / len(seq_q)
+
+        alignment = calculate_alignment((h_cos, h_sin), (q_cos, q_sin))
+        combined_cos = h_cos + q_cos
+        combined_sin = h_sin + q_sin
+        combined_magnitude = math.sqrt(combined_cos**2 + combined_sin**2)
+
         d = calculate_discrimination(av_uH, z)
+
 
         # AA composition
         aa_comp = calculate_composition(seq_w)
@@ -164,8 +220,9 @@ def analyze_sequence(name=None, sequence=None, window=18, verbose=False):
         n_charged = aa_comp['charged']  # noqa: E501
         n_aromatic = aa_comp['aromatic']  # noqa: E501
 
-        _t = [name, sequence, seq_range+1, w, seq_w, z, av_h, av_uH, d,
-              n_tot_pol, n_tot_apol, n_charged, n_aromatic]
+        _t = [name, sequence, seq_range+1, w, seq_w, z, av_h, av_uH, av_uQ, alignment, d,
+      n_tot_pol, n_tot_apol, n_charged, n_aromatic, combined_magnitude]
+
         outdata.append(_t)
 
         if verbose:
@@ -206,11 +263,16 @@ def read_fasta_file(afile):
     return sequences
 
 def run(sequence, verbose):
-    data = analyze_sequence(sequence=sequence, verbose=verbose)
-    print(data)
-    hydrophobic_moments = [row[7] for row in data]
-    max_hydrophobic_moment = max(hydrophobic_moments)
-    return max_hydrophobic_moment
+    data = []
+    for i in range(7, 30):
+        temp_data = analyze_sequence(sequence=sequence, verbose=verbose, window=i)
+        data.extend(temp_data)
+    combined_magnitudes = [row[15] for row in data]  # Assuming it's the 16th element
+    max_combined = max(combined_magnitudes)
+    max_index = combined_magnitudes.index(max_combined)
+    start_best_window = data[max_index][2]  # This is the start index of the best window
+    length_best_window = data[max_index][3]  # This is the length of the best window
+    return max_combined, start_best_window, length_best_window
 
 if __name__ == '__main__':
     print(run("ACDEFGHIKLMNPQRSTVWA", verbose=False))  # Example sequence

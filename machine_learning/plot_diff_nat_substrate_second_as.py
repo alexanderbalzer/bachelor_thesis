@@ -76,14 +76,21 @@ output_file = 'pipeline/output/output_20250519_142700_machine_learning_human/Hom
 df = pd.read_csv(csv_file_path)
 
 # Specify the column you want to process
-diff_if_not_that_nat_substrate = df["diff_if_not_that_nat_substrate"]
-diff_if_huntington = pd.Series([value if go_term != "cyto_nuclear" else None for value, go_term in zip(df["diff_if_huntington"], df['GO_Term'])])
+diff_if_not_that_nat_substrate = df["diff_alignment_if_not_that_nat_substrate"]
+diff_if_huntington = pd.Series([value if go_term == "GO:0005739" else None for value, go_term in zip(df["Hydrophobic Moment if huntington"], df['GO_Term'])])
 sequence = df['Sequence']
 
 # Extract the second amino acid from each sequence
 second_aa = sequence.str[1]
 # Filter proteins with positive diff_if_huntington
-positive_diff_proteins = df[(df['GO_Term'] == "GO:0005739") & (df['GO_Term'] != 'Multiple') & (df['NAT_NatA/D'] == 1) & (df['Hydrophobic Moment'] > 0.3) & (df['Hydrophobic Moment'] -  df['diff_if_huntington'] < 0.3)]
+positive_diff_proteins = df[
+    (df['GO_Term'] == "GO:0005739") & 
+    (df['NAT_NatA/D'] == 1) & 
+    (df['Hydrophobic Moment'] < 0.5) & 
+    (df['Hydrophobic Moment'] > 0.3) & 
+    (df['alignment_of_charges_and_hydrophobic_moment'] > 0) &
+    (df['Hydrophobic Moment if huntington'] > 0)
+    ]
 
 for i, row in tqdm(positive_diff_proteins.iterrows(), total=len(positive_diff_proteins)):
     uniprot_id = row['protein_id']

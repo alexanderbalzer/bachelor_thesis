@@ -270,28 +270,30 @@ def run(organism_names, input_dir, working_dir):
                 mts_when_huntington = mts_sequence[1:]
                 # if the new first amino acid is A, C, T, S, V or G, add X as first amino acid
                 if second_amino_acid in ["A", "C", "T", "S", "V", "G"]:
-                    mod_mts_sequence = "ACE " + mts_when_huntington
-                    alternative_mts_sequence = "ACE ML" + mts_sequence[2:]
+                    mod_mts_sequence = "X" + mts_when_huntington
+                    alternative_mts_sequence = "XML" + mts_sequence[2:]
                 else: 
                     mod_mts_sequence = mts_sequence[1:]
                     alternative_mts_sequence = mts_sequence[1:]
             # if the second amino acid is D, E, N or Q, L, I, F, Y, add X as first amino acid
             elif second_amino_acid in ["D", "E", "N", "Q", "L", "I", "F", "Y"]:
-                mod_mts_sequence = "ACE " + mts_sequence
-                alternative_mts_sequence = "ACE A" + mts_sequence[2:]
+                mod_mts_sequence = "X" + mts_sequence
+                alternative_mts_sequence = "XA" + mts_sequence[2:]
                 mts_when_huntington = mod_mts_sequence
             else:
                 mod_mts_sequence = mts_sequence
                 alternative_mts_sequence = mts_sequence
                 mts_when_huntington = mts_sequence
             # calculate the hydrophobic moment of the mts sequence
-            hydrophobic_moment_value_mod_mts = hydrophobic_moment.run(mod_mts_sequence, verbose=False)
-            hydrophobic_moment_value_alternative = hydrophobic_moment.run(alternative_mts_sequence, verbose=False)
-            hydrophobic_moment_value_mts_when_huntington = hydrophobic_moment.run(mts_when_huntington, verbose=False)
+            hydrophobic_moment_value_mod_mts, start_best_window, length_best_window = hydrophobic_moment.run(mod_mts_sequence, verbose=False)
+            hydrophobic_moment_value_alternative, unused, unused = hydrophobic_moment.run(alternative_mts_sequence, verbose=False)
+            hydrophobic_moment_value_mts_when_huntington, unused, unused = hydrophobic_moment.run(mts_when_huntington, verbose=False)
             # add the hydrophobic moment to the DataFrame
             feature_matrix["Hydrophobic Moment"] = hydrophobic_moment_value_mod_mts
-            feature_matrix["diff_if_not_that_nat_substrate"] = hydrophobic_moment_value_mod_mts - hydrophobic_moment_value_alternative
-            feature_matrix["diff_if_huntington"] = hydrophobic_moment_value_mod_mts - hydrophobic_moment_value_mts_when_huntington
+            feature_matrix["start_of_alpha_helix"] = start_of_alpha_helix
+            feature_matrix["length_of_alpha_helix"] = length_of_alpha_helix
+            feature_matrix["Hydrophobic Moment if diff nat"] = hydrophobic_moment_value_mod_mts - hydrophobic_moment_value_alternative
+            feature_matrix["Hydrophobic Moment if huntington"] = hydrophobic_moment_value_mod_mts - hydrophobic_moment_value_mts_when_huntington
             # cut the protein sequence to the length of the MTS
             protein_sequence = protein_sequence[:90]
             # add the protein sequence to the DataFrame

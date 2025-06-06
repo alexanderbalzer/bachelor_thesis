@@ -1,9 +1,9 @@
 import os
 import subprocess
 import MDAnalysis as mda
-from MDAnalysis.analysis import secondary_structure
 import matplotlib.pyplot as plt
 import numpy as np
+from MDAnalysis.analysis import DSSP
 
 def run(cmd, cwd=None):
     print(f"Running: {cmd}")
@@ -32,10 +32,9 @@ def run_production():
 
 def analyze_helix(nterm_residues=12):
     u = mda.Universe("md.tpr", "md.xtc")
-    dssp = secondary_structure.DSSP(u).run()
+    dssp = DSSP(u).run()
     ss = dssp.secondary_structure[:, :nterm_residues]
     helix_fraction = (ss == 'H').mean(axis=1)
-
     avg_fraction = helix_fraction.mean()
     return avg_fraction
 
@@ -45,4 +44,11 @@ def plot_helix_fraction():
     run_equilibration()
     run_production()
     analyze_helix(nterm_residues=12)
+
+if __name__ == "__main__":
+    try:
+        plot_helix_fraction()
+        print("Helix fraction analysis completed successfully.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
