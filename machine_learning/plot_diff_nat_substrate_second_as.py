@@ -76,11 +76,13 @@ output_file = 'pipeline/output/output_20250519_142700_machine_learning_human/Hom
 df = pd.read_csv(csv_file_path)
 
 # Specify the column you want to process
-diff_if_not_that_nat_substrate = df["Diff in electrostatic help if diff nat"]
-diff_if_huntington = pd.Series([value if go_term == "GO:0005739" else None for value, go_term in zip(df["Diff in electrostatic help if huntington"], df['GO_Term'])])
-
-df = df[(df['GO_Term'] == "GO:0005739")]
+df = df[df['GO_Term'] == "GO:0005739"]
 sequence = df['Sequence']
+second_aa = sequence.str[1]
+diff_if_not_that_nat_substrate = df['Electrostatic Help'] - df['electrostatic help if diff nat']
+diff_if_huntington = df['Electrostatic Help'] - df['electrostatic help if huntington']
+
+'''
 start_of_alpha_helix = df['start_of_alpha_helix']
 length_of_alpha_helix = df['length_of_alpha_helix']
 end_of_alpha_helix = start_of_alpha_helix + length_of_alpha_helix - 1
@@ -121,7 +123,7 @@ plt.tight_layout()
 plt.show()
 
 
-import sys; sys.exit()
+import sys; sys.exit()'''
 
 # Extract the second amino acid from each sequence
 second_aa = sequence.str[1]
@@ -129,10 +131,9 @@ second_aa = sequence.str[1]
 positive_diff_proteins = df[
     (df['GO_Term'] == "GO:0005739") & 
     (df['NAT_NatA/D'] == 1) & 
-    (df['Hydrophobic Moment'] < 0.4) &
-    (df['Hydrophobic Moment'] > 0.3) &
-    (df['Electrostatic Help'] > 0) &
-    (df['Diff in electrostatic help if huntington'] > 0)
+    (df['Hydrophobic Moment'] < 4) &
+    (df['Hydrophobic Moment'] > 2) &
+    (df['Electrostatic Help'] - df['electrostatic help if huntington'] > 0)
     ]
 
 for i, row in tqdm(positive_diff_proteins.iterrows(), total=len(positive_diff_proteins)):

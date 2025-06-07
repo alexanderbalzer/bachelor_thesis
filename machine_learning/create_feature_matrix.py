@@ -285,9 +285,9 @@ def run(organism_names, input_dir, working_dir):
                 alternative_mts_sequence = mts_sequence
                 mts_when_huntington = mts_sequence
             # calculate the hydrophobic moment of the mts sequence
-            hydrophobic_moment_value_mod_mts, start_best_window, length_best_window, electrostatic_help, discrimination_factor = hydrophobic_moment.run(mod_mts_sequence, verbose=False)
-            hydrophobic_moment_value_alternative, unused, unused, electrostatic_help_diff_nat, unused = hydrophobic_moment.run(alternative_mts_sequence, verbose=False)
-            hydrophobic_moment_value_mts_when_huntington, unused, unused, electrostatic_help_huntington, unused = hydrophobic_moment.run(mts_when_huntington, verbose=False)
+            hydrophobic_moment_value_mod_mts, start_best_window, length_best_window, electrostatic_help, discrimination_factor, helix_score = hydrophobic_moment.run(mod_mts_sequence, verbose=False)
+            electrostatic_help_diff_nat = hydrophobic_moment.run_alternative(alternative_mts_sequence, name='Unnamed', seq_range=start_best_window, w=length_best_window, verbose=False)
+            electrostatic_help_huntington = hydrophobic_moment.run_alternative(mts_when_huntington, name='Unnamed', seq_range=start_best_window, w=length_best_window, verbose=False)
             # add the hydrophobic moment to the DataFrame
             feature_matrix["Hydrophobic Moment"] = hydrophobic_moment_value_mod_mts
             feature_matrix["start_of_alpha_helix"] = start_best_window
@@ -296,6 +296,7 @@ def run(organism_names, input_dir, working_dir):
             feature_matrix["Discrimination Factor"] = discrimination_factor
             feature_matrix["electrostatic help if diff nat"] = electrostatic_help_diff_nat
             feature_matrix["electrostatic help if huntington"] = electrostatic_help_huntington
+            feature_matrix['helix_score'] = helix_score
             # cut the protein sequence to the length of the MTS
             protein_sequence = protein_sequence[:90]
             # add the protein sequence to the DataFrame
@@ -305,7 +306,6 @@ def run(organism_names, input_dir, working_dir):
             # add the feature matrix to the feature matrix
             feature_matrix = pd.concat([feature_matrix, feature_matrix2], axis=1)
             feature_matrix['Molecular Weight'] = feature_matrix['Molecular Weight']/ cleavage_pos
-            feature_matrix['helix_score'] = helix_score(mts_sequence)
 
             # add the GO terms to the feature matrix
 

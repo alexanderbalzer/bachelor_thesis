@@ -23,6 +23,7 @@ import math
 import os
 import time
 import numpy as np
+import pandas as pd
 
 #
 # Definitions
@@ -50,7 +51,7 @@ aa_charge = {'E': 1, 'D': 1, 'K': 1, 'R': 1}
 #
 # Functions
 #
-def assign_hydrophobicity(sequence, scale='Eisenberg'):  # noqa: E302
+def assign_hydrophobicity(sequence, scale='Fauchere-Pliska'):  # noqa: E302
     """Assigns a hydrophobicity value to each amino acid in the sequence"""
 
     hscale = scales.get(scale, None)
@@ -82,7 +83,7 @@ def calculate_moment(array, angle=100):
         rad_inc = ((i*angle)*math.pi)/180.0
         sum_cos += hv * math.cos(rad_inc)
         sum_sin += hv * math.sin(rad_inc)
-    return math.sqrt(sum_cos**2 + sum_sin**2) / len(array)
+    return math.sqrt(sum_cos**2 + sum_sin**2)
 
 
 def calculate_charge(sequence, charge_dict=aa_charge):
@@ -117,7 +118,7 @@ def calculate_vector_moment(values, angle=100):
         rad_inc = ((i * angle) * math.pi) / 180.0
         sum_cos += val * math.cos(rad_inc)
         sum_sin += val * math.sin(rad_inc)
-    return sum_cos, sum_sin / len(values)
+    return sum_cos, sum_sin
 
 
 def calculate_alignment(hvec, qvec):
@@ -165,6 +166,17 @@ def calculate_composition(sequence):
     return {'polar': n_p, 'special': n_s,
             'apolar': n_a, 'charged': n_c, 'aromatic': n_ar}
 
+helix_propensity = {
+    'A': 1.45, 'C': 0.77, 'D': 0.98, 'E': 1.53,
+    'F': 1.12, 'G': 0.53, 'H': 1.24, 'I': 1.00,
+    'K': 1.07, 'L': 1.34, 'M': 1.20, 'N': 0.73,
+    'P': 0.59, 'Q': 1.17, 'R': 0.79, 'S': 0.79,
+    'T': 0.82, 'V': 1.14, 'W': 1.14, 'Y': 0.61
+}
+
+def helix_scoring(seq, helix_propensity=helix_propensity):
+    helix_score = sum(helix_propensity.get(res.upper(), 0) for res in seq) / len(seq)
+    return helix_score
 
 def analyze_sequence(name=None, sequence=None, window=9, verbose=False, w_h = 0.944 / (0.944 + 0.33), w_q = 0.33 / (0.944 + 0.33)):
     """Runs all the above on a sequence. Pretty prints the results"""
@@ -193,6 +205,15 @@ def analyze_sequence(name=None, sequence=None, window=9, verbose=False, w_h = 0.
         seq_w = sequence[seq_range:seq_range+w]
         if seq_range and len(seq_w) < w:
             break
+        
+        helix_score = helix_scoring(seq_w, helix_propensity)
+        if helix_score < 0.7:
+            if verbose:
+                print(f'Skipping window {seq_range+1} due to low helix score: {helix_score:.2f}')
+            _t = [name, sequence, seq_range+1, w, seq_w, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, helix_score]
+            outdata.append(_t)
+            continue
 
         # Numerical values
         z = calculate_charge(seq_w)
@@ -200,12 +221,12 @@ def analyze_sequence(name=None, sequence=None, window=9, verbose=False, w_h = 0.
         av_h = sum(seq_h)/len(seq_h)
         
         h_cos, h_sin = calculate_vector_moment(seq_h)
-        av_uH = math.sqrt(h_cos**2 + h_sin**2)
+        av_uH = math.sqrt(h_cos**2 + h_sin**2)/len(seq_h)
         
         seq_q = assign_charge(seq_w, acetylated, seq_range)
         seq_q = - np.abs(np.array(seq_q))
         q_cos, q_sin = calculate_vector_moment(seq_q)
-        av_uQ = math.sqrt(q_cos**2 + q_sin**2)
+        av_uQ = math.sqrt(q_cos**2 + q_sin**2)/len(seq_q)
 
         # Calculate the keller weighted linear combination of the two vectors
         combined_magnitude = w_h * av_uH + w_q * av_uQ  
@@ -223,7 +244,7 @@ def analyze_sequence(name=None, sequence=None, window=9, verbose=False, w_h = 0.
         n_aromatic = aa_comp['aromatic']  # noqa: E501
 
         _t = [name, sequence, seq_range+1, w, seq_w, z, av_h, av_uH, av_uQ, alignment, d,
-      n_tot_pol, n_tot_apol, n_charged, n_aromatic, combined_magnitude]
+      n_tot_pol, n_tot_apol, n_charged, n_aromatic, combined_magnitude, helix_score]
 
         outdata.append(_t)
 
@@ -241,6 +262,47 @@ def analyze_sequence(name=None, sequence=None, window=9, verbose=False, w_h = 0.
 
     return outdata
 
+def analyze_sequence_with_set_parameters(name=None, sequence=None, seq_range=0, w=18, verbose=False, w_h = 0.944 / (0.944 + 0.33), w_q = 0.33 / (0.944 + 0.33)):
+
+    if sequence.startswith('X'):
+        acetylated = True
+        sequence = sequence[1:]  # remove the acetylation prefix
+    else:
+        acetylated = False
+    helix_score = helix_scoring(seq_w, helix_propensity)
+    seq_w = sequence[seq_range:seq_range+w]
+    # Numerical values
+    z = calculate_charge(seq_w)
+    seq_h = assign_hydrophobicity(seq_w)
+    av_h = sum(seq_h)/len(seq_h)
+    
+    h_cos, h_sin = calculate_vector_moment(seq_h)
+    av_uH = math.sqrt(h_cos**2 + h_sin**2)/len(seq_h)
+    
+    seq_q = assign_charge(seq_w, acetylated, seq_range)
+    seq_q = - np.abs(np.array(seq_q))
+    q_cos, q_sin = calculate_vector_moment(seq_q)
+    av_uQ = math.sqrt(q_cos**2 + q_sin**2)/len(seq_q)
+
+    # Calculate the keller weighted linear combination of the two vectors
+    combined_magnitude = w_h * av_uH + w_q * av_uQ  
+    alignment = calculate_alignment((h_cos, h_sin), (q_cos, q_sin))
+    alignment = np.abs(alignment)  # Ensure non-negative value
+
+    d = calculate_discrimination(av_uH, z)
+
+
+    # AA composition
+    aa_comp = calculate_composition(seq_w)
+    n_tot_pol = aa_comp['polar'] + aa_comp['charged']
+    n_tot_apol = aa_comp['apolar'] + aa_comp['aromatic'] + aa_comp['special']  # noqa: E501
+    n_charged = aa_comp['charged']  # noqa: E501
+    n_aromatic = aa_comp['aromatic']  # noqa: E501
+
+    _t = [name, sequence, seq_range+1, w, seq_w, z, av_h, av_uH, av_uQ, alignment, d,
+    n_tot_pol, n_tot_apol, n_charged, n_aromatic, combined_magnitude, helix_score]
+
+    return _t
 
 def read_fasta_file(afile):
     """Parses a file with FASTA formatted sequences"""
@@ -268,7 +330,7 @@ def run(sequence, verbose):
     data = []
     w_h = 0.944 #/ (0.944 + 0.33) # weight for hydrophobic vector
     w_q = 0.33 #/ (0.944 + 0.33) # weight for charge vector
-    for i in range(7, 30):
+    for i in range(11, 30):
         temp_data = analyze_sequence(sequence=sequence, verbose=verbose, window=i, w_h=w_h, w_q=w_q)
         data.extend(temp_data)
     # _t = [name, sequence, seq_range+1, w, seq_w, z, av_h, av_uH, av_uQ, alignment, d,
@@ -282,10 +344,31 @@ def run(sequence, verbose):
     alignment = data[max_index][9]  # This is the alignment value
     electrostatic_help = alignment * av_uQ  # This is the electrostatic help
     discrimination_factor = data[max_index][10]
-    return max_av_uH, start_best_window, length_best_window, electrostatic_help, discrimination_factor
+    helix_score = data[max_index][16]  # This is the helix score
+    df = pd.DataFrame(data, columns=['Name', 'Sequence', 'Start', 'Window Size', 'Sub-Sequence',
+                                       'Charge', 'Mean Hydrophobicity',
+                                       'Mean Hydrophobic Moment', 'Mean Electrostatic Moment',
+                                       'Alignment', 'Discrimination Factor',
+                                       'No. Polar AA', 'No. Apolar AA',
+                                       'No. Charged AA', 'No. Aromatic AA',
+                                       'Combined Magnitude', 'Helix Score'])
+    with open('hydrophobicity_results.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(df.columns)
+        writer.writerows(df.values)
+    return max_av_uH, start_best_window, length_best_window, electrostatic_help, discrimination_factor, helix_score
 
+def run_alternative(sequence, name='Unnamed', seq_range=0, w=18, verbose=False):
+    data = analyze_sequence_with_set_parameters(name=name, sequence=sequence, seq_range=seq_range, w=w, verbose=verbose)
+    av_uQ = data[8] # This is the average electrostatic moment
+    alignment = data[9]  # This is the alignment value
+    electrostatic_help = alignment * av_uQ  # This is the electrostatic help
+    return electrostatic_help
+'''_t = [name, sequence, seq_range+1, w, seq_w, z, av_h, av_uH, av_uQ, alignment, d,
+    n_tot_pol, n_tot_apol, n_charged, n_aromatic, combined_magnitude, helix_score]'''
 if __name__ == '__main__':
-    print(run("GIGAVLKVLTTGLPALI", verbose=False))  # Example sequence
+    print(run("XVGRNSAIAAGVCGALFIGYCIYFDRKRRRRRRRRRR", verbose=False))  # Example sequence
+    print(len("VGRNSAIAAGVCGALFIGYCIYFDRKRR"))  # Example sequence length
 
 
 '''
