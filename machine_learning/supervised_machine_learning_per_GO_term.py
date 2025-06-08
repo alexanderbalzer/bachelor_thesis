@@ -11,6 +11,8 @@ import re
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from adjustText import adjust_text
 from statsmodels.stats.multitest import multipletests
+from datetime import datetime
+from tqdm import tqdm
 
 def load_obo():
     '''
@@ -62,172 +64,178 @@ def drop_one_hot_collinear(X):
 
 name = "Homo_sapiens"  # Example organism name
 
+def run(name, go_dag):
 
-# Load the GO DAG
-go_dag = load_obo()
+    # Set the working directory
+    working_dir = os.path.dirname("pipeline/output/output_20250603_145910_ml_all_organisms/" + name + "/")
 
-# Set the working directory
-working_dir = os.path.dirname("pipeline/output/output_20250519_142700_machine_learning_human/" + name + "/")
+    # Read the feature matrix from the CSV file
+    feature_matrix_path = working_dir + "/feature_matrix_with_go_terms.csv"
+    df = pd.read_csv(feature_matrix_path, index_col=0)
 
-#valid_go_term_file = "pipeline/output/output_20250515_105213/Homo_sapiens/cellular_child_terms.txt"
-valid_go_term_file = os.path.join(working_dir, "legend_content.txt")
+    # Drop the "Sequence" column if it exists
+    if "Sequence" in df.columns:
+        df = df.drop(columns=["Sequence"])
+    if "protein_id_human" in df.columns:
+        df = df.drop(columns=["protein_id_human"])
 
-# Parse the valid GO terms from the file
-with open(valid_go_term_file, "r") as file:
-    valid_go_terms = set(line.strip() for line in file)
+    # Create output directory for results
+    general_output_dir = os.path.join(working_dir, "go_term_rf_results_mito_and_ER_2")
+    os.makedirs(general_output_dir, exist_ok=True)
+    '''
+    go_ids = [
+            #Go terms for: ER, Golgi, Ribosome, Mitochondria, Nucleus, Lysosome, Cell membrane, Cytoplasm
+            "GO:0005783",
+            "GO:0005794",
+            "GO:0005840",
+            "GO:0005739_no_cleavable_mts",
+            "GO:0005739_cleavable_mts",
+            "GO:0005634",
+            "GO:0005764",
+            "GO:0005886",
+            "GO:0005737",
+            "Multiple",
+            "no_GO_term_found"
+        ]
+    valid_go_terms = [
+            "GO:0005740",
+            "GO:0005743",
+            "GO:0005741",
+            "GO:0005758",
+            "GO:0005759",
+            "GO:0005746",
+            "GO:0031966",
+            "Multiple"
+        ]
+    #valid_go_terms = go_ids
+    '''
+    valid_go_terms = ['GO:0005783', 'GO:0005739']
+    for go_term in valid_go_terms:
+        output_dir = os.path.join(general_output_dir, sanitize_filename(get_go_aspect(go_term, go_dag)))
+        os.makedirs(output_dir, exist_ok=True)
+        # Filter for current GO term (binary classification: this term vs. all others)
+        df_filtered = df.copy()
+        # remove the rows that dont contain the go_term or the go term cyto_nuclear
+        df_filtered = df_filtered[df_filtered["GO_Term"].str.contains(go_term, na=False) | df_filtered["GO_Term"].str.contains("cyto_nuclear", na=False)]
+        df_filtered["GO_Term_Binary"] = (df_filtered["GO_Term"] == go_term).astype(int)
+        # Skip if not enough samples for both classes
+        if df_filtered["GO_Term_Binary"].sum() < 5 or (df_filtered["GO_Term_Binary"] == 0).sum() < 5:
+            continue
 
-# Read the feature matrix from the CSV file
-feature_matrix_path = working_dir + "/feature_matrix_with_go_terms.csv"
-df = pd.read_csv(feature_matrix_path, index_col=0)
+        X = df_filtered.drop(["GO_Term", "GO_Term_Binary"], axis=1)
+        y = df_filtered["GO_Term_Binary"]
 
-# Drop the "Sequence" column if it exists
-if "Sequence" in df.columns:
-    df = df.drop(columns=["Sequence"])
-if "protein_id_human" in df.columns:
-    df = df.drop(columns=["protein_id_human"])
+        # Count how many proteins have the current GO term
+        proteins_with_go_term = df_filtered["GO_Term_Binary"].sum()
 
-# Create output directory for results
-general_output_dir = os.path.join(working_dir, "go_term_rf_results_mito_and_ER_2")
-os.makedirs(general_output_dir, exist_ok=True)
-'''
-go_ids = [
-        #Go terms for: ER, Golgi, Ribosome, Mitochondria, Nucleus, Lysosome, Cell membrane, Cytoplasm
-        "GO:0005783",
-        "GO:0005794",
-        "GO:0005840",
-        "GO:0005739_no_cleavable_mts",
-        "GO:0005739_cleavable_mts",
-        "GO:0005634",
-        "GO:0005764",
-        "GO:0005886",
-        "GO:0005737",
-        "Multiple",
-        "no_GO_term_found"
-    ]
-valid_go_terms = [
-        "GO:0005740",
-        "GO:0005743",
-        "GO:0005741",
-        "GO:0005758",
-        "GO:0005759",
-        "GO:0005746",
-        "GO:0031966",
-        "Multiple"
-    ]
-#valid_go_terms = go_ids
-'''
-valid_go_terms = ['GO:0005783', 'GO:0005739']
-for go_term in valid_go_terms:
-    output_dir = os.path.join(general_output_dir, sanitize_filename(get_go_aspect(go_term, go_dag)))
-    os.makedirs(output_dir, exist_ok=True)
-    # Filter for current GO term (binary classification: this term vs. all others)
-    df_filtered = df.copy()
-    # remove the rows that dont contain the go_term or the go term cyto_nuclear
-    df_filtered = df_filtered[df_filtered["GO_Term"].str.contains(go_term, na=False) | df_filtered["GO_Term"].str.contains("cyto_nuclear", na=False)]
-    df_filtered["GO_Term_Binary"] = (df_filtered["GO_Term"] == go_term).astype(int)
-    # Skip if not enough samples for both classes
-    if df_filtered["GO_Term_Binary"].sum() < 5 or (df_filtered["GO_Term_Binary"] == 0).sum() < 5:
-        continue
+        # Add intercept for statsmodels
+        X = drop_one_hot_collinear(X)
+        X = sm.add_constant(X)
+        
 
-    X = df_filtered.drop(["GO_Term", "GO_Term_Binary"], axis=1)
-    y = df_filtered["GO_Term_Binary"]
+        # Compute and save VIF before standardization (exclude intercept if present)
+        vif_df = compute_vif(X.drop(columns=["const"], errors="ignore"))
+        vif_df.to_csv(os.path.join(output_dir, f"{go_term}_vif.csv"), index=False)
 
-    # Count how many proteins have the current GO term
-    proteins_with_go_term = df_filtered["GO_Term_Binary"].sum()
+        # Z-transformation (standardization) of features (excluding the intercept)
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X.drop(columns=["const"], errors="ignore"))
+        X_scaled = pd.DataFrame(X_scaled, columns=[col for col in X.columns if col != "const"], index=X.index)
+        X_scaled = sm.add_constant(X_scaled)  # Add intercept back
 
-    # Add intercept for statsmodels
-    X = drop_one_hot_collinear(X)
-    X = sm.add_constant(X)
-    
+        # Fit logistic regression
+        model = sm.Logit(y, X_scaled)
+        try:
+            result = model.fit(disp=0)
+        except Exception as e:
+            print(f"Skipping {go_term} due to fitting error: {e}")
+            continue
+        #go_term = sanitize_filename(get_go_aspect(go_term, go_dag))
+        # Get coefficients (excluding intercept)
+        coefs = result.params.drop("const")
+        feature_importance_df = pd.DataFrame({
+            'Feature': coefs.index,
+            'Coefficient': coefs.values,
+            'AbsCoefficient': np.abs(coefs.values),
+            'Significance': result.pvalues[coefs.index]
+        }).sort_values(by='AbsCoefficient', ascending=False)
 
-    # Compute and save VIF before standardization (exclude intercept if present)
-    vif_df = compute_vif(X.drop(columns=["const"], errors="ignore"))
-    vif_df.to_csv(os.path.join(output_dir, f"{go_term}_vif.csv"), index=False)
+        # FDR correction (Benjamini-Hochberg)
+        rejected, pvals_corrected, _, _ = multipletests(feature_importance_df['Significance'], alpha=0.1, method='fdr_bh')
+        feature_importance_df['FDR'] = pvals_corrected
+        feature_importance_df['FDR_significant'] = rejected
 
-    # Z-transformation (standardization) of features (excluding the intercept)
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X.drop(columns=["const"], errors="ignore"))
-    X_scaled = pd.DataFrame(X_scaled, columns=[col for col in X.columns if col != "const"], index=X.index)
-    X_scaled = sm.add_constant(X_scaled)  # Add intercept back
+        # Save features with their significance and FDR to file
+        feature_importance_df.to_csv(os.path.join(output_dir, f"{go_term}_logreg_coefficients.csv"), index=False)
 
-    # Fit logistic regression
-    model = sm.Logit(y, X_scaled)
-    try:
-        result = model.fit(disp=0)
-    except Exception as e:
-        print(f"Skipping {go_term} due to fitting error: {e}")
-        continue
-    #go_term = sanitize_filename(get_go_aspect(go_term, go_dag))
-    # Get coefficients (excluding intercept)
-    coefs = result.params.drop("const")
-    feature_importance_df = pd.DataFrame({
-        'Feature': coefs.index,
-        'Coefficient': coefs.values,
-        'AbsCoefficient': np.abs(coefs.values),
-        'Significance': result.pvalues[coefs.index]
-    }).sort_values(by='AbsCoefficient', ascending=False)
+        # Save the model summary to a text file
+        with open(os.path.join(output_dir, f"{go_term}_logreg_summary.txt"), "w") as f:
+            f.write(result.summary().as_text())
 
-    # FDR correction (Benjamini-Hochberg)
-    rejected, pvals_corrected, _, _ = multipletests(feature_importance_df['Significance'], alpha=0.1, method='fdr_bh')
-    feature_importance_df['FDR'] = pvals_corrected
-    feature_importance_df['FDR_significant'] = rejected
+        # Save mle_retvals
+        with open(os.path.join(output_dir, f"{go_term}_mle_retvals.txt"), "w") as f:
+            for key, val in result.mle_retvals.items():
+                f.write(f"{key}: {val}\n")
 
-    # Save features with their significance and FDR to file
-    feature_importance_df.to_csv(os.path.join(output_dir, f"{go_term}_logreg_coefficients.csv"), index=False)
+        # Plot and save feature importances
+        '''plt.figure(figsize=(10, 6))
+        sns.barplot(x='Coefficient', y='Feature', data=feature_importance_df)
+        plt.title(f"Logistic Regression Coefficients for GO Term: {go_term}")
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, f"{go_term}_logreg_coefficients.png"))
+        plt.close()'''
+        feature_importance_df = feature_importance_df.replace([np.inf, -np.inf], np.nan)
+        feature_importance_df = feature_importance_df.dropna(subset=["Significance", "Coefficient"])
+        feature_importance_df = feature_importance_df[feature_importance_df["Significance"] > 0]
 
-    # Save the model summary to a text file
-    with open(os.path.join(output_dir, f"{go_term}_logreg_summary.txt"), "w") as f:
-        f.write(result.summary().as_text())
+        plt.figure(figsize=(10, 6))
+        sns.barplot(x='Coefficient', y='Feature', data=feature_importance_df.head(10))
+        plt.title(f"Top 10 Logistic Regression Coefficients for GO Term: {go_term}")
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, f"{go_term}_logreg_coefficients_top10.png"))
+        plt.close()
 
-    # Save mle_retvals
-    with open(os.path.join(output_dir, f"{go_term}_mle_retvals.txt"), "w") as f:
-        for key, val in result.mle_retvals.items():
-            f.write(f"{key}: {val}\n")
+        # plot a volcano plot
+        plt.figure(figsize=(10, 6))
+        sns.scatterplot(x='Coefficient', y=-np.log10(feature_importance_df['Significance']), data=feature_importance_df, color='grey')
+        plt.title(f"Volcano Plot for GO Term: {go_term}, {get_go_aspect(go_term, go_dag)}, n = {proteins_with_go_term}")
+        plt.xlabel("Coefficient")
+        plt.ylabel("-log10(Significance)")
+        plt.axhline(y=-np.log10(0.05), color='r', linestyle='--')
+        plt.axvline(x=0, color='g', linestyle='--')
+        # Highlight significant features
+        significant_features = feature_importance_df[(feature_importance_df['FDR'] < 0.1)]
+        plt.scatter(significant_features['Coefficient'], -np.log10(significant_features['Significance']), color='red', label='Significant')
 
-    # Plot and save feature importances
-    '''plt.figure(figsize=(10, 6))
-    sns.barplot(x='Coefficient', y='Feature', data=feature_importance_df)
-    plt.title(f"Logistic Regression Coefficients for GO Term: {go_term}")
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f"{go_term}_logreg_coefficients.png"))
-    plt.close()'''
+        # Use adjustText for non-overlapping labels
+        texts = []
+        for _, row in significant_features.iterrows():
+            texts.append(
+                plt.text(row['Coefficient'], -np.log10(row['Significance']), row['Feature'], fontsize=8, color='blue')
+            )
+        adjust_text(texts, arrowprops=dict(arrowstyle='->', color='black', lw=0.5))
 
-    plt.figure(figsize=(10, 6))
-    sns.barplot(x='Coefficient', y='Feature', data=feature_importance_df.head(10))
-    plt.title(f"Top 10 Logistic Regression Coefficients for GO Term: {go_term}")
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f"{go_term}_logreg_coefficients_top10.png"))
-    plt.close()
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, f"{go_term}_volcano_plot.pdf"))
+        plt.close()
+        
 
-    # plot a volcano plot
-    plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='Coefficient', y=-np.log10(feature_importance_df['Significance']), data=feature_importance_df, color='grey')
-    plt.title(f"Volcano Plot for GO Term: {go_term}, {get_go_aspect(go_term, go_dag)}, n = {proteins_with_go_term}")
-    plt.xlabel("Coefficient")
-    plt.ylabel("-log10(Significance)")
-    plt.axhline(y=-np.log10(0.05), color='r', linestyle='--')
-    plt.axvline(x=0, color='g', linestyle='--')
-    # Highlight significant features
-    significant_features = feature_importance_df[(feature_importance_df['FDR'] < 0.1)]
-    plt.scatter(significant_features['Coefficient'], -np.log10(significant_features['Significance']), color='red', label='Significant')
+    for root, dirs, files in os.walk(general_output_dir, topdown=False):
+        for name in dirs:
+            dir_path = os.path.join(root, name)
+            if not os.listdir(dir_path):
+                os.rmdir(dir_path)
+                print(f"Deleted empty directory: {dir_path}")
 
-    # Use adjustText for non-overlapping labels
-    texts = []
-    for _, row in significant_features.iterrows():
-        texts.append(
-            plt.text(row['Coefficient'], -np.log10(row['Significance']), row['Feature'], fontsize=8, color='blue')
-        )
-    adjust_text(texts, arrowprops=dict(arrowstyle='->', color='black', lw=0.5))
-
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f"{go_term}_volcano_plot.pdf"))
-    plt.close()
-    
-
-for root, dirs, files in os.walk(general_output_dir, topdown=False):
-    for name in dirs:
-        dir_path = os.path.join(root, name)
-        if not os.listdir(dir_path):
-            os.rmdir(dir_path)
-            print(f"Deleted empty directory: {dir_path}")
+if __name__ == "__main__":
+    organism_names = [
+    "Homo_sapiens", "Homo_sapiens_isoforms", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
+    "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
+    "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
+    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
+    # Load the GO DAG
+    go_dag = load_obo()
+    for name in tqdm(organism_names):
+        print(f"running analysis for:{name}")
+        run(name, go_dag)
 
