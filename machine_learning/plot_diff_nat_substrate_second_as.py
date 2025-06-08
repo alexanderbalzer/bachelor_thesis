@@ -131,8 +131,8 @@ second_aa = sequence.str[1]
 positive_diff_proteins = df[
     (df['GO_Term'] == "GO:0005739") & 
     (df['NAT_NatA/D'] == 1) & 
-    (df['Hydrophobic Moment'] < 4) &
-    (df['Hydrophobic Moment'] > 2) &
+    (df['Hydrophobic Moment'] < 0.3) &
+    (df['Hydrophobic Moment'] > 0.2) &
     (df['Electrostatic Help'] - df['electrostatic help if huntington'] > 0)
     ]
 

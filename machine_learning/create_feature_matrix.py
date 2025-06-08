@@ -204,7 +204,7 @@ def run(organism_names, input_dir, working_dir):
                     child_dict[child] = go_id
 
         # Parse GO annotations
-        annotation_file = "pipeline/input/Homo_sapiens.goa"
+        annotation_file = f"pipeline/input/{organism}.goa"
         go_annotations = parse_go_annotations(annotation_file)
 
         # check if the file exists
@@ -225,22 +225,26 @@ def run(organism_names, input_dir, working_dir):
             feature_matrix["protein_id_human"] = protein_id_human
             protein_id = row["protein_id"]
             start_of_alpha_helix, length_of_alpha_helix, mpp_cleavage_pos, mitofates_cleavage_probability, tom20_motive = get_mitoFates_infos(working_dir, organism, protein_id)
-            feature_matrix["start_of_alpha_helix"] = start_of_alpha_helix
-            feature_matrix["length_of_alpha_helix"] = length_of_alpha_helix
+            if mpp_cleavage_pos is None:
+                mpp_cleavage_pos = 0
             feature_matrix["MPP_cleavage_position"] = mpp_cleavage_pos
             feature_matrix["mitofates_cleavage_probability"] = mitofates_cleavage_probability
             feature_matrix["tom20_motive"] = tom20_motive
             # get the signalP information
-            spi_cleavage_pos, signalP_cleavage_probability = get_signalP_infos(working_dir, organism, protein_id)
+            '''spi_cleavage_pos, signalP_cleavage_probability = get_signalP_infos(working_dir, organism, protein_id)
             if spi_cleavage_pos == None:
                 signalP_cleavage_probability = 0
             else:
                 signalP_cleavage_probability = 1
-            feature_matrix["signalP_cleavage_probability"] = signalP_cleavage_probability
+            feature_matrix["signalP_cleavage_probability"] = signalP_cleavage_probability'''
             # mts sequence is the sequence specified by start and length of alpha helix
             start_of_alpha_helix = int(start_of_alpha_helix) -1
             length_of_alpha_helix = int(length_of_alpha_helix)
             if not protein_sequence.startswith("M"):
+                invalid_count += 1
+                continue
+            # check if the protein sequence is long enough
+            if len(protein_sequence) < 12:
                 invalid_count += 1
                 continue
             # check if the mts sequence only contains valid amino acids
@@ -248,7 +252,8 @@ def run(organism_names, input_dir, working_dir):
             if not all(aa in valid_amino_acids for aa in protein_sequence):
                 invalid_count += 1
                 continue
-            cleavage_pos = np.min([mpp_cleavage_pos, spi_cleavage_pos]) if spi_cleavage_pos is not None else mpp_cleavage_pos
+            '''cleavage_pos = np.min([mpp_cleavage_pos, spi_cleavage_pos]) if spi_cleavage_pos is not None else mpp_cleavage_pos'''
+            cleavage_pos = int(mpp_cleavage_pos)
             if len(protein_sequence) < int(cleavage_pos):
                 invalid_count += 1
                 continue
@@ -286,8 +291,8 @@ def run(organism_names, input_dir, working_dir):
                 mts_when_huntington = mts_sequence
             # calculate the hydrophobic moment of the mts sequence
             hydrophobic_moment_value_mod_mts, start_best_window, length_best_window, electrostatic_help, discrimination_factor, helix_score = hydrophobic_moment.run(mod_mts_sequence, verbose=False)
-            electrostatic_help_diff_nat = hydrophobic_moment.run_alternative(alternative_mts_sequence, name='Unnamed', seq_range=start_best_window, w=length_best_window, verbose=False)
-            electrostatic_help_huntington = hydrophobic_moment.run_alternative(mts_when_huntington, name='Unnamed', seq_range=start_best_window, w=length_best_window, verbose=False)
+            unused, unused, unused, electrostatic_help_diff_nat, unused, unused = hydrophobic_moment.run(alternative_mts_sequence, verbose=False)
+            unused, unused, unused, electrostatic_help_huntington, unused, unused, = hydrophobic_moment.run(mts_when_huntington, verbose=False)
             # add the hydrophobic moment to the DataFrame
             feature_matrix["Hydrophobic Moment"] = hydrophobic_moment_value_mod_mts
             feature_matrix["start_of_alpha_helix"] = start_best_window
@@ -352,14 +357,22 @@ def run(organism_names, input_dir, working_dir):
 
     
 if __name__ == "__main__":
-    # Example usage
-    '''organism_names = [
-    "Homo_sapiens", "Homo_sapiens_isoforms", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
-    "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
-    "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
-    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]'''
+    '''# Example usage
     organism_names = ["Homo_sapiens"]
     working_dir = "pipeline/output/output_20250519_142700_machine_learning_human"
+    input_dir = "pipeline/input"
+    start_time = datetime.now()
+    run(organism_names, input_dir, working_dir)
+    end_time = datetime.now()
+    run_time = end_time - start_time
+    print(f"finished in: {run_time}")'''
+
+    organism_names = [
+    "Homo_sapiens_isoforms", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
+    "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
+    "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
+    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
+    working_dir = 'pipeline/output/output_20250603_145910_ml_all_organisms'
     input_dir = "pipeline/input"
     start_time = datetime.now()
     run(organism_names, input_dir, working_dir)

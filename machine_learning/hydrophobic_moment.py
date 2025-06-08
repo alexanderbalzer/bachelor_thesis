@@ -269,8 +269,9 @@ def analyze_sequence_with_set_parameters(name=None, sequence=None, seq_range=0, 
         sequence = sequence[1:]  # remove the acetylation prefix
     else:
         acetylated = False
-    helix_score = helix_scoring(seq_w, helix_propensity)
     seq_w = sequence[seq_range:seq_range+w]
+
+    helix_score = helix_scoring(seq_w, helix_propensity)
     # Numerical values
     z = calculate_charge(seq_w)
     seq_h = assign_hydrophobicity(seq_w)
@@ -336,15 +337,23 @@ def run(sequence, verbose):
     # _t = [name, sequence, seq_range+1, w, seq_w, z, av_h, av_uH, av_uQ, alignment, d,
     #  n_tot_pol, n_tot_apol, n_charged, n_aromatic, combined_magnitude]
     av_uH = [row[7] for row in data]  # This is the average hydrophobic moment
-    max_av_uH = max(av_uH)
-    max_index = av_uH.index(max_av_uH)
-    start_best_window = data[max_index][2]  # This is the start index of the best window
-    length_best_window = data[max_index][3]  # This is the length of the best window
-    av_uQ = data[max_index][8] # This is the average electrostatic moment
-    alignment = data[max_index][9]  # This is the alignment value
-    electrostatic_help = alignment * av_uQ  # This is the electrostatic help
-    discrimination_factor = data[max_index][10]
-    helix_score = data[max_index][16]  # This is the helix score
+    if av_uH is None or len(av_uH) == 0:
+        max_av_uH = 0
+        start_best_window = 0
+        length_best_window = 0
+        electrostatic_help = 0
+        discrimination_factor = 0
+        helix_score = 0
+    else:
+        max_av_uH = max(av_uH)
+        max_index = av_uH.index(max_av_uH)
+        start_best_window = data[max_index][2]  # This is the start index of the best window
+        length_best_window = data[max_index][3]  # This is the length of the best window
+        av_uQ = data[max_index][8] # This is the average electrostatic moment
+        alignment = data[max_index][9]  # This is the alignment value
+        electrostatic_help = alignment * av_uQ  # This is the electrostatic help
+        discrimination_factor = data[max_index][10]
+        helix_score = data[max_index][16]  # This is the helix score
     df = pd.DataFrame(data, columns=['Name', 'Sequence', 'Start', 'Window Size', 'Sub-Sequence',
                                        'Charge', 'Mean Hydrophobicity',
                                        'Mean Hydrophobic Moment', 'Mean Electrostatic Moment',
