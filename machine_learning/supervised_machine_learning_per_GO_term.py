@@ -198,7 +198,7 @@ def run(name, go_dag):
         # plot a volcano plot
         plt.figure(figsize=(10, 6))
         sns.scatterplot(x='Coefficient', y=-np.log10(feature_importance_df['Significance']), data=feature_importance_df, color='grey')
-        plt.title(f"Volcano Plot for GO Term: {go_term}, {get_go_aspect(go_term, go_dag)}, n = {proteins_with_go_term}")
+        plt.title(f"Volcano Plot for organism {name}, GO Term: {go_term}, {get_go_aspect(go_term, go_dag)}, n = {proteins_with_go_term}")
         plt.xlabel("Coefficient")
         plt.ylabel("-log10(Significance)")
         plt.axhline(y=-np.log10(0.05), color='r', linestyle='--')
