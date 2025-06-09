@@ -288,7 +288,7 @@ def analyze_sequence_with_set_parameters(name=None, sequence=None, seq_range=0, 
     # Calculate the keller weighted linear combination of the two vectors
     combined_magnitude = w_h * av_uH + w_q * av_uQ  
     alignment = calculate_alignment((h_cos, h_sin), (q_cos, q_sin))
-    alignment = np.abs(alignment)  # Ensure non-negative value
+    alignment = alignment  # Ensure non-negative value
 
     d = calculate_discrimination(av_uH, z)
 

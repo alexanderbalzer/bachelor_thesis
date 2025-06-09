@@ -122,17 +122,27 @@ def run(name, go_dag):
         if df_filtered["GO_Term_Binary"].sum() < 5 or (df_filtered["GO_Term_Binary"] == 0).sum() < 5:
             continue
 
-        X = df_filtered.drop(["GO_Term", "GO_Term_Binary"], axis=1)
+        X = df_filtered.drop(["GO_Term", "GO_Term_Binary", "NAT_Other", "Leucine_and_Alanine_percentage", "Arginine_percentage", "electrostatic help if diff nat", "electrostatic help if huntington"], axis=1)
         y = df_filtered["GO_Term_Binary"]
 
         # Count how many proteins have the current GO term
         proteins_with_go_term = df_filtered["GO_Term_Binary"].sum()
 
+        dropped_constant_columns = X.columns[X.nunique() <= 1].tolist()
+        dropped_duplicate_columns = X.T[X.T.duplicated()].index.tolist()
+
+        if dropped_constant_columns:
+            print(f"Dropping constant columns for {go_term}: {dropped_constant_columns}")
+        if dropped_duplicate_columns:
+            print(f"Dropping duplicate columns for {go_term}: {dropped_duplicate_columns}")
+
+        X = X.loc[:, X.nunique() > 1]  # Remove constant columns
+        X = X.T.drop_duplicates().T    # Remove duplicate columns
+
         # Add intercept for statsmodels
-        X = drop_one_hot_collinear(X)
+        '''X = drop_one_hot_collinear(X)'''
         X = sm.add_constant(X)
         
-
         # Compute and save VIF before standardization (exclude intercept if present)
         vif_df = compute_vif(X.drop(columns=["const"], errors="ignore"))
         vif_df.to_csv(os.path.join(output_dir, f"{go_term}_vif.csv"), index=False)
@@ -161,12 +171,12 @@ def run(name, go_dag):
         }).sort_values(by='AbsCoefficient', ascending=False)
 
         # FDR correction (Benjamini-Hochberg)
-        rejected, pvals_corrected, _, _ = multipletests(feature_importance_df['Significance'], alpha=0.1, method='fdr_bh')
+        rejected, pvals_corrected, _, _ = multipletests(feature_importance_df['Significance'], alpha=0.05, method='fdr_bh')
         feature_importance_df['FDR'] = pvals_corrected
         feature_importance_df['FDR_significant'] = rejected
 
         # Save features with their significance and FDR to file
-        feature_importance_df.to_csv(os.path.join(output_dir, f"{go_term}_logreg_coefficients.csv"), index=False)
+        feature_importance_df.to_csv(os.path.join(output_dir, f"{go_term}_logreg_coefficients_{name}.csv"), index=False)
 
         # Save the model summary to a text file
         with open(os.path.join(output_dir, f"{go_term}_logreg_summary.txt"), "w") as f:
@@ -236,6 +246,5 @@ if __name__ == "__main__":
     # Load the GO DAG
     go_dag = load_obo()
     for name in tqdm(organism_names):
-        print(f"running analysis for:{name}")
         run(name, go_dag)
 

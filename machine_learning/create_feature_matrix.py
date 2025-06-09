@@ -372,6 +372,7 @@ if __name__ == "__main__":
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
     "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
+    organism_names = ["Homo_sapiens"]
     working_dir = 'pipeline/output/output_20250603_145910_ml_all_organisms'
     input_dir = "pipeline/input"
     start_time = datetime.now()

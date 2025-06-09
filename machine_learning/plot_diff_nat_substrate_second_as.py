@@ -69,9 +69,11 @@ def get_uniprot_function(uniprot_id):
         return f"Error retrieving function: {str(e)}"
 
 # Specify the path to your CSV file
-csv_file_path = 'pipeline/output/output_20250519_142700_machine_learning_human/Homo_sapiens/feature_matrix_with_go_terms.csv'
-output_file = 'pipeline/output/output_20250519_142700_machine_learning_human/Homo_sapiens/'
+'''csv_file_path = 'pipeline/output/output_20250519_142700_machine_learning_human/Homo_sapiens/feature_matrix_with_go_terms.csv'
+output_file = 'pipeline/output/output_20250519_142700_machine_learning_human/Homo_sapiens/'''
 
+output_file = "pipeline/output/output_20250603_145910_ml_all_organisms/Homo_sapiens/"
+csv_file_path = output_file + 'feature_matrix_with_go_terms.csv'
 # Read the CSV file into a pandas DataFrame
 df = pd.read_csv(csv_file_path)
 
@@ -133,7 +135,8 @@ positive_diff_proteins = df[
     (df['NAT_NatA/D'] == 1) & 
     (df['Hydrophobic Moment'] < 0.3) &
     (df['Hydrophobic Moment'] > 0.2) &
-    (df['Electrostatic Help'] - df['electrostatic help if huntington'] > 0)
+    (df['start_of_alpha_helix'] <= 3)
+    #(df['Electrostatic Help'] - df['electrostatic help if huntington'] > 0)
     ]
 
 for i, row in tqdm(positive_diff_proteins.iterrows(), total=len(positive_diff_proteins)):
