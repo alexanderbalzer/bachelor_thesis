@@ -201,7 +201,7 @@ def analyze_sequence(name=None, sequence=None, window=9, verbose=False, w_h = 0.
     seq_len = len(sequence)
     #print('[+] Analysing sequence {} ({} aa.)'.format(name, seq_len))
     #print('[+] Using a window of {} aa.'.format(w))
-    for seq_range in range(0, seq_len):
+    for seq_range in range(0, 20):
         seq_w = sequence[seq_range:seq_range+w]
         if seq_range and len(seq_w) < w:
             break
@@ -231,7 +231,7 @@ def analyze_sequence(name=None, sequence=None, window=9, verbose=False, w_h = 0.
         # Calculate the keller weighted linear combination of the two vectors
         combined_magnitude = w_h * av_uH + w_q * av_uQ  
         alignment = calculate_alignment((h_cos, h_sin), (q_cos, q_sin))
-        alignment = np.abs(alignment)  # Ensure non-negative value
+        #alignment = np.abs(alignment)  # Ensure non-negative value
 
         d = calculate_discrimination(av_uH, z)
 
@@ -288,7 +288,6 @@ def analyze_sequence_with_set_parameters(name=None, sequence=None, seq_range=0, 
     # Calculate the keller weighted linear combination of the two vectors
     combined_magnitude = w_h * av_uH + w_q * av_uQ  
     alignment = calculate_alignment((h_cos, h_sin), (q_cos, q_sin))
-    alignment = alignment  # Ensure non-negative value
 
     d = calculate_discrimination(av_uH, z)
 

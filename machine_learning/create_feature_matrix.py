@@ -299,8 +299,8 @@ def run(organism_names, input_dir, working_dir):
             feature_matrix["length_of_alpha_helix"] = length_best_window
             feature_matrix["Electrostatic Help"] = electrostatic_help
             feature_matrix["Discrimination Factor"] = discrimination_factor
-            feature_matrix["electrostatic help if diff nat"] = electrostatic_help_diff_nat
-            feature_matrix["electrostatic help if huntington"] = electrostatic_help_huntington
+            feature_matrix["electrostatic help diff if diff nat"] = electrostatic_help - electrostatic_help_diff_nat
+            feature_matrix["electrostatic help diff if huntington"] = electrostatic_help - electrostatic_help_huntington
             feature_matrix['helix_score'] = helix_score
             # cut the protein sequence to the length of the MTS
             protein_sequence = protein_sequence[:90]
@@ -368,11 +368,11 @@ if __name__ == "__main__":
     print(f"finished in: {run_time}")'''
 
     organism_names = [
-    "Homo_sapiens_isoforms", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
+    "Homo_sapiens", "Homo_sapiens_isoforms", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
     "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
-    organism_names = ["Homo_sapiens"]
+    #organism_names = ["Homo_sapiens"]
     working_dir = 'pipeline/output/output_20250603_145910_ml_all_organisms'
     input_dir = "pipeline/input"
     start_time = datetime.now()
