@@ -241,7 +241,7 @@ if __name__ == "__main__":
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
     "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
-    organism_names = ["Saccharomyces_cerevisiae"]
+    organism_names = ["Homo_sapiens"]
     # Load the GO DAG
     go_dag = load_obo()
     for name in tqdm(organism_names):

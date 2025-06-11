@@ -286,7 +286,7 @@ def run(organism_names, input_dir, working_dir):
                 mts_when_huntington = mts_sequence[1:]
                 # if the new first amino acid is A, C, T, S, V or G, add X as first amino acid
                 if second_amino_acid in ["A", "C", "T", "S", "V", "G"]:
-                    mod_mts_sequence = "X" + mts_when_huntington
+                    mod_mts_sequence = "X" + mts_sequence[1:]
                     alternative_mts_sequence = "XML" + mts_sequence[2:]
                 else: 
                     mod_mts_sequence = mts_sequence[1:]
@@ -381,7 +381,6 @@ if __name__ == "__main__":
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
     "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
-    #organism_names = ["Saccharomyces_cerevisiae"]
     working_dir = 'pipeline/output/output_20250603_145910_ml_all_organisms'
     input_dir = "pipeline/input"
     start_time = datetime.now()
