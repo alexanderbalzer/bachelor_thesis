@@ -81,8 +81,8 @@ df = pd.read_csv(csv_file_path)
 df = df[df['GO_Term'] == "GO:0005739"]
 sequence = df['Sequence']
 second_aa = sequence.str[1]
-diff_if_not_that_nat_substrate = df['Electrostatic Help'] - df['electrostatic help if diff nat']
-diff_if_huntington = df['Electrostatic Help'] - df['electrostatic help if huntington']
+diff_if_not_that_nat_substrate = df['electrostatic help diff if diff nat']
+diff_if_huntington = df['electrostatic help diff if huntington']
 
 '''
 start_of_alpha_helix = df['start_of_alpha_helix']
@@ -133,9 +133,10 @@ second_aa = sequence.str[1]
 positive_diff_proteins = df[
     (df['GO_Term'] == "GO:0005739") & 
     (df['NAT_NatA/D'] == 1) & 
-    (df['Hydrophobic Moment'] < 0.5) &
-    (df['Hydrophobic Moment'] > 0.2) &
-    (df['Electrostatic Help'] - df['electrostatic help if huntington'] > 0) 
+    (df['Hydrophobic Moment'] <= 0.3) &
+    (df['Hydrophobic Moment'] >= 0.2) &
+    (df['electrostatic help diff if huntington'] > 0) &
+    (df['Electrostatic Help'] > 0)
     #(df['Electrostatic Help'] - df['electrostatic help if huntington'] > 0)
     ]
 

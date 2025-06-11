@@ -260,16 +260,27 @@ def run(organism_names, input_dir, working_dir):
             #mts_sequence = protein_sequence[start_of_alpha_helix:start_of_alpha_helix + length_of_alpha_helix]
             # One-hot encode the second amino acid
             second_amino_acid = protein_sequence[1] if len(protein_sequence) > 1 else None
+            # One-hot encode the second amino acid
             amino_acids = "ACDEFGHIKLMNPQRSTVWY"
+            one_hot_encoded_second_amino_acid = {f"Second_AA_{aa}": 1 if second_amino_acid == aa else 0 for aa in amino_acids}
+            feature_matrix = feature_matrix.assign(**one_hot_encoded_second_amino_acid)
             # Classify the NAT substrate
+            '''if second_amino_acid in ["A", "C", "T", "S", "V", "G", "P", "D", "E", "N", "Q", "L", "I", "F"]:
+                acetylated = 1
+            else:
+                acetylated = 0
+            feature_matrix["Acetylated"] = acetylated'''
+            '''
             natc_substrate = classify_natc_substrate(second_amino_acid)
             #feature_matrix["NAT_Substrate"] = natc_substrate
 
             # One-hot encode the NAT substrate classification
             natc_classes = ["NatA/D", "NatB", "NatC/E", "Other"]
             one_hot_encoded_natc = {f"NAT_{cls}": 1 if natc_substrate == cls else 0 for cls in natc_classes}
-            feature_matrix = feature_matrix.assign(**one_hot_encoded_natc)
-            mts_sequence = protein_sequence[0:int(cleavage_pos)]
+            feature_matrix = feature_matrix.assign(**one_hot_encoded_natc)'''
+            # cut the protein sequence to the length of the MTS
+            cut = min(cleavage_pos, len(protein_sequence), mpp_cleavage_pos)
+            mts_sequence = protein_sequence[:cut]
             # if the second amino acid is A, C, T, S, V, P or G, delete the first amino acid
             if second_amino_acid in ["A", "C", "T", "S", "V", "G", "P"]:
                 mts_when_huntington = mts_sequence[1:]
@@ -291,23 +302,21 @@ def run(organism_names, input_dir, working_dir):
                 mts_when_huntington = mts_sequence
             # calculate the hydrophobic moment of the mts sequence
             hydrophobic_moment_value_mod_mts, start_best_window, length_best_window, electrostatic_help, discrimination_factor, helix_score = hydrophobic_moment.run(mod_mts_sequence, verbose=False)
-            unused, unused, unused, electrostatic_help_diff_nat, unused, unused = hydrophobic_moment.run(alternative_mts_sequence, verbose=False)
-            unused, unused, unused, electrostatic_help_huntington, unused, unused, = hydrophobic_moment.run(mts_when_huntington, verbose=False)
+            '''unused, unused, unused, electrostatic_help_diff_nat, unused, unused = hydrophobic_moment.run(alternative_mts_sequence, verbose=False)
+            unused, unused, unused, electrostatic_help_huntington, unused, unused, = hydrophobic_moment.run(mts_when_huntington, verbose=False)'''
             # add the hydrophobic moment to the DataFrame
             feature_matrix["Hydrophobic Moment"] = hydrophobic_moment_value_mod_mts
             feature_matrix["start_of_alpha_helix"] = start_best_window
             feature_matrix["length_of_alpha_helix"] = length_best_window
             feature_matrix["Electrostatic Help"] = electrostatic_help
             feature_matrix["Discrimination Factor"] = discrimination_factor
-            feature_matrix["electrostatic help diff if diff nat"] = electrostatic_help - electrostatic_help_diff_nat
-            feature_matrix["electrostatic help diff if huntington"] = electrostatic_help - electrostatic_help_huntington
+            '''feature_matrix["electrostatic help diff if diff nat"] = electrostatic_help - electrostatic_help_diff_nat
+            feature_matrix["electrostatic help diff if huntington"] = electrostatic_help - electrostatic_help_huntington'''
             feature_matrix['helix_score'] = helix_score
-            # cut the protein sequence to the length of the MTS
-            protein_sequence = protein_sequence[:90]
             # add the protein sequence to the DataFrame
-            feature_matrix["Sequence"] = [protein_sequence]
+            feature_matrix["Sequence"] = [mts_sequence]
             # create a feature matrix for the protein
-            feature_matrix2 = feature_matrix_per_protein(protein_sequence)
+            feature_matrix2 = feature_matrix_per_protein(mts_sequence)
             # add the feature matrix to the feature matrix
             feature_matrix = pd.concat([feature_matrix, feature_matrix2], axis=1)
             feature_matrix['Molecular Weight'] = feature_matrix['Molecular Weight']/ cleavage_pos
@@ -372,7 +381,7 @@ if __name__ == "__main__":
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
     "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
-    #organism_names = ["Homo_sapiens"]
+    #organism_names = ["Saccharomyces_cerevisiae"]
     working_dir = 'pipeline/output/output_20250603_145910_ml_all_organisms'
     input_dir = "pipeline/input"
     start_time = datetime.now()

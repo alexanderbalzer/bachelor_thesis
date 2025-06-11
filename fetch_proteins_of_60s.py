@@ -3,37 +3,30 @@ from Bio import SeqIO
 import pandas as pd
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
+from io import StringIO
 
-proteins = [ "RPLP0", "RPL3", "RPL4", "RPL5", "RPL6", "RPL7A", "RPL7", "RPL8", "RPL9", "RPL10", 
-"RPL11", "RPL13A", "RPL13", "RPL14", "RPL15", "RPL17", 
-"RPL18A", "RPL18", "RPL19", "RPL22", "RPL23A", "RPL23", "RPL24", "RPL26", "RPL27A",
-"RPL27", "RPL28", "RPL29", "RPL30", "RPL31", "RPL32", "RPL34", "RPL35A", "RPL35", "RPL36A",
-"RPL36", "RPL37A", "RPL37", "RPL38", "RPL39", "RPL40" ]
+proteins = ["TOM5", "TOM6", "TOM7", "TOM20", "TOM22", "TOM40", "NAA10",
+"NAA15", "HYPK", "HTT", "HSPA9", "VDAC2", "NACA", "BTF3"]
 
-def fetch_protein_sequences(proteins, fasta_file):
-    protein_sequences = {}
-    for record in SeqIO.parse(fasta_file, "fasta"):
-        protein_description = record.description
-        informations = protein_description.split(" ")
-        for info in informations:
-            if info.startswith("GN="):
-                gene_id = info.split("=")[1]
-                if gene_id in proteins:
-                    protein_sequences[gene_id] = str(record.seq)
-                    break
-    return protein_sequences
+def fetch_protein_sequence(protein_name):
+    url = f"https://rest.uniprot.org/uniprotkb/search?query={protein_name}&format=fasta&size=1"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.text
+    else:
+        print(f"Failed to fetch {protein_name}: {response.status_code}")
+        return None
 
-fasta_file_path = "pipeline/input/Homo_sapiens.fasta"  # Replace with the actual path to your proteome fasta file
-protein_sequences = fetch_protein_sequences(proteins, fasta_file_path)
-# convert to panda
-df = pd.DataFrame(list(protein_sequences.items()), columns=["gene_id", "sequence"])
-
-# Convert DataFrame to list of SeqRecord objects
-records = [
-    SeqRecord(Seq(row["sequence"]), id=row["gene_id"], description="")
-    for _, row in df.iterrows()
-]
-
-# Save as FASTA
-with open("protein_sequences_60s.fasta", "w") as fasta_out:
-    SeqIO.write(records, fasta_out, "fasta")
+proteins = [protein.upper() + "_HUMAN" for protein in proteins]  # Ensure all protein names are uppercase
+protein_sequences = []
+for protein in proteins:
+    sequence = fetch_protein_sequence(protein)
+    if sequence:
+        # Parse the FASTA format and create a SeqRecord
+        handle = StringIO(sequence)  # ← FIX
+        seq_record = SeqIO.read(handle, "fasta")
+        protein_sequences.append(str(seq_record.seq))
+# Save fetched sequences to a file
+with open("fetched_proteins.fasta", "w") as fasta_file:
+    for protein, seq in zip(proteins, protein_sequences):
+        fasta_file.write(f"{seq}\n")

@@ -201,7 +201,7 @@ def analyze_sequence(name=None, sequence=None, window=9, verbose=False, w_h = 0.
     seq_len = len(sequence)
     #print('[+] Analysing sequence {} ({} aa.)'.format(name, seq_len))
     #print('[+] Using a window of {} aa.'.format(w))
-    for seq_range in range(0, 20):
+    for seq_range in range(0, 2):
         seq_w = sequence[seq_range:seq_range+w]
         if seq_range and len(seq_w) < w:
             break

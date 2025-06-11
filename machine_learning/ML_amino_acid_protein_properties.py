@@ -78,72 +78,52 @@ def run(name, go_dag):
         df = df.drop(columns=["protein_id_human"])
 
     # Create output directory for results
-    general_output_dir = os.path.join(working_dir, "go_term_rf_results_mito_and_ER_2")
+    general_output_dir = os.path.join(working_dir, "amino_acid_results_mito")
     os.makedirs(general_output_dir, exist_ok=True)
-    '''
-    go_ids = [
-            #Go terms for: ER, Golgi, Ribosome, Mitochondria, Nucleus, Lysosome, Cell membrane, Cytoplasm
-            "GO:0005783",
-            "GO:0005794",
-            "GO:0005840",
-            "GO:0005739_no_cleavable_mts",
-            "GO:0005739_cleavable_mts",
-            "GO:0005634",
-            "GO:0005764",
-            "GO:0005886",
-            "GO:0005737",
-            "Multiple",
-            "no_GO_term_found"
-        ]
-    valid_go_terms = [
-            "GO:0005740",
-            "GO:0005743",
-            "GO:0005741",
-            "GO:0005758",
-            "GO:0005759",
-            "GO:0005746",
-            "GO:0031966",
-            "Multiple"
-        ]
-    #valid_go_terms = go_ids
-    '''
-    valid_go_terms = ['GO:0005783', 'GO:0005739', 'Multiple']
-    for go_term in valid_go_terms:
-        output_dir = os.path.join(general_output_dir, sanitize_filename(get_go_aspect(go_term, go_dag)))
-        os.makedirs(output_dir, exist_ok=True)
+    df = df[(df['GO_Term'] == 'GO:0005739')]
+    df = df.drop(columns=["GO_Term"])
+    print(len(df), "proteins with GO Term GO:0005739")
+    # Un-hot encode the Second_AA columns
+    second_aa_columns = [col for col in df.columns if col.startswith("Second_AA_")]
+    df["Second_AA"] = df[second_aa_columns].idxmax(axis=1).str.replace("Second_AA_", "")
+    df = df.drop(columns=second_aa_columns)
+    amino_acids = "ACDEFGHIKLMNPQRSTVWY"
+    print(df.head())
+    for aa in tqdm(amino_acids):
+        print(f"Processing amino acid: {aa}")
+        output_dir = os.path.join(general_output_dir, aa)
+        os.makedirs(output_dir, exist_ok=True)  # Ensure the output directory exists
         # Filter for current GO term (binary classification: this term vs. all others)
         df_filtered = df.copy()
-        # remove the rows that dont contain the go_term or the go term cyto_nuclear
-        df_filtered = df_filtered[df_filtered["GO_Term"].str.contains(go_term, na=False) | df_filtered["GO_Term"].str.contains("cyto_nuclear", na=False)]
-        df_filtered["GO_Term_Binary"] = (df_filtered["GO_Term"] == go_term).astype(int)
+        df_filtered["Second_AA_Binary"] = (df_filtered["Second_AA"] == aa).astype(int)
         # Skip if not enough samples for both classes
-        if df_filtered["GO_Term_Binary"].sum() < 5 or (df_filtered["GO_Term_Binary"] == 0).sum() < 5:
+        if df_filtered["Second_AA_Binary"].sum() < 5 or (df_filtered["Second_AA_Binary"] == 0).sum() < 5:
             continue
-
-        X = df_filtered.drop(["GO_Term", "GO_Term_Binary", "Leucine_and_Alanine_percentage", "Arginine_percentage", "Second_AA_V"], axis=1)
-        y = df_filtered["GO_Term_Binary"]
+        columns_to_drop = ["Second_AA", "Second_AA_Binary", "Leucine_and_Alanine_percentage", "Arginine_percentage", "Second_AA_V"]
+        columns_to_drop = [col for col in columns_to_drop if col in df_filtered.columns]  # Verify column existence
+        X = df_filtered.drop(columns_to_drop, axis=1)
+        y = df_filtered["Second_AA_Binary"]
 
         # Count how many proteins have the current GO term
-        proteins_with_go_term = df_filtered["GO_Term_Binary"].sum()
+        proteins_with_go_term = df_filtered["Second_AA_Binary"].sum()
 
         dropped_constant_columns = X.columns[X.nunique() <= 1].tolist()
         dropped_duplicate_columns = X.T[X.T.duplicated()].index.tolist()
 
         if dropped_constant_columns:
-            print(f"Dropping constant columns for {go_term}: {dropped_constant_columns}")
+            print(f"Dropping constant columns for {aa}: {dropped_constant_columns}")
         if dropped_duplicate_columns:
-            print(f"Dropping duplicate columns for {go_term}: {dropped_duplicate_columns}")
+            print(f"Dropping duplicate columns for {aa}: {dropped_duplicate_columns}")
 
         X = X.loc[:, X.nunique() > 1]  # Remove constant columns
         X = X.T.drop_duplicates().T    # Remove duplicate columns
 
         # Add intercept for statsmodels
-        '''X = drop_one_hot_collinear(X)'''
         X = sm.add_constant(X)
         
         # Compute and save VIF before standardization (exclude intercept if present)
         vif_df = compute_vif(X.drop(columns=["const"], errors="ignore"))
-        vif_df.to_csv(os.path.join(output_dir, f"{go_term}_vif.csv"), index=False)
+        vif_df.to_csv(os.path.join(output_dir, f"{aa}_vif.csv"), index=False)
 
         # Z-transformation (standardization) of features (excluding the intercept)
         scaler = StandardScaler()
@@ -156,7 +136,7 @@ def run(name, go_dag):
         try:
             result = model.fit(disp=0)
         except Exception as e:
-            print(f"Skipping {go_term} due to fitting error: {e}")
+            print(f"Skipping {aa} due to fitting error: {e}")
             continue
         #go_term = sanitize_filename(get_go_aspect(go_term, go_dag))
         # Get coefficients (excluding intercept)
@@ -174,39 +154,32 @@ def run(name, go_dag):
         feature_importance_df['FDR_significant'] = rejected
 
         # Save features with their significance and FDR to file
-        feature_importance_df.to_csv(os.path.join(output_dir, f"{go_term}_logreg_coefficients_{name}.csv"), index=False)
+        feature_importance_df.to_csv(os.path.join(output_dir, f"{aa}_logreg_coefficients_{name}.csv"), index=False)
 
         # Save the model summary to a text file
-        with open(os.path.join(output_dir, f"{go_term}_logreg_summary.txt"), "w") as f:
+        with open(os.path.join(output_dir, f"{aa}_logreg_summary.txt"), "w") as f:
             f.write(result.summary().as_text())
 
         # Save mle_retvals
-        with open(os.path.join(output_dir, f"{go_term}_mle_retvals.txt"), "w") as f:
+        with open(os.path.join(output_dir, f"{aa}_mle_retvals.txt"), "w") as f:
             for key, val in result.mle_retvals.items():
                 f.write(f"{key}: {val}\n")
 
-        # Plot and save feature importances
-        '''plt.figure(figsize=(10, 6))
-        sns.barplot(x='Coefficient', y='Feature', data=feature_importance_df)
-        plt.title(f"Logistic Regression Coefficients for GO Term: {go_term}")
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, f"{go_term}_logreg_coefficients.png"))
-        plt.close()'''
         feature_importance_df = feature_importance_df.replace([np.inf, -np.inf], np.nan)
         feature_importance_df = feature_importance_df.dropna(subset=["Significance", "Coefficient"])
         feature_importance_df = feature_importance_df[feature_importance_df["Significance"] > 0]
 
         plt.figure(figsize=(10, 6))
         sns.barplot(x='Coefficient', y='Feature', data=feature_importance_df.head(10))
-        plt.title(f"Top 10 Logistic Regression Coefficients for GO Term: {go_term}")
+        plt.title(f"Top 10 Logistic Regression Coefficients for GO Term: {aa}")
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, f"{go_term}_logreg_coefficients_top10.png"))
+        plt.savefig(os.path.join(output_dir, f"{aa}_logreg_coefficients_top10.png"))
         plt.close()
 
         # plot a volcano plot
         plt.figure(figsize=(10, 6))
         sns.scatterplot(x='Coefficient', y=-np.log10(feature_importance_df['Significance']), data=feature_importance_df, color='grey')
-        plt.title(f"Volcano Plot for organism {name}, GO Term: {go_term}, {get_go_aspect(go_term, go_dag)}, n = {proteins_with_go_term}")
+        plt.title(f"Volcano Plot for organism {name}, amino acid: {aa}, n = {proteins_with_go_term}")
         plt.xlabel("Coefficient")
         plt.ylabel("-log10(Significance)")
         plt.axhline(y=-np.log10(0.05), color='r', linestyle='--')
@@ -224,7 +197,7 @@ def run(name, go_dag):
         adjust_text(texts, arrowprops=dict(arrowstyle='->', color='black', lw=0.5))
 
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, f"{go_term}_volcano_plot.pdf"))
+        plt.savefig(os.path.join(output_dir, f"{aa}_volcano_plot.pdf"))
         plt.close()
         
 
