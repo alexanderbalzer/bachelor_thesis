@@ -175,6 +175,9 @@ def run(name, go_dag):
 
         # Save features with their significance and FDR to file
         feature_importance_df.to_csv(os.path.join(output_dir, f"{go_term}_logreg_coefficients_{name}.csv"), index=False)
+        logreg_coefficients_path = os.path.join('pipeline/output/output_20250603_145910_ml_all_organisms', f"logreg_coefficients")
+        os.makedirs(logreg_coefficients_path, exist_ok=True)
+        feature_importance_df.to_csv(os.path.join(logreg_coefficients_path, f"{go_term}_logreg_coefficients_{name}.csv"), index=False)
 
         # Save the model summary to a text file
         with open(os.path.join(output_dir, f"{go_term}_logreg_summary.txt"), "w") as f:
@@ -241,7 +244,7 @@ if __name__ == "__main__":
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
     "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
-    organism_names = ["Homo_sapiens"]
+    #organism_names = ["Homo_sapiens"]
     # Load the GO DAG
     go_dag = load_obo()
     for name in tqdm(organism_names):

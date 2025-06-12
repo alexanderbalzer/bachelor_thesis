@@ -46,7 +46,7 @@ scales = {'Fauchere-Pliska': {'A':  0.31, 'R': -1.01, 'N': -0.60,
           }
 _supported_scales = list(scales.keys())
 
-aa_charge = {'E': 1, 'D': 1, 'K': 1, 'R': 1}
+aa_charge = {'E': -1, 'D': -1, 'K': 1, 'R': 1}
 
 #
 # Functions
@@ -107,7 +107,7 @@ def assign_charge(sequence, acetylated, seq_range):
         elif aa == 'H':
             charges.append(0.1)  # Approximate partial charge at pH 7.4
         else:
-            charges.append(aa_charge.get(aa, 0))
+            charges.append(np.abs(aa_charge.get(aa, 0)))
     return charges
 
 
@@ -201,7 +201,7 @@ def analyze_sequence(name=None, sequence=None, window=9, verbose=False, w_h = 0.
     seq_len = len(sequence)
     #print('[+] Analysing sequence {} ({} aa.)'.format(name, seq_len))
     #print('[+] Using a window of {} aa.'.format(w))
-    for seq_range in range(0, 1):
+    for seq_range in range(0, 5):
         seq_w = sequence[seq_range:seq_range+w]
         if seq_range and len(seq_w) < w:
             break
@@ -353,6 +353,7 @@ def run(sequence, verbose):
         electrostatic_help = alignment * av_uQ  # This is the electrostatic help
         discrimination_factor = data[max_index][10]
         helix_score = data[max_index][16]  # This is the helix score
+        charge = data[max_index][5]  # This is the charge of the best window
     df = pd.DataFrame(data, columns=['Name', 'Sequence', 'Start', 'Window Size', 'Sub-Sequence',
                                        'Charge', 'Mean Hydrophobicity',
                                        'Mean Hydrophobic Moment', 'Mean Electrostatic Moment',
@@ -364,7 +365,7 @@ def run(sequence, verbose):
         writer = csv.writer(csvfile)
         writer.writerow(df.columns)
         writer.writerows(df.values)
-    return max_av_uH, start_best_window, length_best_window, electrostatic_help, discrimination_factor, helix_score
+    return max_av_uH, start_best_window, length_best_window, electrostatic_help, discrimination_factor, helix_score, charge
 
 def run_alternative(sequence, name='Unnamed', seq_range=0, w=18, verbose=False):
     data = analyze_sequence_with_set_parameters(name=name, sequence=sequence, seq_range=seq_range, w=w, verbose=verbose)

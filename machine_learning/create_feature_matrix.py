@@ -223,6 +223,7 @@ def run(organism_names, input_dir, working_dir):
             # add the protein id to the DataFrame
             feature_matrix["protein_id"] = [protein_id]
             feature_matrix["protein_id_human"] = protein_id_human
+            feature_matrix["length"] = len(protein_sequence)
             protein_id = row["protein_id"]
             start_of_alpha_helix, length_of_alpha_helix, mpp_cleavage_pos, mitofates_cleavage_probability, tom20_motive = get_mitoFates_infos(working_dir, organism, protein_id)
             if mpp_cleavage_pos is None:
@@ -301,11 +302,12 @@ def run(organism_names, input_dir, working_dir):
                 alternative_mts_sequence = mts_sequence
                 mts_when_huntington = mts_sequence
             # calculate the hydrophobic moment of the mts sequence
-            hydrophobic_moment_value_mod_mts, start_best_window, length_best_window, electrostatic_help, discrimination_factor, helix_score = hydrophobic_moment.run(mod_mts_sequence, verbose=False)
+            hydrophobic_moment_value_mod_mts, start_best_window, length_best_window, electrostatic_help, discrimination_factor, helix_score, charge = hydrophobic_moment.run(mod_mts_sequence, verbose=False)
             '''unused, unused, unused, electrostatic_help_diff_nat, unused, unused = hydrophobic_moment.run(alternative_mts_sequence, verbose=False)
             unused, unused, unused, electrostatic_help_huntington, unused, unused, = hydrophobic_moment.run(mts_when_huntington, verbose=False)'''
             # add the hydrophobic moment to the DataFrame
             feature_matrix["Hydrophobic Moment"] = hydrophobic_moment_value_mod_mts
+            feature_matrix["Charge"] = charge
             feature_matrix["start_of_alpha_helix"] = start_best_window
             feature_matrix["length_of_alpha_helix"] = length_best_window
             feature_matrix["Electrostatic Help"] = electrostatic_help
@@ -377,10 +379,10 @@ if __name__ == "__main__":
     print(f"finished in: {run_time}")'''
 
     organism_names = [
-    "Homo_sapiens", "Homo_sapiens_isoforms", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
+    "Homo_sapiens", "Saccharomyces_cerevisiae", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
-    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
+    "Candida_glabrata", "Zygosaccharomyces_rouxii", "Homo_sapiens_isoforms"]
     working_dir = 'pipeline/output/output_20250603_145910_ml_all_organisms'
     input_dir = "pipeline/input"
     start_time = datetime.now()
