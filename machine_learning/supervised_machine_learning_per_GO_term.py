@@ -13,6 +13,7 @@ from adjustText import adjust_text
 from statsmodels.stats.multitest import multipletests
 from datetime import datetime
 from tqdm import tqdm
+from matplotlib.patches import Patch
 
 def load_obo():
     '''
@@ -109,127 +110,163 @@ def run(name, go_dag):
     '''
     valid_go_terms = ['GO:0005783', 'GO:0005739', 'Multiple']
     for go_term in valid_go_terms:
-        output_dir = os.path.join(general_output_dir, sanitize_filename(get_go_aspect(go_term, go_dag)))
-        os.makedirs(output_dir, exist_ok=True)
+        output_dir_go = os.path.join(general_output_dir, sanitize_filename(get_go_aspect(go_term, go_dag)))
+        os.makedirs(output_dir_go, exist_ok=True)
         # Filter for current GO term (binary classification: this term vs. all others)
         df_filtered = df.copy()
-        # remove the rows that dont contain the go_term or the go term cyto_nuclear
-        df_filtered = df_filtered[df_filtered["GO_Term"].str.contains(go_term, na=False) | df_filtered["GO_Term"].str.contains("cyto_nuclear", na=False)]
-        df_filtered["GO_Term_Binary"] = (df_filtered["GO_Term"] == go_term).astype(int)
-        # Skip if not enough samples for both classes
-        if df_filtered["GO_Term_Binary"].sum() < 5 or (df_filtered["GO_Term_Binary"] == 0).sum() < 5:
-            continue
-
-        X = df_filtered.drop(["GO_Term", "GO_Term_Binary", "Leucine_and_Alanine_percentage", "Arginine_percentage", "Second_AA_V", "Discrimination Factor"], axis=1)
-        y = df_filtered["GO_Term_Binary"]
-
-        # Count how many proteins have the current GO term
-        proteins_with_go_term = df_filtered["GO_Term_Binary"].sum()
-
-        dropped_constant_columns = X.columns[X.nunique() <= 1].tolist()
-        dropped_duplicate_columns = X.T[X.T.duplicated()].index.tolist()
-
-        if dropped_constant_columns:
-            print(f"Dropping constant columns for {go_term}: {dropped_constant_columns}")
-        if dropped_duplicate_columns:
-            print(f"Dropping duplicate columns for {go_term}: {dropped_duplicate_columns}")
-
-        X = X.loc[:, X.nunique() > 1]  # Remove constant columns
-        X = X.T.drop_duplicates().T    # Remove duplicate columns
-
-        # Add intercept for statsmodels
-        '''X = drop_one_hot_collinear(X)'''
-        X = sm.add_constant(X)
+        # un one-hot encode the second amino acid
+        second_aa_columns = [col for col in df_filtered.columns if col.startswith("Second_AA_")]
+        df_filtered["Second_AA"] = df_filtered[second_aa_columns].idxmax(axis=1).str.replace("Second_AA_", "")
+        df_filtered = df_filtered.drop(columns=second_aa_columns)
+        natA = {'A', 'S', 'T', 'V', 'C', 'G'}
+        natC = {'L', 'I', 'F', 'W'}
+        natB = {'D', 'E', 'N', 'Q'}
+        # Add a column for nat type based on Second_AA
+        def get_nat_type(aa):
+            if aa in natA:
+                return 'natA'
+            elif aa in natC:
+                return 'natC'
+            elif aa in natB:
+                return 'natB'
+            else:
+                return 'natX'  # Unknown or other types
+        df_filtered['Nat_Type'] = df_filtered['Second_AA'].apply(get_nat_type)
+        print(df_filtered['Nat_Type'].value_counts())
+        # delete the second amino acid column
+        df_filtered = df_filtered.drop(columns=["Second_AA"])
+        copy_of_df_filtered = df_filtered.copy()
+        nat_types = ['natB', 'natA', 'natC', 'natX']
+        for nat_type in nat_types:
+            df_filtered = copy_of_df_filtered.copy()
+            if go_term == "GO:0005739":
+                output_dir = os.path.join(output_dir_go, nat_type)
+                os.makedirs(output_dir, exist_ok=True)
+                # remove the rows that dont contain the go_term or the go term cyto_nuclear
+                df_filtered = df_filtered[(df_filtered['GO_Term'] == go_term) | (df_filtered["GO_Term"] == "cyto_nuclear")]
+                df_filtered = df_filtered[(df_filtered['Nat_Type'] == nat_type) | (df_filtered["GO_Term"] == "cyto_nuclear")]
+                df_filtered["GO_Term_Binary"] = (df_filtered["GO_Term"] == go_term).astype(int)
+                print(f"Number of proteins with GO term {go_term} and nat type {nat_type}: {df_filtered['GO_Term_Binary'].sum()}")
+            else:
+                output_dir = os.path.join(output_dir_go)
+                os.makedirs(output_dir, exist_ok=True)
+                # remove the rows that dont contain the go_term
+                df_filtered = df_filtered[(df_filtered['GO_Term'] == go_term) | (df_filtered["GO_Term"] == "cyto_nuclear")]
+                df_filtered["GO_Term_Binary"] = (df_filtered["GO_Term"] == go_term).astype(int)
         
-        # Compute and save VIF before standardization (exclude intercept if present)
-        vif_df = compute_vif(X.drop(columns=["const"], errors="ignore"))
-        vif_df.to_csv(os.path.join(output_dir, f"{go_term}_vif.csv"), index=False)
+            X = df_filtered.drop(['Nat_Type', "GO_Term", "GO_Term_Binary", "Leucine_and_Alanine_percentage", "Arginine_percentage", "Discrimination Factor"], axis=1)
+            y = df_filtered["GO_Term_Binary"]
 
-        # Z-transformation (standardization) of features (excluding the intercept)
-        scaler = StandardScaler()
-        X_scaled = scaler.fit_transform(X.drop(columns=["const"], errors="ignore"))
-        X_scaled = pd.DataFrame(X_scaled, columns=[col for col in X.columns if col != "const"], index=X.index)
-        X_scaled = sm.add_constant(X_scaled)  # Add intercept back
+            # Count how many proteins have the current GO term
+            proteins_with_go_term = df_filtered["GO_Term_Binary"].sum()
 
-        # Fit logistic regression
-        model = sm.Logit(y, X_scaled)
-        try:
-            result = model.fit(disp=0)
-        except Exception as e:
-            print(f"Skipping {go_term} due to fitting error: {e}")
-            continue
-        #go_term = sanitize_filename(get_go_aspect(go_term, go_dag))
-        # Get coefficients (excluding intercept)
-        coefs = result.params.drop("const")
-        feature_importance_df = pd.DataFrame({
-            'Feature': coefs.index,
-            'Coefficient': coefs.values,
-            'AbsCoefficient': np.abs(coefs.values),
-            'Significance': result.pvalues[coefs.index]
-        }).sort_values(by='AbsCoefficient', ascending=False)
+            dropped_constant_columns = X.columns[X.nunique() <= 1].tolist()
+            dropped_duplicate_columns = X.T[X.T.duplicated()].index.tolist()
 
-        # FDR correction (Benjamini-Hochberg)
-        rejected, pvals_corrected, _, _ = multipletests(feature_importance_df['Significance'], alpha=0.05, method='fdr_bh')
-        feature_importance_df['FDR'] = pvals_corrected
-        feature_importance_df['FDR_significant'] = rejected
+            if dropped_constant_columns:
+                print(f"Dropping constant columns for {go_term}: {dropped_constant_columns}")
+            if dropped_duplicate_columns:
+                print(f"Dropping duplicate columns for {go_term}: {dropped_duplicate_columns}")
 
-        # Save features with their significance and FDR to file
-        feature_importance_df.to_csv(os.path.join(output_dir, f"{go_term}_logreg_coefficients_{name}.csv"), index=False)
-        logreg_coefficients_path = os.path.join('pipeline/output/output_20250603_145910_ml_all_organisms', f"logreg_coefficients")
-        os.makedirs(logreg_coefficients_path, exist_ok=True)
-        feature_importance_df.to_csv(os.path.join(logreg_coefficients_path, f"{go_term}_logreg_coefficients_{name}.csv"), index=False)
-        logreg_coeff = feature_importance_df[['Feature', 'Coefficient', 'FDR_significant']]
+            X = X.loc[:, X.nunique() > 1]  # Remove constant columns
+            X = X.T.drop_duplicates().T    # Remove duplicate columns
 
-        # Save the model summary to a text file
-        with open(os.path.join(output_dir, f"{go_term}_logreg_summary.txt"), "w") as f:
-            f.write(result.summary().as_text())
+            # Add intercept for statsmodels
+            '''X = drop_one_hot_collinear(X)'''
+            X = sm.add_constant(X)
+            
+            # Compute and save VIF before standardization (exclude intercept if present)
+            vif_df = compute_vif(X.drop(columns=["const"], errors="ignore"))
+            vif_df.to_csv(os.path.join(output_dir, f"{go_term}_vif.csv"), index=False)
 
-        # Save mle_retvals
-        with open(os.path.join(output_dir, f"{go_term}_mle_retvals.txt"), "w") as f:
-            for key, val in result.mle_retvals.items():
-                f.write(f"{key}: {val}\n")
+            # Z-transformation (standardization) of features (excluding the intercept)
+            scaler = StandardScaler()
+            X_scaled = scaler.fit_transform(X.drop(columns=["const"], errors="ignore"))
+            X_scaled = pd.DataFrame(X_scaled, columns=[col for col in X.columns if col != "const"], index=X.index)
+            X_scaled = sm.add_constant(X_scaled)  # Add intercept back
 
-        # Plot and save feature importances
-        '''plt.figure(figsize=(10, 6))
-        sns.barplot(x='Coefficient', y='Feature', data=feature_importance_df)
-        plt.title(f"Logistic Regression Coefficients for GO Term: {go_term}")
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, f"{go_term}_logreg_coefficients.png"))
-        plt.close()'''
-        feature_importance_df = feature_importance_df.replace([np.inf, -np.inf], np.nan)
-        feature_importance_df = feature_importance_df.dropna(subset=["Significance", "Coefficient"])
-        feature_importance_df = feature_importance_df[feature_importance_df["Significance"] > 0]
+            # Fit logistic regression
+            model = sm.Logit(y, X_scaled)
+            try:
+                result = model.fit(disp=0)
+            except Exception as e:
+                print(f"Skipping {go_term} due to fitting error: {e}")
+                continue
+            #go_term = sanitize_filename(get_go_aspect(go_term, go_dag))
+            # Get coefficients (excluding intercept)
+            coefs = result.params.drop("const")
+            feature_importance_df = pd.DataFrame({
+                'Feature': coefs.index,
+                'Coefficient': coefs.values,
+                'AbsCoefficient': np.abs(coefs.values),
+                'Significance': result.pvalues[coefs.index]
+            }).sort_values(by='AbsCoefficient', ascending=False)
 
-        plt.figure(figsize=(10, 6))
-        sns.barplot(x='Coefficient', y='Feature', data=feature_importance_df.head(10))
-        plt.title(f"Top 10 Logistic Regression Coefficients for GO Term: {go_term}")
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, f"{go_term}_logreg_coefficients_top10.png"))
-        plt.close()
+            # FDR correction (Benjamini-Hochberg)
+            rejected, pvals_corrected, _, _ = multipletests(feature_importance_df['Significance'], alpha=0.05, method='fdr_bh')
+            feature_importance_df['FDR'] = pvals_corrected
+            feature_importance_df['FDR_significant'] = rejected
 
-        # plot a volcano plot
-        plt.figure(figsize=(10, 6))
-        sns.scatterplot(x='Coefficient', y=-np.log10(feature_importance_df['Significance']), data=feature_importance_df, color='grey')
-        plt.title(f"Volcano Plot for organism {name}, GO Term: {go_term}, {get_go_aspect(go_term, go_dag)}, n = {proteins_with_go_term}")
-        plt.xlabel("Coefficient")
-        plt.ylabel("-log10(Significance)")
-        plt.axhline(y=-np.log10(0.05), color='r', linestyle='--')
-        plt.axvline(x=0, color='g', linestyle='--')
-        # Highlight significant features
-        significant_features = feature_importance_df[(feature_importance_df['FDR'] < 0.1)]
-        plt.scatter(significant_features['Coefficient'], -np.log10(significant_features['Significance']), color='red', label='Significant')
+            # Save features with their significance and FDR to file
+            feature_importance_df.to_csv(os.path.join(output_dir, f"{go_term}_logreg_coefficients_{name}.csv"), index=False)
+            logreg_coefficients_path = os.path.join('pipeline/output/output_20250603_145910_ml_all_organisms', f"logreg_coefficients")
+            os.makedirs(logreg_coefficients_path, exist_ok=True)
+            feature_importance_df.to_csv(os.path.join(logreg_coefficients_path, f"{go_term}_logreg_coefficients_{name}.csv"), index=False)
+            logreg_coeff = feature_importance_df[['Feature', 'Coefficient', 'FDR_significant']]
 
-        # Use adjustText for non-overlapping labels
-        texts = []
-        for _, row in significant_features.iterrows():
-            texts.append(
-                plt.text(row['Coefficient'], -np.log10(row['Significance']), row['Feature'], fontsize=8, color='blue')
-            )
-        adjust_text(texts, arrowprops=dict(arrowstyle='->', color='black', lw=0.5))
+            # Save the model summary to a text file
+            with open(os.path.join(output_dir, f"{go_term}_logreg_summary.txt"), "w") as f:
+                f.write(result.summary().as_text())
 
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, f"{go_term}_volcano_plot.pdf"))
-        plt.close()
+            # Save mle_retvals
+            with open(os.path.join(output_dir, f"{go_term}_mle_retvals.txt"), "w") as f:
+                for key, val in result.mle_retvals.items():
+                    f.write(f"{key}: {val}\n")
+
+            # Plot and save feature importances
+            '''plt.figure(figsize=(10, 6))
+            sns.barplot(x='Coefficient', y='Feature', data=feature_importance_df)
+            plt.title(f"Logistic Regression Coefficients for GO Term: {go_term}")
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, f"{go_term}_logreg_coefficients.png"))
+            plt.close()'''
+            feature_importance_df = feature_importance_df.replace([np.inf, -np.inf], np.nan)
+            feature_importance_df = feature_importance_df.dropna(subset=["Significance", "Coefficient"])
+            feature_importance_df = feature_importance_df[feature_importance_df["Significance"] > 0]
+
+            plt.figure(figsize=(10, 6))
+            sns.barplot(x='Coefficient', y='Feature', data=feature_importance_df.head(10))
+            plt.title(f"Top 10 Logistic Regression Coefficients for GO Term: {go_term}")
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, f"{go_term}_logreg_coefficients_top10.png"))
+            plt.close()
+
+            # plot a volcano plot
+            plt.figure(figsize=(10, 6))
+            sns.scatterplot(x='Coefficient', y=-np.log10(feature_importance_df['Significance']), data=feature_importance_df, color='grey')
+            if go_term == "GO:0005739":
+                plt.title(f"Volcano Plot for {name}, {go_term}, {get_go_aspect(go_term, go_dag)}, {nat_type}, n = {proteins_with_go_term}")
+            else:
+                plt.title(f"Volcano Plot for {name}, {go_term}, {get_go_aspect(go_term, go_dag)}, n = {proteins_with_go_term}")
+            plt.xlabel("Coefficient")
+            plt.ylabel("-log10(Significance)")
+            plt.axhline(y=-np.log10(0.05), color='r', linestyle='--')
+            plt.axvline(x=0, color='g', linestyle='--')
+            # Highlight significant features
+            significant_features = feature_importance_df[(feature_importance_df['FDR'] < 0.1)]
+            plt.scatter(significant_features['Coefficient'], -np.log10(significant_features['Significance']), color='red', label='Significant')
+
+            # Use adjustText for non-overlapping labels
+            texts = []
+            for _, row in significant_features.iterrows():
+                texts.append(
+                    plt.text(row['Coefficient'], -np.log10(row['Significance']), row['Feature'], fontsize=8, color='blue')
+                )
+            adjust_text(texts, arrowprops=dict(arrowstyle='->', color='black', lw=0.5))
+
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, f"{go_term}_volcano_plot.pdf"))
+            plt.close()
 
         if go_term == "GO:0005739":
             mito_df = logreg_coeff
@@ -238,7 +275,7 @@ def run(name, go_dag):
         elif go_term == "Multiple":
             both_df = logreg_coeff
 
-    # === 2. Gruppenzuweisung ===
+    '''# === 2. Gruppenzuweisung ===
     mito_df['Group'] = 'Mitochondrion (GO:0005739)'
     er_df['Group'] = 'ER (GO:0005783)'
     both_df['Group'] = 'ER+Mito'
@@ -255,22 +292,30 @@ def run(name, go_dag):
     sig_pivot = sig_df.pivot(index='Feature', columns='Group', values='Coefficient')
 
     # === 5. Plot erstellen ===
-    fig, ax = plt.subplots(figsize=(16, 8))
-
+    fig, ax = plt.subplots(figsize=(8, 10))
     # Zuerst: alle (grau)
-    full_pivot.plot(kind='bar', ax=ax, color='lightgray', edgecolor='black', legend=False)
+    full_pivot.plot(kind='barh', ax=ax, edgecolor='white', legend=False, hatch='/////', width=0.8)
 
     # Dann: signifikante Balken drüberlegen (farbig)
-    sig_pivot.plot(kind='bar', ax=ax, legend=True)
+    sig_pivot.plot(kind='barh', ax=ax, edgecolor='white', legend=True, width=0.8)
+    # Add a second legend for hatched and unhatched bars
+    legend_elements = [
+        Patch(facecolor='blue', edgecolor='black', label='ER (GO:0005783)'),
+        Patch(facecolor='orange', edgecolor='black', label='ER+Mito'),
+        Patch(facecolor='green', edgecolor='black', label='Mitochondrion (GO:0005739)'),
+        Patch(facecolor='none', edgecolor='none', label=''),
+        Patch(facecolor='gray', edgecolor='white', hatch='/////', label='Not Significant'),
+        Patch(facecolor='gray', edgecolor='black', label='Significant')
+    ]
+    ax.legend(handles=legend_elements, loc='upper right', fontsize='small')
 
     # === 6. Plot verschönern ===
-    plt.title("LogReg-Koeffizienten (FDR-signifikant farbig, andere grau)")
-    plt.ylabel("Koeffizient")
-    plt.xlabel("Feature")
-    plt.axhline(0, color='black', linewidth=0.8)
-    plt.xticks(rotation=90)
+    plt.xlabel("Coefficient")
+    plt.ylabel("Feature")
+    plt.axvline(x=0, color='black', linestyle='-', linewidth=0.8)
+    plt.xticks(rotation=0)
     plt.tight_layout()
-    plt.savefig(os.path.join(general_output_dir, f"compared_coefficients_mito_ER_{name}.pdf"))
+    plt.savefig(os.path.join(general_output_dir, f"compared_coefficients_mito_ER_{name}.pdf"))'''
         
 
     for root, dirs, files in os.walk(general_output_dir, topdown=False):
