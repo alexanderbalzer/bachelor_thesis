@@ -120,7 +120,7 @@ def run(name, go_dag):
         if df_filtered["GO_Term_Binary"].sum() < 5 or (df_filtered["GO_Term_Binary"] == 0).sum() < 5:
             continue
 
-        X = df_filtered.drop(["GO_Term", "GO_Term_Binary", "Leucine_and_Alanine_percentage", "Arginine_percentage", "Second_AA_V"], axis=1)
+        X = df_filtered.drop(["GO_Term", "GO_Term_Binary", "Leucine_and_Alanine_percentage", "Arginine_percentage", "Second_AA_V", "Discrimination Factor"], axis=1)
         y = df_filtered["GO_Term_Binary"]
 
         # Count how many proteins have the current GO term
@@ -178,6 +178,7 @@ def run(name, go_dag):
         logreg_coefficients_path = os.path.join('pipeline/output/output_20250603_145910_ml_all_organisms', f"logreg_coefficients")
         os.makedirs(logreg_coefficients_path, exist_ok=True)
         feature_importance_df.to_csv(os.path.join(logreg_coefficients_path, f"{go_term}_logreg_coefficients_{name}.csv"), index=False)
+        logreg_coeff = feature_importance_df[['Feature', 'Coefficient', 'FDR_significant']]
 
         # Save the model summary to a text file
         with open(os.path.join(output_dir, f"{go_term}_logreg_summary.txt"), "w") as f:
@@ -229,6 +230,47 @@ def run(name, go_dag):
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, f"{go_term}_volcano_plot.pdf"))
         plt.close()
+
+        if go_term == "GO:0005739":
+            mito_df = logreg_coeff
+        elif go_term == "GO:0005783":
+            er_df = logreg_coeff
+        elif go_term == "Multiple":
+            both_df = logreg_coeff
+
+    # === 2. Gruppenzuweisung ===
+    mito_df['Group'] = 'Mitochondrion (GO:0005739)'
+    er_df['Group'] = 'ER (GO:0005783)'
+    both_df['Group'] = 'ER+Mito'
+
+    # === 3. Kombinieren und nur gemeinsame Features behalten ===
+    combined_df = pd.concat([mito_df, er_df, both_df], ignore_index=True)
+    common_features = set(mito_df['Feature']) & set(er_df['Feature']) & set(both_df['Feature'])
+    combined_df = combined_df[combined_df['Feature'].isin(common_features)]
+
+    # === 4. Zwei DataFrames erstellen: signifikant und alle Werte ===
+    full_pivot = combined_df.pivot(index='Feature', columns='Group', values='Coefficient')
+    sig_df = combined_df.copy()
+    sig_df.loc[~sig_df['FDR_significant'], 'Coefficient'] = np.nan
+    sig_pivot = sig_df.pivot(index='Feature', columns='Group', values='Coefficient')
+
+    # === 5. Plot erstellen ===
+    fig, ax = plt.subplots(figsize=(16, 8))
+
+    # Zuerst: alle (grau)
+    full_pivot.plot(kind='bar', ax=ax, color='lightgray', edgecolor='black', legend=False)
+
+    # Dann: signifikante Balken drüberlegen (farbig)
+    sig_pivot.plot(kind='bar', ax=ax, legend=True)
+
+    # === 6. Plot verschönern ===
+    plt.title("LogReg-Koeffizienten (FDR-signifikant farbig, andere grau)")
+    plt.ylabel("Koeffizient")
+    plt.xlabel("Feature")
+    plt.axhline(0, color='black', linewidth=0.8)
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    plt.savefig(os.path.join(general_output_dir, f"compared_coefficients_mito_ER_{name}.pdf"))
         
 
     for root, dirs, files in os.walk(general_output_dir, topdown=False):
@@ -244,7 +286,7 @@ if __name__ == "__main__":
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
     "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
-    #organism_names = ["Homo_sapiens"]
+    organism_names = ["Homo_sapiens"]
     # Load the GO DAG
     go_dag = load_obo()
     for name in tqdm(organism_names):
