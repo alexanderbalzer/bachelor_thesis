@@ -59,7 +59,7 @@ def run(organism_names, go_term):
     g = sns.clustermap(
         pivot_df, 
         cmap='RdBu_r',
-        vmin=-1, vmax=1,  # <-- set colorbar range
+        vmin=-0.8, vmax=0.8,  # <-- set colorbar range
         figsize=(len(pivot_df.columns)*0.7+4, len(pivot_df.index)*0.5+4),
         cbar_kws={'label': 'Coefficient'},
         linewidths=0.5

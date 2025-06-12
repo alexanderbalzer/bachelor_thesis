@@ -154,7 +154,7 @@ def run(name, go_dag):
                 df_filtered = df_filtered[(df_filtered['GO_Term'] == go_term) | (df_filtered["GO_Term"] == "cyto_nuclear")]
                 df_filtered["GO_Term_Binary"] = (df_filtered["GO_Term"] == go_term).astype(int)
         
-            X = df_filtered.drop(['Nat_Type', "GO_Term", "GO_Term_Binary", "Leucine_and_Alanine_percentage", "Arginine_percentage", "Discrimination Factor"], axis=1)
+            X = df_filtered.drop(['Molecular Weight', 'Nat_Type', "GO_Term", "GO_Term_Binary", "Leucine_and_Alanine_percentage", "Arginine_percentage", "Discrimination Factor"], axis=1)
             y = df_filtered["GO_Term_Binary"]
 
             # Count how many proteins have the current GO term
