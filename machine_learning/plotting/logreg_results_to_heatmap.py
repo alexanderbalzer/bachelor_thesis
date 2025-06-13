@@ -5,9 +5,24 @@ import matplotlib.pyplot as plt
 import os
 from tqdm import tqdm
 
+def format_species_name(name: str) -> str:
+    # Teile den Namen anhand des Unterstrichs
+    parts = name.split("_")
+    if name == "Homo_sapiens_isoforms":
+        return "H. Sapiens with isoforms"
+    if len(parts) != 2:
+        raise ValueError("Name muss genau ein Unterstrich enthalten (Gattung_Art)")
+    genus, species = parts
+    # Kürze den Gattungsnamen auf den ersten Buchstaben + Punkt
+    short_genus = genus[0] + "."
+    
+    # Setze alles in kursiv (z. B. für Markdown oder HTML)
+    formatted = f"{short_genus} {species}"
+    return formatted
 
 def run(organism_names, go_term):
     combined_df = pd.DataFrame()
+    amount_of_proteins = {}
     for name in organism_names:
         # Load the feature importance data
         logreg_coefficients_path = os.path.join('pipeline/output/output_20250603_145910_ml_all_organisms', f"logreg_coefficients")
@@ -15,7 +30,7 @@ def run(organism_names, go_term):
         feature_importance_df = pd.read_csv(feature_importance_df_path)
         
         # Keep only the columns 'Coefficient' and 'FDR_significant'
-        feature_importance_df = feature_importance_df[['Feature','Coefficient', 'FDR_significant']]
+        feature_importance_df = feature_importance_df[['Feature','Coefficient', 'FDR_significant', 'n']]
         feature_importance_df['Feature'] = feature_importance_df['Feature'].str.replace('_', ' ')
         # make the 'Feature' column the index
         feature_importance_df.set_index('Feature', inplace=True)
@@ -27,8 +42,14 @@ def run(organism_names, go_term):
         feature_importance_df['Coefficient'] = feature_importance_df['Coefficient'].astype(float)
         # Add a column for significance
         feature_importance_df['FDR_significant'] = feature_importance_df['FDR_significant'].astype(str).str.lower() == 'true'
+        amount_of_proteins[name] = feature_importance_df.loc['Isoelectric Point', 'n']
+        feature_importance_df = feature_importance_df.drop(index=['mitofates cleavage probability', 'MPP cleavage position'])
         # Combine the dataframes
         combined_df = pd.concat([combined_df, feature_importance_df], ignore_index=False)
+    
+
+    # Format organism names for better readability and add amount of proteins
+    combined_df['Organism'] = combined_df['Organism'].apply(lambda x: f"{format_species_name(x)} (n = {amount_of_proteins[x]})")
     # Pivot: rows=Organism, columns=Feature, values=Coefficient
     pivot_df = combined_df.pivot_table(
         index='Feature', columns='Organism', values='Coefficient', aggfunc='mean'
@@ -38,6 +59,11 @@ def run(organism_names, go_term):
     significance_mask = combined_df.pivot_table(
         index='Feature', columns='Organism', values='FDR_significant', aggfunc=lambda x: any(x == True)
     )
+
+    # Nur Features behalten, die mindestens einen signifikanten Wert haben
+    rows_with_significance = significance_mask.any(axis=1)
+    pivot_df = pivot_df.loc[rows_with_significance]
+    significance_mask = significance_mask.loc[rows_with_significance]
 
     '''plt.figure(figsize=(len(pivot_df.columns)*0.7+4, len(pivot_df.index)*0.5+4))
     ax = sns.heatmap(pivot_df, cmap='vlag', annot=False, cbar=True)
@@ -54,17 +80,23 @@ def run(organism_names, go_term):
     plt.tight_layout()
     plt.savefig(os.path.join(logreg_coefficients_path, f"{go_term}_heatmap.png"), dpi=300)
     plt.show()'''
-
     # Create a clustermap (features=y, organisms=x, coefficients=values)
     g = sns.clustermap(
         pivot_df, 
         cmap='RdBu_r',
         vmin=-0.8, vmax=0.8,  # <-- set colorbar range
         figsize=(len(pivot_df.columns)*0.7+4, len(pivot_df.index)*0.5+4),
-        cbar_kws={'label': 'Coefficient'},
-        linewidths=0.5
+        cbar_kws={'orientation': 'vertical', 'label': 'Coefficient', 'ticks': np.arange(-0.8, 0.9, 0.8)},
+        linewidths=0.5,
+        cbar_pos=(0.85, 0.83, 0.03, 0.15),  # [left, bottom, width, height]
+        row_cluster=True,  # Cluster rows (features)
+        col_cluster=True,  # Cluster columns (organisms),
     )
-    # Add asterisks for significant values
+
+    # name the axes
+    g.ax_heatmap.set_xlabel("")
+    g.ax_heatmap.set_ylabel("")
+    g.ax_heatmap.set_xticklabels(g.ax_heatmap.get_xticklabels(), rotation=45, ha='right')
 
     # Reorder index and columns based on clustermap dendrogram
     row_order = g.dendrogram_row.reordered_ind
@@ -78,10 +110,6 @@ def run(organism_names, go_term):
         for x, organism in enumerate(organisms_ordered):
             if significance_mask.loc[feature, organism]:
                 g.ax_heatmap.text(x + 0.5, y + 0.5, '*', ha='center', va='center', color='black', fontsize=12)
-
-
-    g.ax_heatmap.set_xlabel("Organism")
-    g.ax_heatmap.set_ylabel("Feature")
 
     g.savefig(os.path.join(logreg_coefficients_path, f"{go_term}_clustermap.pdf"), dpi=300)
 

@@ -14,6 +14,17 @@ from statsmodels.stats.multitest import multipletests
 from datetime import datetime
 from tqdm import tqdm
 from matplotlib.patches import Patch
+import warnings
+def tqdm_warning(message, category, filename, lineno, file=None, line=None):
+    tqdm.write(warnings.formatwarning(message, category, filename, lineno, line))
+
+warnings.showwarning = tqdm_warning
+import sys
+
+def tqdm_excepthook(exctype, value, traceback):
+    tqdm.write(f"Uncaught exception: {value}")
+
+sys.excepthook = tqdm_excepthook
 
 def load_obo():
     '''
@@ -109,56 +120,60 @@ def run(name, go_dag):
     #valid_go_terms = go_ids
     '''
     valid_go_terms = ['GO:0005783', 'GO:0005739', 'Multiple']
-    for go_term in valid_go_terms:
+    for go_term in tqdm(valid_go_terms, position=2, desc=f"Processing GO terms for {name}", leave=False):
         output_dir_go = os.path.join(general_output_dir, sanitize_filename(get_go_aspect(go_term, go_dag)))
         os.makedirs(output_dir_go, exist_ok=True)
         # Filter for current GO term (binary classification: this term vs. all others)
         df_filtered = df.copy()
-        # un one-hot encode the second amino acid
-        second_aa_columns = [col for col in df_filtered.columns if col.startswith("Second_AA_")]
-        df_filtered["Second_AA"] = df_filtered[second_aa_columns].idxmax(axis=1).str.replace("Second_AA_", "")
-        df_filtered = df_filtered.drop(columns=second_aa_columns)
-        natA = {'A', 'S', 'T', 'V', 'C', 'G'}
-        natC = {'L', 'I', 'F', 'W'}
-        natB = {'D', 'E', 'N', 'Q'}
-        # Add a column for nat type based on Second_AA
-        def get_nat_type(aa):
-            if aa in natA:
-                return 'natA'
-            elif aa in natC:
-                return 'natC'
-            elif aa in natB:
-                return 'natB'
-            else:
-                return 'natX'  # Unknown or other types
-        df_filtered['Nat_Type'] = df_filtered['Second_AA'].apply(get_nat_type)
-        print(df_filtered['Nat_Type'].value_counts())
-        # delete the second amino acid column
-        df_filtered = df_filtered.drop(columns=["Second_AA"])
-        copy_of_df_filtered = df_filtered.copy()
-        nat_types = ['natB', 'natA', 'natC', 'natX']
+        if go_term == 'GO:0005739' and name == 'Homo_sapiens':
+            nat_types = ['natB', 'natA', 'natC', 'natX', 'all']
+        else:
+            nat_types = ['all']
+        
         for nat_type in nat_types:
-            df_filtered = copy_of_df_filtered.copy()
-            if go_term == "GO:0005739":
+            df_filtered = df.copy()
+            if go_term == "GO:0005739" and nat_type != "all":
+                second_aa_columns = [col for col in df_filtered.columns if col.startswith("Second_AA_")]
+                df_filtered["Second_AA"] = df_filtered[second_aa_columns].idxmax(axis=1).str.replace("Second_AA_", "")
+                df_filtered = df_filtered.drop(columns=second_aa_columns)
+                natA = {'A', 'S', 'T', 'V', 'C', 'G'}
+                natC = {'L', 'I', 'F', 'W'}
+                natB = {'D', 'E', 'N', 'Q'}
+                # Add a column for nat type based on Second_AA
+                def get_nat_type(aa):
+                    if aa in natA:
+                        return 'natA'
+                    elif aa in natC:
+                        return 'natC'
+                    elif aa in natB:
+                        return 'natB'
+                    else:
+                        return 'natX'  # Unknown or other types
+                df_filtered['Nat_Type'] = df_filtered['Second_AA'].apply(get_nat_type)
+                # delete the second amino acid column
+                df_filtered = df_filtered.drop(columns=["Second_AA"])
+                copy_of_df_filtered = df_filtered.copy()
+                df_filtered = copy_of_df_filtered.copy()
                 output_dir = os.path.join(output_dir_go, nat_type)
                 os.makedirs(output_dir, exist_ok=True)
                 # remove the rows that dont contain the go_term or the go term cyto_nuclear
                 df_filtered = df_filtered[(df_filtered['GO_Term'] == go_term) | (df_filtered["GO_Term"] == "cyto_nuclear")]
                 df_filtered = df_filtered[(df_filtered['Nat_Type'] == nat_type) | (df_filtered["GO_Term"] == "cyto_nuclear")]
                 df_filtered["GO_Term_Binary"] = (df_filtered["GO_Term"] == go_term).astype(int)
-                print(f"Number of proteins with GO term {go_term} and nat type {nat_type}: {df_filtered['GO_Term_Binary'].sum()}")
+                df_filtered = df_filtered.drop(columns=["Nat_Type"])
             else:
                 output_dir = os.path.join(output_dir_go)
                 os.makedirs(output_dir, exist_ok=True)
                 # remove the rows that dont contain the go_term
                 df_filtered = df_filtered[(df_filtered['GO_Term'] == go_term) | (df_filtered["GO_Term"] == "cyto_nuclear")]
                 df_filtered["GO_Term_Binary"] = (df_filtered["GO_Term"] == go_term).astype(int)
+                df_filtered = df_filtered.drop(columns=["Second_AA_V"])
         
-            X = df_filtered.drop(['Molecular Weight', 'Nat_Type', "GO_Term", "GO_Term_Binary", "Leucine_and_Alanine_percentage", "Arginine_percentage", "Discrimination Factor"], axis=1)
+            X = df_filtered.drop(['Molecular Weight', "GO_Term", "GO_Term_Binary", "Leucine_and_Alanine_percentage", "Arginine_percentage", "Discrimination Factor"], axis=1)
             y = df_filtered["GO_Term_Binary"]
 
             # Count how many proteins have the current GO term
-            proteins_with_go_term = df_filtered["GO_Term_Binary"].sum()
+            proteins_with_go_term = df_filtered[(df_filtered['GO_Term'] == go_term)].sum()
 
             dropped_constant_columns = X.columns[X.nunique() <= 1].tolist()
             dropped_duplicate_columns = X.T[X.T.duplicated()].index.tolist()
@@ -206,6 +221,7 @@ def run(name, go_dag):
             rejected, pvals_corrected, _, _ = multipletests(feature_importance_df['Significance'], alpha=0.05, method='fdr_bh')
             feature_importance_df['FDR'] = pvals_corrected
             feature_importance_df['FDR_significant'] = rejected
+            feature_importance_df['n'] = proteins_with_go_term
 
             # Save features with their significance and FDR to file
             feature_importance_df.to_csv(os.path.join(output_dir, f"{go_term}_logreg_coefficients_{name}.csv"), index=False)
@@ -327,13 +343,14 @@ def run(name, go_dag):
 
 if __name__ == "__main__":
     organism_names = [
-    "Homo_sapiens", "Homo_sapiens_isoforms", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
+    "Homo_sapiens","Mus_musculus", "Dario_rerio", "Daphnia_magna", 
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
     "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
-    organism_names = ["Homo_sapiens"]
+    #  "Homo_sapiens_isoforms", 
+    #organism_names = ["Homo_sapiens"]
     # Load the GO DAG
     go_dag = load_obo()
-    for name in tqdm(organism_names):
+    for name in tqdm(organism_names, position=1, desc= "pipeline progress"):
         run(name, go_dag)
 

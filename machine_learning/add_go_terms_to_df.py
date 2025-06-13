@@ -1,152 +1,75 @@
-import os
 import pandas as pd
-from goatools.obo_parser import GODag
-from goatools.base import download_go_basic_obo
+import requests
+from tqdm import tqdm
+import os
 
+# Liste der GO-Terms für ER-verwandte Lokalisationen
+er_gos = {
+    "GO:0005783", "GO:0005790", "GO:0005791", "GO:0009511", "GO:0016529",
+    "GO:1990007", "GO:0005766", "GO:0005767", "GO:0020020", "GO:0032010",
+    "GO:0036019", "GO:0042582", "GO:0042629", "GO:0043246", "GO:0044194",
+    "GO:0044754", "GO:0005764", "GO:0150051", "GO:0005794", "GO:0001533",
+    "GO:0042383", "GO:0097524", "GO:0120001", "GO:0005886"
+}
 
-def parse_go_annotations(annotation_file):
-    """
-    Parse a GO annotation file to create a dictionary
-    mapping protein IDs and their associated GO terms.
-    """
-    go_annotation = {}
-    with open(annotation_file, "r") as file:
-        for line in file:
-            if line.startswith("!"):  
-                continue
-            fields = line.strip().split("\t")
-            protein_id = fields[1]  #protein ID (column 2 in GAF)
-            function = fields[8]  #function type (column 9 in GAF)
-            if function != "C":  #filter for location information
-                continue
-            go_term = fields[4]     #GO term (column 5 in GAF)
-            if protein_id not in go_annotation:
-                go_annotation[protein_id] = []
-            go_annotation[protein_id].append(go_term)
-    return go_annotation
+mito_go = "GO:0005739"
 
-def load_obo():
-    '''
-    load the latest obo file to exchange the GO terms with their aspects
-    '''
-    obo_path = "pipeline/go.obo"
-    if not os.path.exists(obo_path):
-        obo_path = download_go_basic_obo()  
-    # Load the GO DAG
-    go_dag = GODag(obo_path)
-    return go_dag
+def get_go_terms(uniprot_id):
+    url = f"https://rest.uniprot.org/uniprotkb/{uniprot_id}.json"
+    try:
+        response = requests.get(url)
+        if response.status_code != 200:
+            return set()
+        data = response.json()
+        refs = data.get("uniProtKBCrossReferences", [])
+        return {ref["id"] for ref in refs if ref.get("database") == "GO"}
+    except Exception:
+        return set()
 
-def run(name):
-    # Load the GO ontology file (e.g., gene_ontology.obo)
-    go_obo = load_obo()
+def classify_location(go_terms):
+    is_mito = mito_go in go_terms
+    is_er = bool(er_gos & go_terms)
 
-    go_dag = GODag("go-basic.obo")  
+    if is_mito and is_er:
+        return "Multiple"
+    elif is_mito:
+        return 'GO:0005739'
+    elif is_er:
+        return "GO:0005783"
+    else:
+        return "cyto_nuclear"
 
+def annotate_file(input_file, output_file):
+    df = pd.read_csv(input_file)
+    if 'ProteinID' not in df.columns:
+        raise ValueError("Die CSV-Datei muss eine Spalte 'ProteinID' enthalten.")
 
-    go_ids = [
-        #Go terms for: ER, Golgi, Ribosome, Mitochondria, Nucleus, Lysosome, Cell membrane, Cytoplasm
-        "GO:0005783",
-        "GO:0005794",
-        "GO:0005840",
-        "GO:0005739",
-        "GO:0005634",
-        "GO:0005764",
-        "GO:0005886",
-        "GO:0005737"
-    ]
-    valid_go_terms = [
-        "GO:0005740",
-        "GO:0005743",
-        "GO:0005741",
-        "GO:0005758",
-        "GO:0005759",
-        "GO:0005746",
-        "GO:0031966"
-    ]
-    # Set the working directory
-    working_dir = os.path.dirname("pipeline/output/output_20250519_142700_machine_learning_human/" + name + "/")
-    feature_matrix_path = working_dir + "/feature_matrix_with_go_terms_prepared.csv"
-    # Read the feature matrix from the CSV file
-    feature_matrix = pd.read_csv(feature_matrix_path, index_col=0)
-    print(feature_matrix.head())
-    # Add GO terms to the feature matrix
+    tqdm.pandas(desc="Annotating proteins")
+    df['GO_Location'] = df['ProteinID'].progress_apply(lambda pid: classify_location(get_go_terms(pid)))
 
-    go_child_dir = working_dir + "/go_childs/"
-    # load the go_ids
-    child_dict = {}
-    for go_id in go_ids:
-        with open(f"{go_child_dir}{go_id}.txt", "r") as file:
-            for line in file:
-                child = line.strip().split("_")[0]
-                child_dict[child] = go_id
-
-    # Parse GO annotations
-    annotation_file = "pipeline/input/Homo_sapiens.goa"
-    go_annotations = parse_go_annotations(annotation_file)
-    
-    # Add filtered GO terms rowwise to the feature matrix
-    for protein_id, row in feature_matrix.iterrows():
-        filtered_terms = []
-        if protein_id in go_annotations:
-            for term in go_annotations[protein_id]:
-                if term in child_dict:
-                    filtered_terms.append(child_dict[term])
-            feature_matrix.at[protein_id, "GO_Term"] = ",".join(filtered_terms)
-    
-
-    
-    for protein_id, row in feature_matrix.iterrows():
-        filtered_terms = []
-        if protein_id in go_annotations:
-            for term in go_annotations[protein_id]:
-                # test if term has any children terms
-                if term in valid_go_terms:
-                    filtered_terms.append(term)
-            feature_matrix.at[protein_id, "GO_Term"] = ",".join(filtered_terms)
-    '''
-    # Filter rows to keep only those containing the GO term GO:0005739
-    feature_matrix = feature_matrix[feature_matrix["GO_Term"].str.contains("GO:0005739", na=False)]
-    '''
-    # Remove duplicate GO terms in each row
-    feature_matrix["GO_Term"] = feature_matrix["GO_Term"].apply(
-        lambda x: ",".join(sorted(set(x.split(",")))) if pd.notna(x) else x
-    )
-    
-    # Remove the GO term GO:0005739 from the GO_Term column
-    feature_matrix["GO_Term"] = feature_matrix["GO_Term"].apply(
-        lambda x: ",".join(term for term in x.split(",") if term != "GO:0005739") if pd.notna(x) else x
-    )
-    # if a protein has multiple go_terms, assign the term multiple
-    feature_matrix["GO_Term"] = feature_matrix["GO_Term"].apply(
-        lambda x: "Multiple" if isinstance(x, str) and "," in x else x
-    )
-    '''
-    # if a protein has multiple go terms, copy the row and assign the go term to the new row
-    # and remove the go term from the original row
-    feature_matrix["GO_Term"] = feature_matrix["GO_Term"].apply(
-        lambda x: x.split(",") if pd.notna(x) else x
-    )'''
-    '''
-    feature_matrix = feature_matrix.explode("GO_Term")
-    # Empty the cells that have more than one GO term
-    feature_matrix["GO_Term"] = feature_matrix["GO_Term"].apply(
-        lambda x: "" if isinstance(x, str) and "," in x else x)'''
-    # Remove rows with an empty GO term
-    '''for index, row in feature_matrix.iterrows():
-        if isinstance(row["GO_Term"], str):
-            terms = row["GO_Term"].split(",")
-            if len(terms) == 1 and terms[0] == "":
-                feature_matrix.drop(index, inplace=True)'''
-
-    # moves the go term column to the beginning of the DataFrame
-    go_term_column = feature_matrix.pop("GO_Term")
-    feature_matrix.insert(0, "GO_Term", go_term_column)
-    # Save the updated feature matrix to a CSV file
-    output_path = working_dir + "/feature_matrix_with_go_terms_mito.csv"
-    feature_matrix.to_csv(output_path)
-    print(f"Feature matrix with GO terms saved to {output_path}")
+    df.to_csv(output_file, index=False)
+    print(f"✅ Ergebnis gespeichert unter: {output_file}")
 
 if __name__ == "__main__":
-    # Example usage
-    name = "Homo_sapiens"  # Example organism name
-    run(name)
+    general_working_dir = "pipeline/output/output_20250603_145910_ml_all_organisms"
+    organism_names = [
+    "Homo_sapiens","Mus_musculus", "Dario_rerio", "Daphnia_magna", 
+    "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
+    "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
+    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
+    organism_names = ["Homo_sapiens"]
+    for name in organism_names:
+        input_file = os.path.join(general_working_dir, name, "feature_matrix_with_go_terms")
+        output_file = os.path.join(general_working_dir, name, "feature_matrix_with_go_terms_alt")
+        feature_matrix1 = pd.read_csv(input_file)
+        feature_matrix = feature_matrix1.copy()
+        for i, row in feature_matrix.iterrows():
+            protein_id = row['ProteinID']
+            go_terms = get_go_terms(protein_id)
+            location = classify_location(go_terms)
+            feature_matrix.at[i, 'GO_Term'] = location
+        feature_matrix.to_csv(output_file, index=False)
+        # Compare the two feature matrices
+        matching_rows = feature_matrix1['GO_Term'] == feature_matrix['GO_Term']
+        percentage_match = (matching_rows.sum() / len(feature_matrix1)) * 100
+        print(f"Percentage of matching GO_Term values: {percentage_match:.2f}%")
