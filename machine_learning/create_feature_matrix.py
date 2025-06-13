@@ -5,7 +5,6 @@ from Bio import SeqIO
 import hydrophobic_moment
 from datetime import datetime
 from tqdm import tqdm
-import add_go_terms_to_df
 from goatools.obo_parser import GODag
 from goatools.base import download_go_basic_obo
 import numpy as np
@@ -189,7 +188,7 @@ def run(organism_names, input_dir, working_dir):
             ]
     go_ids = ["GO:0005739", "GO:0005783"]
 
-    for organism in organism_names:
+    for organism in tqdm(organism_names, desc="Processing organisms", position=0, leave=False):
         invalid_count = 0
         working_dir_per_organism = working_dir + "/" + organism 
         fasta = working_dir_per_organism + "/" + "filtered_proteins_by_GO_for_" + organism + ".fasta"
@@ -214,7 +213,7 @@ def run(organism_names, input_dir, working_dir):
         # read the fasta file and create a DataFrame
         df = fasta_to_dataframe(fasta_file)
         # create a list of all the proteins in the fasta file
-        for index, row in tqdm(df.iterrows(), total=len(df), desc=f"Processing proteins for {organism}"):
+        for index, row in tqdm(df.iterrows(), total=len(df), desc=f"Processing proteins for {organism}", leave=False, position=1):
             protein_sequence = row["Sequence"]
             protein_id = row["protein_id"]
             protein_id_human = row["protein_id_human"]
@@ -325,7 +324,7 @@ def run(organism_names, input_dir, working_dir):
 
             # add the GO terms to the feature matrix
 
-            # Add filtered GO terms rowwise to the feature matrix
+            '''# Add filtered GO terms rowwise to the feature matrix
             filtered_terms = []
             if protein_id in go_annotations:
                 for term in go_annotations[protein_id]:
@@ -337,16 +336,6 @@ def run(organism_names, input_dir, working_dir):
                 terms = filtered_terms
             else:
                 feature_matrix['GO_Term'] = ""
-            '''if "GO:0005739" in terms:
-                if mitofates_cleavage_probability < 0.5:
-                    terms = ["GO:0005739_no_cleavable_mts" if t == "GO:0005739" else t for t in terms]
-                elif mitofates_cleavage_probability >= 0.5:
-                    terms = ["GO:0005739_cleavable_mts" if t == "GO:0005739" else t for t in terms]'''
-            if len(terms) > 1:
-                '''for term in terms:
-                    feature_matrix_temp = feature_matrix.copy()
-                    feature_matrix_temp['GO_Term'] = term
-                    protein_list.append(feature_matrix_temp)'''
                 terms = "Multiple"
                 feature_matrix['GO_Term'] = terms
                 protein_list.append(feature_matrix)
@@ -356,8 +345,8 @@ def run(organism_names, input_dir, working_dir):
                     terms = "cyto_nuclear"
                 feature_matrix['GO_Term'] = terms
                 # append the feature matrix to the list of proteins
-                protein_list.append(feature_matrix)
-
+                protein_list.append(feature_matrix)'''
+            protein_list.append(feature_matrix)
             # append the feature matrix to the list of proteins
         all_proteins_df = pd.concat(protein_list, ignore_index=True)
         # save the DataFrame to a csv file

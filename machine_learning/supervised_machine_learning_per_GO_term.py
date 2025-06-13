@@ -173,7 +173,7 @@ def run(name, go_dag):
             y = df_filtered["GO_Term_Binary"]
 
             # Count how many proteins have the current GO term
-            proteins_with_go_term = df_filtered[(df_filtered['GO_Term'] == go_term)].sum()
+            proteins_with_go_term = df_filtered[(df_filtered['GO_Term'] == go_term)].shape[0]
 
             dropped_constant_columns = X.columns[X.nunique() <= 1].tolist()
             dropped_duplicate_columns = X.T[X.T.duplicated()].index.tolist()
