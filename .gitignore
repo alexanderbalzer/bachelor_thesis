@@ -5,3 +5,4 @@ pipeline/test.py
 extra_stuff
 README.md
 pipeline/create_logoplot.py
+pipeline/grouping_of_proteins_with_same_n_terminus
