@@ -16,6 +16,7 @@ Oryzias_latipes: metazoa
 Parasteatoda_tepidariorum: metazoa
 Plasmodium_malariae: plant
 Physcomitrium_patens: plant
+Rattus_norvegicus: metazoa
 Saccharomyces_cerevisiae: fungi
 Scheffersomyces_stipitis: fungi
 Schizosaccharomyces_pombe: fungi

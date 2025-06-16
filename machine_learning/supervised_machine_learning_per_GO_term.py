@@ -351,6 +351,6 @@ if __name__ == "__main__":
     #organism_names = ["Homo_sapiens"]
     # Load the GO DAG
     go_dag = load_obo()
-    for name in tqdm(organism_names, position=1, desc= "pipeline progress"):
+    for name in tqdm(organism_names, position=1, desc= "pipeline progress", leave=False):
         run(name, go_dag)
 

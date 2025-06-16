@@ -90,10 +90,10 @@ if __name__ == "__main__":
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
     "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
-    #organism_names = ["Homo_sapiens"]
+    organism_names = ["Arabidopsis_thaliana"]
     for name in tqdm(organism_names, leave=False):
         input_file = os.path.join(general_working_dir, name, "feature_matrix_with_go_terms.csv")
-        output_file = os.path.join(general_working_dir, name, "feature_matrix_with_go_terms.csv")
+        output_file = os.path.join(general_working_dir, name, "feature_matrix_with_go_terms_alt.csv")
         
         # Load the input feature matrix
         feature_matrix1 = pd.read_csv(input_file)
