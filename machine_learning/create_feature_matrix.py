@@ -368,11 +368,10 @@ if __name__ == "__main__":
     print(f"finished in: {run_time}")'''
 
     organism_names = [
-    "Homo_sapiens", "Saccharomyces_cerevisiae", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
+    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Dario_rerio",
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
-    "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
-    "Candida_glabrata", "Zygosaccharomyces_rouxii", "Homo_sapiens_isoforms"]
-    working_dir = 'pipeline/output/output_20250603_145910_ml_all_organisms'
+    "Saccharomyces_cerevisiae"]
+    working_dir = 'pipeline/output/output_20250616_165204'
     input_dir = "pipeline/input"
     start_time = datetime.now()
     run(organism_names, input_dir, working_dir)

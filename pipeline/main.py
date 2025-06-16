@@ -56,9 +56,9 @@ def main():
     organism_names = [os.path.splitext(f)[0] for f in fasta_files]
     
     organism_names = [
-         "Zygosaccharomyces_rouxii", "Saccharomyces_cerevisiae", "Candida_glabrata",
-        "Chlamydomonas_reinhardtii", "Physcomitrium_patens", "Arabidopsis_thaliana", "Drosophila_Melanogaster",
-        "Caenorhabditis_elegans", "Daphnia_magna", "Dario_rerio", "Mus_musculus", "Homo_sapiens", "Homo_sapiens_isoforms"]
+    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Dario_rerio",
+    "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
+    "Saccharomyces_cerevisiae"]
     
     #organism_names = ["Saccharomyces_cerevisiae"]
     log_message(f"Organism names extracted: {', '.join(organism_names)}")

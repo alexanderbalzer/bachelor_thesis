@@ -62,10 +62,11 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
         all_arrays = [0, 0]
         all_counted_instances = [0, 0, 0]
         amount_of_proteins = [0, 0, 0]
-
+        subset_protein_count = {}
         # run the three input files
         for file in range(len(input)):
             panda_df = fasta_to_dataframe(input[file])
+            subset_protein_count[file] = len(panda_df)
             proteins = list(panda_df['sequence'])
 
             # Create a 2D array to store the first 20 amino acids of each protein
@@ -144,10 +145,10 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
         pcm1 = ax[0].imshow(all_arrays[0], cmap=cmap)
         pcm2 = ax[1].imshow(all_arrays[1], cmap=cmap)
         ax[0].set_ylabel("")
-        ax[0].set_title("Mitochondrial proteins with MTS", fontsize=7)
+        ax[0].set_title(f"Mitochondrial proteins with MTS (n= {subset_protein_count[0]})", fontsize=7)
         ax[1].set_xticks(range(len(position)), labels=position, rotation=0, rotation_mode="anchor", fontsize=7)
         ax[1].set_yticks(range(len(amino_acid)), labels=amino_acid, rotation=0, rotation_mode="anchor", fontsize=7)
-        ax[1].set_title("Mitochondrial proteins without MTS", fontsize=7)
+        ax[1].set_title(f"Mitochondrial proteins without MTS (n= {subset_protein_count[1]})", fontsize=7)
         ax[1].set_ylabel(" ")
         ax[0].set_xlabel("Position in N-terminal sequences", fontsize=7)
         ax[1].set_xlabel("Position in N-terminal sequences", fontsize=7)
@@ -166,12 +167,12 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
 if __name__ == "__main__":
     # Define the names of the organisms
     organism_names = [
-    "Homo_sapiens", "Homo_sapiens_isoforms", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
+    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Dario_rerio",
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
-    "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
-    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
+    "Saccharomyces_cerevisiae"]
+    
+    output_dir = "pipeline/output/output_20250616_161709"
     input_dir = "pipeline/input"
-    output_dir = "pipeline/output/output_20250519_101903"
     heatmap_type = "hgt"  # or "hgt"
 
     run(organism_names, input_dir, output_dir, heatmap_type)

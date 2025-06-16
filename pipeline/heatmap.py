@@ -16,7 +16,7 @@ def fasta_to_dataframe(fasta_file):
     return pd.DataFrame(data, columns=['sequence'])
 
 
-def format_species_name(name: str) -> str:
+def format_species_name(name: str, amount_of_proteins) -> str:
     # Teile den Namen anhand des Unterstrichs
     parts = name.split("_")
     if name == "Homo_sapiens_isoforms":
@@ -26,9 +26,9 @@ def format_species_name(name: str) -> str:
     genus, species = parts
     # Kürze den Gattungsnamen auf den ersten Buchstaben + Punkt
     short_genus = genus[0] + "."
-    
+    amount = amount_of_proteins[name]
     # Setze alles in kursiv (z. B. für Markdown oder HTML)
-    formatted = f"{short_genus} {species}"
+    formatted = f"{short_genus} {species} (n= {amount})"
     return formatted
 
 
@@ -49,6 +49,7 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
     os.makedirs(cache_dir, exist_ok=True)
 
     dictlist = []
+    amount_of_proteins = {}
     reference_array = np.zeros((len(organism_names), len(amino_acid)), dtype=float)
     subset_array = np.zeros((len(organism_names), len(amino_acid)), dtype=float)
     visual_array = np.zeros((len(organism_names), len(amino_acid)), dtype=float)
@@ -69,6 +70,8 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
             data = []
             for line in SeqIO.parse(file, "fasta"):
                 data.append(list(str(line.seq)))
+            # get the amount of proteins in the file
+            amount_of_proteins_file = len(data)
             data = list(data)
             # limit the length of the sequences to 20 and cut the first
             for i in range(len(data)):
@@ -88,6 +91,7 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
             if y == 0:
                 for i in range(len(amino_acid)):
                     subset_array[z, i] = count_dict.get(amino_acid[i], 0)
+                amount_of_proteins[organism] = amount_of_proteins_file
             if y == 1:
                 for i in range(len(amino_acid)):
                     reference_array[z, i] = count_dict.get(amino_acid[i], 0)
@@ -146,8 +150,6 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
     # save the visual array as a csv file
     np.savetxt(os.path.join(output_dir, "visual_array.csv"), visual_array, delimiter=",")
 
-    newick = "(((Homo_sapiens, Mus_musculus), (Dario_rerio, Daphnia_magna)), ((Caenorhabditis_elegans, Drosophila_Melanogaster), (Arabidopsis_thaliana, Physcomitrium_patens))), ((Chlamydomonas_reinhardtii, Plasmodium_malariae), (Candida_glabrata, (Saccharomyces_cerevisiae, Zygosaccharomyces_rouxii))));"
-
     
     # Create the heatmap and add the dendrogram to the plot
     plt.figure(figsize=(12, 8))
@@ -155,7 +157,7 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
     ax.set_xticks(np.arange(len(amino_acid)), amino_acid)
     ax.set_yticks(np.arange(len(organism_names)), organism_names)
     ax.set_xticklabels(amino_acid)
-    formated_names = [format_species_name(name) for name in organism_names]
+    formated_names = [format_species_name(name, amount_of_proteins) for name in organism_names]
     ax.set_yticklabels(formated_names, fontstyle="italic")
     cmap = 'RdBu_r'
     max = np.max(visual_array)
@@ -180,12 +182,12 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
 if __name__ == "__main__":
     # Example usage
     organism_names = [
-         "Zygosaccharomyces_rouxii", "Saccharomyces_cerevisiae", "Candida_glabrata",
-        "Chlamydomonas_reinhardtii", "Physcomitrium_patens", "Arabidopsis_thaliana", "Drosophila_Melanogaster",
-        "Caenorhabditis_elegans", "Daphnia_magna", "Dario_rerio", "Mus_musculus", "Homo_sapiens", "Homo_sapiens_isoforms"]
+    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Dario_rerio",
+    "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
+    "Saccharomyces_cerevisiae"]
     input_dir = "pipeline/input"
-    cache_dir = "pipeline/cache/cache_20250513_133508/"
-    output_dir = "pipeline/output/output_20250519_101903"
+    cache_dir = "pipeline/cache/cache_20250616_161709/"
+    output_dir = "pipeline/output/output_20250616_161709"
     create_heatmap = True
     heatmap_type = "hgt"
     create_phylogenetic_tree = False

@@ -74,10 +74,10 @@ def drop_one_hot_collinear(X):
             cols_to_drop.append(group[0])
     return X.drop(columns=cols_to_drop)
 
-def run(name, go_dag):
+def run(name, go_dag, dir):
 
     # Set the working directory
-    working_dir = os.path.dirname("pipeline/output/output_20250603_145910_ml_all_organisms/" + name + "/")
+    working_dir = os.path.dirname(dir + name + "/")
 
     # Read the feature matrix from the CSV file
     feature_matrix_path = working_dir + "/feature_matrix_with_go_terms.csv"
@@ -343,14 +343,14 @@ def run(name, go_dag):
 
 if __name__ == "__main__":
     organism_names = [
-    "Homo_sapiens","Mus_musculus", "Dario_rerio", "Daphnia_magna", 
+    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Dario_rerio",
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
-    "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
-    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
+    "Saccharomyces_cerevisiae"]
+    working_dir = 'pipeline/output/output_20250616_165204'
     #  "Homo_sapiens_isoforms", 
     #organism_names = ["Homo_sapiens"]
     # Load the GO DAG
     go_dag = load_obo()
     for name in tqdm(organism_names, position=1, desc= "pipeline progress", leave=False):
-        run(name, go_dag)
+        run(name, go_dag, dir=working_dir)
 
