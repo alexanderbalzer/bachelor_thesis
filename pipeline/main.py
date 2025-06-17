@@ -56,7 +56,7 @@ def main():
     organism_names = [os.path.splitext(f)[0] for f in fasta_files]
     
     organism_names = [
-    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Dario_rerio",
+    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Danio_rerio",
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Saccharomyces_cerevisiae"]
     

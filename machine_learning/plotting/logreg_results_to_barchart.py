@@ -7,11 +7,11 @@ from tqdm import tqdm
 from matplotlib.patches import Patch
 
 
-def run(organism_names, go_terms):
+def run(organism_names, go_terms, working_dir):
     for name in organism_names:
         for go_term in go_terms:
             # Load the feature importance data
-            logreg_coefficients_path = os.path.join('pipeline/output/output_20250603_145910_ml_all_organisms', f"logreg_coefficients")
+            logreg_coefficients_path = os.path.join(working_dir, f"logreg_coefficients")
             feature_importance_df_path = os.path.join(logreg_coefficients_path, f"{go_term}_logreg_coefficients_{name}.csv")
             feature_importance_df = pd.read_csv(feature_importance_df_path)
             # Keep only the columns 'Coefficient' and 'FDR_significant'
@@ -65,15 +65,17 @@ def run(organism_names, go_terms):
         plt.axvline(x=0, color='black', linestyle='-', linewidth=0.8)
         plt.xticks(rotation=0)
         plt.tight_layout()
-        plt.savefig(os.path.join(logreg_coefficients_path, f"{go_term}_logreg_coefficients_{name}.pdf"), dpi=300)
+        barchart_folder = os.path.join(working_dir, "plots")
+        os.makedirs(barchart_folder, exist_ok=True)
+        plt.savefig(os.path.join(barchart_folder, f"{go_term}_logreg_coefficients_{name}.pdf"), dpi=300)
 
 if __name__ == "__main__":
     # Define the organism names and GO term
     organism_names = [
-    "Homo_sapiens", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
+    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Danio_rerio",
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
-    "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
-    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
-    organism_names = ['Homo_sapiens']
+    "Saccharomyces_cerevisiae"]
+    working_dir = 'pipeline/output/output_20250617_151116_latest_ML/'
+    #organism_names = ['Homo_sapiens']
     go_terms = ['GO:0005739','GO:0005783', 'Multiple']
-    run(organism_names=organism_names, go_terms=go_terms)
+    run(organism_names=organism_names, go_terms=go_terms, working_dir=working_dir)

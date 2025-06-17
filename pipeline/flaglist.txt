@@ -3,7 +3,7 @@ Caenorhabditis_elegans: metazoa
 Candida_glabrata: fungi
 Chlamydomonas_reinhardtii: plant
 Clavispora_lusitaniae: fungi
-Dario_rerio: metazoa
+Danio_rerio: metazoa
 Daphnia_magna: metazoa
 Debaryomyces_hansenii: fungi
 Drosophila_Melanogaster: metazoa

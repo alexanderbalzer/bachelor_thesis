@@ -51,7 +51,7 @@ aa_charge = {'E': -1, 'D': -1, 'K': 1, 'R': 1}
 #
 # Functions
 #
-def assign_hydrophobicity(sequence, scale='Fauchere-Pliska'):  # noqa: E302
+def assign_hydrophobicity(sequence, scale='Eisenberg'):  # noqa: E302
     """Assigns a hydrophobicity value to each amino acid in the sequence"""
 
     hscale = scales.get(scale, None)

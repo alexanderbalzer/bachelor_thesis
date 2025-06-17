@@ -84,13 +84,11 @@ def annotate_file(input_file, output_file):
     print(f"✅ Datei gespeichert unter: {output_file}")
 
 if __name__ == "__main__":
-    general_working_dir = "pipeline/output/output_20250603_145910_ml_all_organisms"
+    general_working_dir = "pipeline/output/output_20250616_165204"
     organism_names = [
-    "Homo_sapiens","Mus_musculus", "Dario_rerio", "Daphnia_magna", 
+    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Dario_rerio",
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
-    "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
-    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
-    organism_names = ["Arabidopsis_thaliana"]
+    "Saccharomyces_cerevisiae"]
     for name in tqdm(organism_names, leave=False):
         input_file = os.path.join(general_working_dir, name, "feature_matrix_with_go_terms.csv")
         output_file = os.path.join(general_working_dir, name, "feature_matrix_with_go_terms_alt.csv")

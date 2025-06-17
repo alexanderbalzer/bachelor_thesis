@@ -20,12 +20,12 @@ def format_species_name(name: str) -> str:
     formatted = f"{short_genus} {species}"
     return formatted
 
-def run(organism_names, go_term):
+def run(organism_names, go_term, dir):
     combined_df = pd.DataFrame()
     amount_of_proteins = {}
     for name in organism_names:
         # Load the feature importance data
-        logreg_coefficients_path = os.path.join('pipeline/output/output_20250603_145910_ml_all_organisms', f"logreg_coefficients")
+        logreg_coefficients_path = os.path.join(dir, f"logreg_coefficients")
         feature_importance_df_path = os.path.join(logreg_coefficients_path, f"{go_term}_logreg_coefficients_{name}.csv")
         feature_importance_df = pd.read_csv(feature_importance_df_path)
         
@@ -43,7 +43,12 @@ def run(organism_names, go_term):
         # Add a column for significance
         feature_importance_df['FDR_significant'] = feature_importance_df['FDR_significant'].astype(str).str.lower() == 'true'
         amount_of_proteins[name] = feature_importance_df.loc['Isoelectric Point', 'n']
-        feature_importance_df = feature_importance_df.drop(index=['mitofates cleavage probability', 'MPP cleavage position'])
+        if 'mitofates cleavage probability' in feature_importance_df.index:
+            # Remove the 'mitofates cleavage probability' and 'MPP cleavage position' rows
+            feature_importance_df = feature_importance_df.drop(index=['mitofates cleavage probability', 'MPP cleavage position'])
+        elif 'MPP cleavage position' in feature_importance_df.index:
+            feature_importance_df = feature_importance_df.drop(index=['MPP cleavage position'])
+
         # Combine the dataframes
         combined_df = pd.concat([combined_df, feature_importance_df], ignore_index=False)
     
@@ -110,17 +115,18 @@ def run(organism_names, go_term):
         for x, organism in enumerate(organisms_ordered):
             if significance_mask.loc[feature, organism]:
                 g.ax_heatmap.text(x + 0.5, y + 0.5, '*', ha='center', va='center', color='black', fontsize=12)
-
-    g.savefig(os.path.join(logreg_coefficients_path, f"{go_term}_clustermap.pdf"), dpi=300)
+    plot_folder = os.path.join(working_dir, "plots")
+    os.makedirs(plot_folder, exist_ok=True)
+    g.savefig(os.path.join(plot_folder, f"{go_term}_clustermap.pdf"), dpi=300)
 
 if __name__ == "__main__":
     # Define the organism names and GO term
     organism_names = [
-    "Homo_sapiens", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
+    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Danio_rerio",
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
-    "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
-    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
+    "Saccharomyces_cerevisiae"]
     #go_term = 'GO:0005739' # one of GO:0005739 GO:0005783 Multiple
     go_terms = ['GO:0005739','GO:0005783', 'Multiple']
+    working_dir = 'pipeline/output/output_20250617_151116_latest_ML'
     for go_term in go_terms:
-        run(organism_names=organism_names, go_term=go_term)
+        run(organism_names=organism_names, go_term=go_term, dir=working_dir)

@@ -117,7 +117,7 @@ if __name__ == "__main__":
     # Example usage
     output_dir = "pipeline/grouping_of_proteins_with_same_n_terminus"
     organism_names = [
-    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Dario_rerio",
+    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Danio_rerio",
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Saccharomyces_cerevisiae"]
     run(organism_names=organism_names, output_dir=output_dir)

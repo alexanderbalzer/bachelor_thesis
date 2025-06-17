@@ -66,29 +66,56 @@ def check_file_exists(file_path):
         logging.error(f"File not found: {file_path}")
         raise
 
-def run_perl_script(mitofates_path, input_file, flag, output_file):
+import os
+import subprocess
+from Bio import SeqIO
+import tempfile
+
+def run_perl_script_batched(mitofates_path, input_file, flag, output_file, batch_size=2000):
     """
-    Run the MitoFates Perl script with the specified input file and flag.
+    Run the MitoFates Perl script in batches of N sequences.
+    
     Args:
         mitofates_path (str): Path to the MitoFates Perl script.
         input_file (str): Path to the input FASTA file.
-        flag (str): Flag for the organism.
-        output_file (str): Path to the output file.
+        flag (str): Flag for the organism (e.g., "-m" or "-p").
+        output_file (str): Path to the combined output file.
+        batch_size (int): Number of sequences per batch (default: 2000).
     """
-    # sets the PATH variable to include /usr/bin
-    # this is needed for the perl script to run
-    # because the script uses the perl interpreter
-    # and the perl interpreter with the needed modules cannot be installed in the conda environment
     env = os.environ.copy()
-    env["PATH"] = "/usr/bin:" + env["PATH"]  
-    with open(output_file, "w") as output_handle:
-        subprocess.run(
-            ["perl", mitofates_path, input_file, flag],
-            stdout=output_handle,
-            stderr=subprocess.PIPE,
-            env=env,
-            check=True
-        )
+    env["PATH"] = "/usr/bin:" + env["PATH"]
+
+    sequences = list(SeqIO.parse(input_file, "fasta"))
+    total_seqs = len(sequences)
+    num_batches = (total_seqs + batch_size - 1) // batch_size
+
+    print(f"Total sequences: {total_seqs}, Batches: {num_batches}, Batch size: {batch_size}")
+
+    with open(output_file, "w") as combined_out:
+        for i in range(num_batches):
+            batch_seqs = sequences[i * batch_size : (i + 1) * batch_size]
+            
+            with tempfile.NamedTemporaryFile(mode="w+", suffix=".fasta", delete=False) as temp_fasta:
+                SeqIO.write(batch_seqs, temp_fasta.name, "fasta")
+                temp_outfile = temp_fasta.name + ".out"
+
+                try:
+                    subprocess.run(
+                        ["perl", mitofates_path, temp_fasta.name, flag],
+                        stdout=open(temp_outfile, "w"),
+                        stderr=subprocess.PIPE,
+                        env=env,
+                        check=True
+                    )
+                    # Append result to combined output
+                    with open(temp_outfile, "r") as result:
+                        combined_out.write(result.read())
+                finally:
+                    os.remove(temp_fasta.name)
+                    if os.path.exists(temp_outfile):
+                        os.remove(temp_outfile)
+
+
 def fasta_to_dataframe(fasta_file):
     headers = []
     sequences = []
@@ -143,7 +170,7 @@ def run(list_of_organisms, output_dir, mitofates_path, flagdict, delete_cache, t
         try:
             input_file = os.path.join(output_dir_per_organism, f"filtered_proteins_by_GO_for_{organism}.fasta")
             output_mitofates_file = os.path.join(output_dir_per_organism, f"mitofates_for_{organism}.cgi")
-            run_perl_script(mitofates_path, input_file, flagdict[organism], output_mitofates_file)
+            run_perl_script_batched(mitofates_path, input_file, flagdict[organism], output_mitofates_file)
             logging.info(f"Perl script completed for {organism}")
         except subprocess.CalledProcessError as e:
             logging.error(f"Error running MitoFates Perl script for {organism}: {e.stderr.decode()}")

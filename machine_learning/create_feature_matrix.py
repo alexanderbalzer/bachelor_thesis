@@ -146,6 +146,13 @@ helix_propensity = {
     'P': 0.59, 'Q': 1.17, 'R': 0.79, 'S': 0.79,
     'T': 0.82, 'V': 1.14, 'W': 1.14, 'Y': 0.61
 }
+Eisenberg_scale = {'A':  0.25, 'R': -1.80, 'N': -0.64,
+                        'D': -0.72, 'C':  0.04, 'Q': -0.69,
+                        'E': -0.62, 'G':  0.16, 'H': -0.40,
+                        'I':  0.73, 'L':  0.53, 'K': -1.10,
+                        'M':  0.26, 'F':  0.61, 'P': -0.07,
+                        'S': -0.26, 'T': -0.18, 'W':  0.37,
+                        'Y':  0.02, 'V':  0.54}
 
 def helix_score(seq):
     if len(seq) < 10:
@@ -193,7 +200,7 @@ def run(organism_names, input_dir, working_dir):
         working_dir_per_organism = working_dir + "/" + organism 
         fasta = working_dir_per_organism + "/" + "filtered_proteins_by_GO_for_" + organism + ".fasta"
         fasta_file = os.path.join(fasta)
-        go_child_dir = working_dir_per_organism + "/go_childs_reduced/"
+        go_child_dir = working_dir + "/go_childs_reduced/"
         # load the go_ids
         child_dict = {}
         for go_id in go_ids:
@@ -261,9 +268,11 @@ def run(organism_names, input_dir, working_dir):
             # One-hot encode the second amino acid
             second_amino_acid = protein_sequence[1] if len(protein_sequence) > 1 else None
             # One-hot encode the second amino acid
-            amino_acids = "ACDEFGHIKLMNPQRSTVWY"
+            amino_acids = "ACDEFGHIKLMNPQRSTVWY"'''
             one_hot_encoded_second_amino_acid = {f"Second_AA_{aa}": 1 if second_amino_acid == aa else 0 for aa in amino_acids}
-            feature_matrix = feature_matrix.assign(**one_hot_encoded_second_amino_acid)
+            feature_matrix = feature_matrix.assign(**one_hot_encoded_second_amino_acid)'''
+
+
             # Classify the NAT substrate
             '''if second_amino_acid in ["A", "C", "T", "S", "V", "G", "P", "D", "E", "N", "Q", "L", "I", "F"]:
                 acetylated = 1
@@ -300,6 +309,15 @@ def run(organism_names, input_dir, working_dir):
                 mod_mts_sequence = mts_sequence
                 alternative_mts_sequence = mts_sequence
                 mts_when_huntington = mts_sequence
+            # get the combined hydrophobicity of the first 2 amino acids of the neo n terminus
+            if len(mod_mts_sequence) < 2:
+                invalid_count += 1
+                continue
+            first_two_aa = mod_mts_sequence[:2]
+            combined_hydrophobicity = sum(Eisenberg_scale.get(aa, 0) for aa in first_two_aa)
+            # add the combined hydrophobicity to the DataFrame
+            feature_matrix["H_first_two_aa_neo_N"] = combined_hydrophobicity
+
             # calculate the hydrophobic moment of the mts sequence
             hydrophobic_moment_value_mod_mts, start_best_window, length_best_window, electrostatic_help, discrimination_factor, helix_score, charge = hydrophobic_moment.run(mod_mts_sequence, verbose=False)
             '''unused, unused, unused, electrostatic_help_diff_nat, unused, unused = hydrophobic_moment.run(alternative_mts_sequence, verbose=False)
@@ -324,7 +342,7 @@ def run(organism_names, input_dir, working_dir):
 
             # add the GO terms to the feature matrix
 
-            '''# Add filtered GO terms rowwise to the feature matrix
+            # Add filtered GO terms rowwise to the feature matrix
             filtered_terms = []
             if protein_id in go_annotations:
                 for term in go_annotations[protein_id]:
@@ -334,18 +352,22 @@ def run(organism_names, input_dir, working_dir):
                 filtered_terms = list(set(filtered_terms))
                 # if a protein has multiple go terms, set the filtered terms empty
                 terms = filtered_terms
-            else:
-                feature_matrix['GO_Term'] = ""
-                terms = "Multiple"
-                feature_matrix['GO_Term'] = terms
-                protein_list.append(feature_matrix)
+            if terms:
+                # if the protein has GO terms, set the GO term to the first one
+                feature_matrix['GO_Term'] = terms[0]
+                # if the protein has multiple GO terms, set the GO term to "Multiple"
+                if len(terms) > 1:
+                    feature_matrix['GO_Term'] = "Multiple"
+            #else:
+            #    feature_matrix['GO_Term'] = ""
+            #    terms = "Multiple"
+            #    feature_matrix['GO_Term'] = terms
+            #    protein_list.append(feature_matrix)
             else:
                 # if the protein has no GO terms, set the GO term to cyto_nuclear
-                if len(terms) == 0:
-                    terms = "cyto_nuclear"
+                terms = "cyto_nuclear"
                 feature_matrix['GO_Term'] = terms
                 # append the feature matrix to the list of proteins
-                protein_list.append(feature_matrix)'''
             protein_list.append(feature_matrix)
             # append the feature matrix to the list of proteins
         all_proteins_df = pd.concat(protein_list, ignore_index=True)
@@ -368,10 +390,10 @@ if __name__ == "__main__":
     print(f"finished in: {run_time}")'''
 
     organism_names = [
-    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Dario_rerio",
+    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Danio_rerio",
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Saccharomyces_cerevisiae"]
-    working_dir = 'pipeline/output/output_20250616_165204'
+    working_dir = 'pipeline/output/output_20250617_151116_latest_ML'
     input_dir = "pipeline/input"
     start_time = datetime.now()
     run(organism_names, input_dir, working_dir)
