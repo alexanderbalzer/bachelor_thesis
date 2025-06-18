@@ -230,23 +230,23 @@ def run(organism_names, input_dir, working_dir):
             feature_matrix["protein_id"] = [protein_id]
             feature_matrix["protein_id_human"] = protein_id_human
             feature_matrix["length"] = len(protein_sequence)
-            protein_id = row["protein_id"]
+            '''protein_id = row["protein_id"]
             start_of_alpha_helix, length_of_alpha_helix, mpp_cleavage_pos, mitofates_cleavage_probability, tom20_motive = get_mitoFates_infos(working_dir, organism, protein_id)
             if mpp_cleavage_pos is None:
-                mpp_cleavage_pos = 0
+                mpp_cleavage_pos = 30
             feature_matrix["MPP_cleavage_position"] = mpp_cleavage_pos
             feature_matrix["mitofates_cleavage_probability"] = mitofates_cleavage_probability
             feature_matrix["tom20_motive"] = tom20_motive
             # get the signalP information
-            '''spi_cleavage_pos, signalP_cleavage_probability = get_signalP_infos(working_dir, organism, protein_id)
+            spi_cleavage_pos, signalP_cleavage_probability = get_signalP_infos(working_dir, organism, protein_id)
             if spi_cleavage_pos == None:
                 signalP_cleavage_probability = 0
             else:
                 signalP_cleavage_probability = 1
-            feature_matrix["signalP_cleavage_probability"] = signalP_cleavage_probability'''
+            feature_matrix["signalP_cleavage_probability"] = signalP_cleavage_probability
             # mts sequence is the sequence specified by start and length of alpha helix
             start_of_alpha_helix = int(start_of_alpha_helix) -1
-            length_of_alpha_helix = int(length_of_alpha_helix)
+            length_of_alpha_helix = int(length_of_alpha_helix)'''
             if not protein_sequence.startswith("M"):
                 invalid_count += 1
                 continue
@@ -259,18 +259,13 @@ def run(organism_names, input_dir, working_dir):
             if not all(aa in valid_amino_acids for aa in protein_sequence):
                 invalid_count += 1
                 continue
-            '''cleavage_pos = np.min([mpp_cleavage_pos, spi_cleavage_pos]) if spi_cleavage_pos is not None else mpp_cleavage_pos'''
-            cleavage_pos = int(mpp_cleavage_pos)
-            if len(protein_sequence) < int(cleavage_pos):
-                invalid_count += 1
-                continue
             #mts_sequence = protein_sequence[start_of_alpha_helix:start_of_alpha_helix + length_of_alpha_helix]
             # One-hot encode the second amino acid
             second_amino_acid = protein_sequence[1] if len(protein_sequence) > 1 else None
             # One-hot encode the second amino acid
-            amino_acids = "ACDEFGHIKLMNPQRSTVWY"'''
+            amino_acids = "ACDEFGHIKLMNPQRSTVWY"
             one_hot_encoded_second_amino_acid = {f"Second_AA_{aa}": 1 if second_amino_acid == aa else 0 for aa in amino_acids}
-            feature_matrix = feature_matrix.assign(**one_hot_encoded_second_amino_acid)'''
+            feature_matrix = feature_matrix.assign(**one_hot_encoded_second_amino_acid)
 
 
             # Classify the NAT substrate
@@ -288,7 +283,7 @@ def run(organism_names, input_dir, working_dir):
             one_hot_encoded_natc = {f"NAT_{cls}": 1 if natc_substrate == cls else 0 for cls in natc_classes}
             feature_matrix = feature_matrix.assign(**one_hot_encoded_natc)'''
             # cut the protein sequence to the length of the MTS
-            cut = min(cleavage_pos, len(protein_sequence), mpp_cleavage_pos)
+            cut = 30
             mts_sequence = protein_sequence[:cut]
             # if the second amino acid is A, C, T, S, V, P or G, delete the first amino acid
             if second_amino_acid in ["A", "C", "T", "S", "V", "G", "P"]:
@@ -338,7 +333,7 @@ def run(organism_names, input_dir, working_dir):
             feature_matrix2 = feature_matrix_per_protein(mts_sequence)
             # add the feature matrix to the feature matrix
             feature_matrix = pd.concat([feature_matrix, feature_matrix2], axis=1)
-            feature_matrix['Molecular Weight'] = feature_matrix['Molecular Weight']/ cleavage_pos
+            feature_matrix['Molecular Weight'] = feature_matrix['Molecular Weight']/ cut
 
             # add the GO terms to the feature matrix
 
@@ -393,7 +388,7 @@ if __name__ == "__main__":
     "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Danio_rerio",
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Saccharomyces_cerevisiae"]
-    working_dir = 'pipeline/output/output_20250617_151116_latest_ML'
+    working_dir = 'pipeline/output/output_20250617_183139_latest_ML'
     input_dir = "pipeline/input"
     start_time = datetime.now()
     run(organism_names, input_dir, working_dir)

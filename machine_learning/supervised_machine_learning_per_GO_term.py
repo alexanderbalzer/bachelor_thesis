@@ -167,7 +167,7 @@ def run(name, go_dag, dir):
                 # remove the rows that dont contain the go_term
                 df_filtered = df_filtered[(df_filtered['GO_Term'] == go_term) | (df_filtered["GO_Term"] == "cyto_nuclear")]
                 df_filtered["GO_Term_Binary"] = (df_filtered["GO_Term"] == go_term).astype(int)
-                #df_filtered = df_filtered.drop(columns=["Second_AA_V"])
+                df_filtered = df_filtered.drop(columns=["Second_AA_V"])
         
             X = df_filtered.drop(['Molecular Weight', "GO_Term", "GO_Term_Binary", "Leucine_and_Alanine_percentage", "Arginine_percentage", "Discrimination Factor"], axis=1)
             y = df_filtered["GO_Term_Binary"]
@@ -346,7 +346,7 @@ if __name__ == "__main__":
     "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Danio_rerio",
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Saccharomyces_cerevisiae"]
-    working_dir = 'pipeline/output/output_20250617_151116_latest_ML/'
+    working_dir = 'pipeline/output/output_20250617_183139_latest_ML/'
     #  "Homo_sapiens_isoforms", 
     #organism_names = ["Homo_sapiens"]
     # Load the GO DAG

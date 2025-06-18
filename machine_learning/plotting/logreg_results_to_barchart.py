@@ -75,7 +75,7 @@ if __name__ == "__main__":
     "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Danio_rerio",
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Saccharomyces_cerevisiae"]
-    working_dir = 'pipeline/output/output_20250617_151116_latest_ML/'
+    working_dir = 'pipeline/output/output_20250617_183139_latest_ML/'
     #organism_names = ['Homo_sapiens']
     go_terms = ['GO:0005739','GO:0005783', 'Multiple']
     run(organism_names=organism_names, go_terms=go_terms, working_dir=working_dir)

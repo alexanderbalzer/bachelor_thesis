@@ -127,6 +127,6 @@ if __name__ == "__main__":
     "Saccharomyces_cerevisiae"]
     #go_term = 'GO:0005739' # one of GO:0005739 GO:0005783 Multiple
     go_terms = ['GO:0005739','GO:0005783', 'Multiple']
-    working_dir = 'pipeline/output/output_20250617_151116_latest_ML'
+    working_dir = 'pipeline/output/output_20250617_183139_latest_ML'
     for go_term in go_terms:
         run(organism_names=organism_names, go_term=go_term, dir=working_dir)
