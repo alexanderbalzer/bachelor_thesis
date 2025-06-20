@@ -125,6 +125,7 @@ def run(name, go_dag, dir):
         os.makedirs(output_dir_go, exist_ok=True)
         # Filter for current GO term (binary classification: this term vs. all others)
         df_filtered = df.copy()
+        df_filtered = df_filtered.drop(columns=[col for col in df_filtered.columns if col.startswith("Second_AA_")])
         if go_term == 'GO:0005739' and name == 'Homo_sapiens' and any(col.startswith("Second_AA_") for col in df_filtered.columns):
             nat_types = ['natB', 'natA', 'natC', 'natX', 'all']
         else:
@@ -169,7 +170,7 @@ def run(name, go_dag, dir):
                 df_filtered["GO_Term_Binary"] = (df_filtered["GO_Term"] == go_term).astype(int)
                 df_filtered = df_filtered.drop(columns=["Second_AA_V"])
         
-            X = df_filtered.drop(['Molecular Weight', "GO_Term", "GO_Term_Binary", "Leucine_and_Alanine_percentage", "Arginine_percentage", "Discrimination Factor"], axis=1)
+            X = df_filtered.drop(['Molecular Weight', "GO_Term", "GO_Term_Binary", "Leucine_and_Alanine_percentage", "Arginine_percentage", "Discrimination Factor", "start_of_alpha_helix", "length_of_alpha_helix", "SecStr_Sheet", "SecStr_Helix"], axis=1)
             y = df_filtered["GO_Term_Binary"]
 
             # Count how many proteins have the current GO term
