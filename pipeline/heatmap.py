@@ -182,12 +182,12 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
 if __name__ == "__main__":
     # Example usage
     organism_names = [
-    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Dario_rerio",
+    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Danio_rerio",
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Saccharomyces_cerevisiae"]
     input_dir = "pipeline/input"
-    cache_dir = "pipeline/cache/cache_20250616_161709/"
-    output_dir = "pipeline/output/output_20250616_161709"
+    cache_dir = "pipeline/cache/cache_20250617_183904/"
+    output_dir = "pipeline/output/output_20250617_183904"
     create_heatmap = True
     heatmap_type = "hgt"
     create_phylogenetic_tree = False

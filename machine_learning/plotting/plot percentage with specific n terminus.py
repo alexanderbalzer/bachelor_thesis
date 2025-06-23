@@ -22,14 +22,30 @@ def format_species_name(name: str) -> str:
     formatted = f"{short_genus} {species}"
     return formatted
 
-eisenberg = {
-    'A':  0.25, 'R': -1.80, 'N': -0.64,
-    'D': -0.72, 'C':  0.04, 'Q': -0.69,
-    'E': -0.62, 'G':  0.16, 'H': -0.40,
-    'I':  0.73, 'L':  0.53, 'K': -1.10,
-    'M':  0.26, 'F':  0.61, 'P': -0.07,
-    'S': -0.26, 'T': -0.18, 'W':  0.37,
-    'Y':  0.02, 'V':  0.54}
+eisenberg_hydrophobicity = {
+    'A':  0.62,  # Alanine
+    'R': -2.53,  # Arginine
+    'N': -0.78,  # Asparagine
+    'D': -0.90,  # Aspartic acid
+    'C':  0.29,  # Cysteine
+    'Q': -0.85,  # Glutamine
+    'E': -0.74,  # Glutamic acid
+    'G':  0.48,  # Glycine
+    'H': -0.40,  # Histidine
+    'I':  1.38,  # Isoleucine
+    'L':  1.06,  # Leucine
+    'K': -1.50,  # Lysine
+    'M':  0.64,  # Methionine
+    'F':  1.19,  # Phenylalanine
+    'P':  0.12,  # Proline
+    'S': -0.18,  # Serine
+    'T': -0.05,  # Threonine
+    'W':  0.81,  # Tryptophan
+    'Y':  0.26,  # Tyrosine
+    'V':  1.08   # Valine
+}
+
+
 fauchere_pliskat = {
     'A':  0.31, 'R': -1.01, 'N': -0.60,
     'D': -0.77, 'C':  1.54, 'Q': -0.22,
@@ -149,7 +165,7 @@ custom_values = {
     'G': -8.22653087338568,
     'V': -2.12461123525388
 }
-helix_propensity_pace_scholtz = {
+helix_propensity_Chou_Fasman = {
     'A': 1.41,  # Alanine
     'R': 0.98,  # Arginine
     'N': 0.67,  # Asparagine
@@ -174,26 +190,93 @@ helix_propensity_pace_scholtz = {
 
 amino_acids = list(custom_values.keys())
 
+organism = 'Saccharomyces_cerevisiae'  # Change this to the desired organism
+#organism = 'Homo_sapiens'  # Change this to the desired organism
+
 # Load the feature matrix (replace 'feature_matrix.csv' with your file path)
-file_path = 'pipeline/output/output_20250617_183139_latest_ML/Homo_sapiens/feature_matrix_with_go_terms.csv'
+file_path = f'pipeline/output/output_20250617_183139_latest_ML/{organism}/feature_matrix_with_go_terms.csv'
+#file_path = 'pipeline/output/output_20250617_183139_latest_ML/Saccharomyces_cerevisiae/feature_matrix_with_go_terms.csv'
 data = pd.read_csv(file_path)
 cyto_nuclear_df = data.copy()
 
 # Filter for mitochondrial proteins, take their sequence and map if they fit to a specific mask
 
-mito_df = data[(data['GO_Term'] == 'GO:0005739')]
+mito_df = data[(data['GO_Term'] == 'GO:0005739') & (data['Hydrophobic Moment'] >= 0.5)]
 cyto_nuclear_df = cyto_nuclear_df[(cyto_nuclear_df['GO_Term'] == 'cyto_nuclear')]
 # Categorize by the second amino acid
 categories1 = pd.DataFrame({
-    'Category': cyto_nuclear_df['Sequence'].str[1].fillna('Unknown')
+    'aas': cyto_nuclear_df['Sequence'].str[1:3].fillna('Unknown')
 })
 categories2 = pd.DataFrame({
-    'Category': mito_df['Sequence'].str[1].fillna('Unknown')
+    'aas': mito_df['Sequence'].str[1:3].fillna('Unknown')
 })
+nat = { 
+    "MA": 'NatA',
+    "MS": 'NatA',
+    "MT": 'NatA',
+    "MG": 'NatA',
+    "MV": 'NatA',
+    "MC": 'NatA',
+    "ML": 'NatC',
+    "MF": 'NatC',
+    "MI": 'NatC',
+    "MW": 'NatC',
+    "MY": 'NatC',
+    "MK": 'NatC',
+    "MD": 'NatB',
+    "ME": 'NatB',
+    "MN": 'NatB',
+    "MQ": 'NatB'
+}
+
+
+hydrophobic = set('MALFIWVC')
+neutral = set('STGPYH')
+hydrophilic = set('NQEDRK')
+def get_category(seq):
+    if len(seq) < 2:
+        return 'Unknown'
+    masked_seq = ''
+    for aa in seq:
+        if aa in hydrophobic:
+            masked_seq += 'H'
+        elif aa in neutral:
+            masked_seq += 'N'
+        elif aa in hydrophilic:
+            masked_seq += 'P'
+        else:
+            masked_seq += 'X'
+    return masked_seq
+
+categories1['Category'] = categories1['aas'].apply(get_category)
+categories2['Category'] = categories2['aas'].apply(get_category)
+
+categories1['Categories_grouped'] = categories1['Category']
+categories2['Categories_grouped'] = categories2['Category']
 
 # Count occurrences of each category
-value_counts = categories1['Category'].value_counts()
-value_counts2 = categories2['Category'].value_counts()
+value_counts = categories1['Categories_grouped'].value_counts()
+value_counts2 = categories2['Categories_grouped'].value_counts()
+# Create subplots for the pie charts
+fig, axes = plt.subplots(1, 2, figsize=(16, 8))
+
+# Pie chart for the first value counts
+axes[0].pie(value_counts, labels=value_counts.index, autopct='%1.1f%%', startangle=90)
+axes[0].set_title(f'Distribution of Second aa in cyto_nuclear (n = {len(cyto_nuclear_df)})')
+
+# Pie chart for the second value counts
+axes[1].pie(value_counts2, labels=value_counts2.index, autopct='%1.1f%%', startangle=90)
+axes[1].set_title(f'Distribution of Second aa in mito (n = {len(mito_df)})')
+
+# Adjust layout and show the figure
+plt.tight_layout()
+
+working_dir = 'pipeline/output/output_20250617_183904'
+output_dir = os.path.join(working_dir, 'plots')
+plt.savefig(os.path.join(output_dir, f'distribution_of_second_aa_in_cyto_nuclear_and_mito{organism}.pdf'), dpi=300)
+plt.show()
+exit()
+
 # Map the hydrophobicity values to the amino acids in value_counts2
 # Prepare data for 3D scatter plot
 organism_names = [
@@ -204,11 +287,11 @@ for organism in organism_names:
     working_dir = 'pipeline/output/output_20250617_183904'
     output_dir = os.path.join(working_dir, 'plots')
     os.makedirs(output_dir, exist_ok=True)
-    visual_array_path = os.path.join(working_dir, 'visual_array.csv')
+    visual_array_path = os.path.join(working_dir, 'visual_array_organisms.csv')
     hgt_array_df = pd.read_csv(visual_array_path, index_col=0)
     hgt_values = hgt_array_df.loc[organism]
-    hydrophobicity_values = [eisenberg.get(aa, np.nan) for aa in amino_acids]
-    helix_propensity_values = [helix_propensity_pace_scholtz.get(aa, np.nan) for aa in amino_acids]
+    hydrophobicity_values = [eisenberg_hydrophobicity.get(aa, np.nan) for aa in amino_acids]
+    helix_propensity_values = [helix_propensity_Chou_Fasman.get(aa, np.nan) for aa in amino_acids]
     nat_substrate_types = [nat_specificity.get(aa, 'Unknown') for aa in amino_acids]
     custom_values_list = [hgt_values[aa] if aa in hgt_values else np.nan for aa in amino_acids]
 
@@ -216,17 +299,18 @@ for organism in organism_names:
     # Create a DataFrame for the 3D scatter plot
     scatter_data = pd.DataFrame({
         'Amino Acid': amino_acids,
-        'Hydrophobicity': hydrophobicity_values,
-        'Helix Propensity': helix_propensity_values,
+        'Hydrophobicity (Eisenberg)': hydrophobicity_values,
+        'Helix Propensity (Chou-Fasman)': helix_propensity_values,
         'HGT score': custom_values_list,
         'NAT Substrate Type': nat_substrate_types
     })
+    # 
 
 
     fig2 = px.scatter(
         scatter_data,
-        x='Hydrophobicity',
-        y='Helix Propensity',
+        x='Hydrophobicity (Eisenberg)',
+        y='Helix Propensity (Chou-Fasman)',
         color='HGT score',
         color_continuous_scale='RdBu_r',
         range_color=[-20, 20],
@@ -286,7 +370,7 @@ for organism in organism_names:
     # Save the figure as a PDF
     fig2.write_image(output_file_png, scale=5)
 
-
+'''
 # Normalize hydrophobicity and helix propensity
 scatter_data['Normalized Hydrophobicity'] = (scatter_data['Hydrophobicity'] - scatter_data['Hydrophobicity'].min()) / (scatter_data['Hydrophobicity'].max() - scatter_data['Hydrophobicity'].min())
 scatter_data['Normalized Helix Propensity'] = (scatter_data['Helix Propensity'] - scatter_data['Helix Propensity'].min()) / (scatter_data['Helix Propensity'].max() - scatter_data['Helix Propensity'].min())
@@ -294,7 +378,7 @@ scatter_data['Normalized Helix Propensity'] = (scatter_data['Helix Propensity'] 
 # Create a new value by adding normalized hydrophobicity and helix propensity
 scatter_data['Combined Score'] = scatter_data['Normalized Hydrophobicity'] + scatter_data['Normalized Helix Propensity']
 # Plot HGT score against the new combined score
-
+'''
 
 
 # Create subplots for the pie charts

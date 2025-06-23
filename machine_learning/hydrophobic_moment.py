@@ -36,13 +36,28 @@ scales = {'Fauchere-Pliska': {'A':  0.31, 'R': -1.01, 'N': -0.60,
                               'S': -0.04, 'T':  0.26, 'W':  2.25,
                               'Y':  0.96, 'V':  1.22},
 
-          'Eisenberg': {'A':  0.25, 'R': -1.80, 'N': -0.64,
-                        'D': -0.72, 'C':  0.04, 'Q': -0.69,
-                        'E': -0.62, 'G':  0.16, 'H': -0.40,
-                        'I':  0.73, 'L':  0.53, 'K': -1.10,
-                        'M':  0.26, 'F':  0.61, 'P': -0.07,
-                        'S': -0.26, 'T': -0.18, 'W':  0.37,
-                        'Y':  0.02, 'V':  0.54},
+          'Eisenberg': {
+    'A':  0.62,  # Alanine
+    'R': -2.53,  # Arginine
+    'N': -0.78,  # Asparagine
+    'D': -0.90,  # Aspartic acid
+    'C':  0.29,  # Cysteine
+    'Q': -0.85,  # Glutamine
+    'E': -0.74,  # Glutamic acid
+    'G':  0.48,  # Glycine
+    'H': -0.40,  # Histidine
+    'I':  1.38,  # Isoleucine
+    'L':  1.06,  # Leucine
+    'K': -1.50,  # Lysine
+    'M':  0.64,  # Methionine
+    'F':  1.19,  # Phenylalanine
+    'P':  0.12,  # Proline
+    'S': -0.18,  # Serine
+    'T': -0.05,  # Threonine
+    'W':  0.81,  # Tryptophan
+    'Y':  0.26,  # Tyrosine
+    'V':  1.08   # Valine
+},
           }
 _supported_scales = list(scales.keys())
 
@@ -201,7 +216,11 @@ def analyze_sequence(name=None, sequence=None, window=9, verbose=False, w_h = 0.
     seq_len = len(sequence)
     #print('[+] Analysing sequence {} ({} aa.)'.format(name, seq_len))
     #print('[+] Using a window of {} aa.'.format(w))
-    for seq_range in range(0, 5):
+    for seq_range in range(1, 10):
+        if seq_range + w > seq_len:
+            if verbose:
+                print(f'Skipping window {seq_range+1} due to insufficient length: {seq_len} < {seq_range+w}')
+            break
         seq_w = sequence[seq_range:seq_range+w]
         if seq_range and len(seq_w) < w:
             break

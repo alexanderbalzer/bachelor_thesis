@@ -146,13 +146,28 @@ helix_propensity = {
     'P': 0.59, 'Q': 1.17, 'R': 0.79, 'S': 0.79,
     'T': 0.82, 'V': 1.14, 'W': 1.14, 'Y': 0.61
 }
-Eisenberg_scale = {'A':  0.25, 'R': -1.80, 'N': -0.64,
-                        'D': -0.72, 'C':  0.04, 'Q': -0.69,
-                        'E': -0.62, 'G':  0.16, 'H': -0.40,
-                        'I':  0.73, 'L':  0.53, 'K': -1.10,
-                        'M':  0.26, 'F':  0.61, 'P': -0.07,
-                        'S': -0.26, 'T': -0.18, 'W':  0.37,
-                        'Y':  0.02, 'V':  0.54}
+Eisenberg_scale = {
+    'A':  0.62,  # Alanine
+    'R': -2.53,  # Arginine
+    'N': -0.78,  # Asparagine
+    'D': -0.90,  # Aspartic acid
+    'C':  0.29,  # Cysteine
+    'Q': -0.85,  # Glutamine
+    'E': -0.74,  # Glutamic acid
+    'G':  0.48,  # Glycine
+    'H': -0.40,  # Histidine
+    'I':  1.38,  # Isoleucine
+    'L':  1.06,  # Leucine
+    'K': -1.50,  # Lysine
+    'M':  0.64,  # Methionine
+    'F':  1.19,  # Phenylalanine
+    'P':  0.12,  # Proline
+    'S': -0.18,  # Serine
+    'T': -0.05,  # Threonine
+    'W':  0.81,  # Tryptophan
+    'Y':  0.26,  # Tyrosine
+    'V':  1.08   # Valine
+}
 
 def helix_score(seq):
     if len(seq) < 10:
@@ -283,7 +298,7 @@ def run(organism_names, input_dir, working_dir):
             one_hot_encoded_natc = {f"NAT_{cls}": 1 if natc_substrate == cls else 0 for cls in natc_classes}
             feature_matrix = feature_matrix.assign(**one_hot_encoded_natc)'''
             # cut the protein sequence to the length of the MTS
-            cut = 30
+            cut = 40
             mts_sequence = protein_sequence[:cut]
             # if the second amino acid is A, C, T, S, V, P or G, delete the first amino acid
             if second_amino_acid in ["A", "C", "T", "S", "V", "G", "P"]:

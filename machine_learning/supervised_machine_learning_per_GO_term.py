@@ -119,14 +119,14 @@ def run(name, go_dag, dir):
         ]
     #valid_go_terms = go_ids
     '''
-    valid_go_terms = ['GO:0005783', 'GO:0005739', 'Multiple']
+    valid_go_terms = ['GO:0005783', 'GO:0005739']
     for go_term in tqdm(valid_go_terms, position=2, desc=f"Processing GO terms for {name}", leave=False):
         output_dir_go = os.path.join(general_output_dir, sanitize_filename(get_go_aspect(go_term, go_dag)))
         os.makedirs(output_dir_go, exist_ok=True)
         # Filter for current GO term (binary classification: this term vs. all others)
         df_filtered = df.copy()
         df_filtered = df_filtered.drop(columns=[col for col in df_filtered.columns if col.startswith("Second_AA_")])
-        if go_term == 'GO:0005739' and name == 'Homo_sapiens' and any(col.startswith("Second_AA_") for col in df_filtered.columns):
+        if go_term == 'GO:0005739' and any(col.startswith("Second_AA_") for col in df_filtered.columns):
             nat_types = ['natB', 'natA', 'natC', 'natX', 'all']
         else:
             nat_types = ['all']
@@ -169,8 +169,13 @@ def run(name, go_dag, dir):
                 df_filtered = df_filtered[(df_filtered['GO_Term'] == go_term) | (df_filtered["GO_Term"] == "cyto_nuclear")]
                 df_filtered["GO_Term_Binary"] = (df_filtered["GO_Term"] == go_term).astype(int)
                 df_filtered = df_filtered.drop(columns=["Second_AA_V"])
+                df_filtered = df_filtered.drop(columns=[col for col in df_filtered.columns if col.startswith("Second")])
         
-            X = df_filtered.drop(['Molecular Weight', "GO_Term", "GO_Term_Binary", "Leucine_and_Alanine_percentage", "Arginine_percentage", "Discrimination Factor", "start_of_alpha_helix", "length_of_alpha_helix", "SecStr_Sheet", "SecStr_Helix"], axis=1)
+            X = df_filtered.drop([
+                'Molecular Weight', "GO_Term", "GO_Term_Binary", "Leucine_and_Alanine_percentage", 
+                "Arginine_percentage", "Discrimination Factor", "start_of_alpha_helix", "length_of_alpha_helix", 
+                "SecStr_Sheet", "SecStr_Helix", "Electrostatic Help", "Instability Index", "Charge", "Aromaticity"
+                ], axis=1)
             y = df_filtered["GO_Term_Binary"]
 
             # Count how many proteins have the current GO term
@@ -255,7 +260,7 @@ def run(name, go_dag, dir):
             sns.barplot(x='Coefficient', y='Feature', data=feature_importance_df.head(10))
             plt.title(f"Top 10 Logistic Regression Coefficients for GO Term: {go_term}")
             plt.tight_layout()
-            plt.savefig(os.path.join(output_dir, f"{go_term}_logreg_coefficients_top10.png"))
+            plt.savefig(os.path.join(output_dir, f"{go_term}_{nat_type}_logreg_coefficients_top10.png"))
             plt.close()
 
             # plot a volcano plot

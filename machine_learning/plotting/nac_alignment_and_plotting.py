@@ -42,9 +42,8 @@ def load_and_simplify_fasta(fasta_path):
     return sequences
 
 # Step 3: Align all sequences to the longest one
-
 def align_to_reference(sequences):
-    reference_name = max(sequences, key=lambda x: len(sequences[x]))
+    reference_name = 'sp|E9PAV3|NACAM_HUMAN'
     reference_seq = sequences[reference_name]
     aligned_sequences = {}
 
@@ -52,39 +51,52 @@ def align_to_reference(sequences):
         if name == reference_name:
             aligned_sequences[name] = reference_seq
         else:
-            # Use scoring scheme: match=2, mismatch=-1, open_gap=-0.5, extend_gap=-0.1
-            alignment = pairwise2.align.globalms(reference_seq, seq, 2, -1, -0.5, -0.1, one_alignment_only=True)[0]
-            aligned_sequences[name] = alignment[1]  # aligned target sequence
+            # Use scoring scheme: match=2, mismatch=-1, open_gap=-0.5, extend_gap=-0.2
+            alignment = pairwise2.align.globalms(reference_seq, seq, 9, 1, -8, -7, one_alignment_only=True)[0]
+            aligned_seq = alignment[1]  # aligned target sequence
+
+            # Replace mismatches with '.'
+            aligned_seq = "".join(c if c != "-" else "." for c in aligned_seq)
+            aligned_sequences[name] = aligned_seq  #
+
     return aligned_sequences
 
 
 # Plot the aligned profiles as a heatmap
 def plot_property_profiles(aligned_sequences):
-    label_map = {"A": 0, "B": 1, "N": 2, "H": 3, "X": 4, "-": np.nan}
+    import pandas as pd
+
+    label_map = {"A": 0, "B": 1, "N": 2, "H": 3, "X": 4, "-": np.nan, ".": np.nan, " ": np.nan, "\t": np.nan}
     cmap = plt.get_cmap("tab10", 5)
 
-    max_length = min(100, max(len(seq) for seq in aligned_sequences.values()))  # Limit to first 100 amino acids
-    numeric_profiles = {}
+    max_length = max(len(seq) for seq in aligned_sequences.values())  # Use full length
 
+    # Build DataFrame: rows=sequence names, columns=aligned positions
+    data = {}
     for name, seq in aligned_sequences.items():
-        numeric_seq = [label_map.get(c, np.nan) for c in seq[:100]]  # Slice to first 100 amino acids
-        padded_seq = numeric_seq + [np.nan] * (max_length - len(numeric_seq))
-        numeric_profiles[name] = padded_seq
+        numeric_seq = [label_map.get(c, np.nan) for c in seq[:max_length]]
+        # Pad to max_length
+        if len(numeric_seq) < max_length:
+            numeric_seq += [np.nan] * (max_length - len(numeric_seq))
+        data[name] = numeric_seq
+    df = pd.DataFrame.from_dict(data, orient='index', columns=np.arange(1, max_length+1))
 
-    _, ax = plt.subplots(figsize=(14, len(numeric_profiles)))  # Removed unused variable 'fig'
-    for i, (name, profile) in enumerate(numeric_profiles.items()):
-        profile_array = np.array(profile, dtype=float)
-        ax.imshow([profile_array], aspect="auto", cmap=cmap, extent=[0, max_length, i, i + 1])
+    fig, ax = plt.subplots(figsize=(14, len(df)))
+    im = ax.imshow(df.values, aspect="auto", cmap=cmap, interpolation='none', vmin=0, vmax=4)
 
-    ax.set_yticks(np.arange(len(numeric_profiles)) + 0.5)
-    ax.set_yticklabels(numeric_profiles.keys())
+    ax.set_yticks(np.arange(len(df)))
+    ax.set_yticklabels(df.index)
+    # Show every 10th position, but cover the full length
+    step = max(1, max_length // 20)
+    ax.set_xticks(np.arange(0, max_length, step))
+    ax.set_xticklabels(np.arange(1, max_length+1, step))
     ax.set_xlabel("Aligned Position")
-    ax.set_title("Aligned Biochemical Property Profiles (First 100 Amino Acids)")
+    ax.set_title("Aligned Biochemical Property Profiles (Full Sequence)")
 
     sm = plt.cm.ScalarMappable(cmap=cmap)
     sm.set_array([])
-    cbar = plt.colorbar(sm, ax=ax, ticks=range(5))
-    cbar.ax.set_yticklabels(["Acidic", "Basic", "Neutral", "Hydrophobic", "Other"])
+    cbar = plt.colorbar(sm, ax=ax)
+    cbar.set_ticklabels(["Acidic (A)", "Basic (B)", "Neutral (N)", "Hydrophobic (H)", "Unknown (X)"])
     cbar.set_label("Residue Type")
 
     plt.tight_layout()
@@ -165,5 +177,5 @@ if __name__ == "__main__":
     with open(output_path, "w") as output_file:
         for name, seq in aligned.items():
             output_file.write(f">{name}\n{seq}\n")
-    print(f"Aligned sequences saved to {output_path}")    
-plt.show()  # Show the heatmap plot
+    plt.savefig(os.path.join(working_dir, "aligned_property_profiles.pdf"), dpi=500, bbox_inches="tight")
+    print(f"Aligned sequences saved to {output_path}")

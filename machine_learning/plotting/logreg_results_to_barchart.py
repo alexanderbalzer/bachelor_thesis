@@ -28,12 +28,13 @@ def run(organism_names, go_terms, working_dir):
             # === 2. Gruppenzuweisung ===
         mito_df['Group'] = 'Mitochondrion (GO:0005739)'
         er_df['Group'] = 'ER (GO:0005783)'
-        both_df['Group'] = 'ER+Mito'
+        #both_df['Group'] = 'ER+Mito'
 
         # === 3. Kombinieren und nur gemeinsame Features behalten ===
-        combined_df = pd.concat([mito_df, er_df, both_df], ignore_index=True)
-        common_features = set(mito_df['Feature']) & set(er_df['Feature']) & set(both_df['Feature'])
+        combined_df = pd.concat([mito_df, er_df], ignore_index=True)
+        common_features = set(mito_df['Feature']) & set(er_df['Feature'])
         combined_df = combined_df[combined_df['Feature'].isin(common_features)]
+        # Set the first row as the header
 
         # === 4. Zwei DataFrames erstellen: signifikant und alle Werte ===
         full_pivot = combined_df.pivot(index='Feature', columns='Group', values='Coefficient')
@@ -42,16 +43,20 @@ def run(organism_names, go_terms, working_dir):
         sig_pivot = sig_df.pivot(index='Feature', columns='Group', values='Coefficient')
 
         # === 5. Plot erstellen ===
-        fig, ax = plt.subplots(figsize=(8, 10))
-        # Zuerst: alle (grau)
-        full_pivot.plot(kind='barh', ax=ax, edgecolor='white', legend=False, hatch='/////', width=0.8)
+        color_map = {
+            'ER (GO:0005783)': 'blue',
+            'Mitochondrion (GO:0005739)': 'green'
+        }
+        fig, ax = plt.subplots(figsize=(12, 6))
+        # First: all (gray)
+        full_pivot.plot(kind='bar', ax=ax, edgecolor='white', legend=False, hatch='/////', width=0.8, color=[color_map.get(col, 'gray') for col in full_pivot.columns])
 
-        # Dann: signifikante Balken drüberlegen (farbig)
-        sig_pivot.plot(kind='barh', ax=ax, edgecolor='white', legend=True, width=0.8)
+        # Then: overlay significant bars (colored)
+        sig_pivot.plot(kind='bar', ax=ax, edgecolor='white', legend=True, width=0.8, color=[color_map.get(col, 'gray') for col in sig_pivot.columns])
+
         # Add a second legend for hatched and unhatched bars
         legend_elements = [
             Patch(facecolor='blue', edgecolor='black', label='ER (GO:0005783)'),
-            Patch(facecolor='orange', edgecolor='black', label='ER+Mito'),
             Patch(facecolor='green', edgecolor='black', label='Mitochondrion (GO:0005739)'),
             Patch(facecolor='none', edgecolor='none', label=''),
             Patch(facecolor='gray', edgecolor='white', hatch='/////', label='Not Significant'),
@@ -60,9 +65,9 @@ def run(organism_names, go_terms, working_dir):
         ax.legend(handles=legend_elements, loc='upper right', fontsize='small')
 
         # === 6. Plot verschönern ===
-        plt.xlabel("Coefficient")
-        plt.ylabel("Feature")
-        plt.axvline(x=0, color='black', linestyle='-', linewidth=0.8)
+        plt.xlabel("Feature")
+        plt.ylabel("Coefficient")
+        plt.axhline(y=0, color='black', linestyle='-', linewidth=0.8)
         plt.xticks(rotation=0)
         plt.tight_layout()
         barchart_folder = os.path.join(working_dir, "plots")
@@ -77,5 +82,5 @@ if __name__ == "__main__":
     "Saccharomyces_cerevisiae"]
     working_dir = 'pipeline/output/output_20250617_183139_latest_ML/'
     #organism_names = ['Homo_sapiens']
-    go_terms = ['GO:0005739','GO:0005783', 'Multiple']
+    go_terms = ['GO:0005739','GO:0005783']
     run(organism_names=organism_names, go_terms=go_terms, working_dir=working_dir)
