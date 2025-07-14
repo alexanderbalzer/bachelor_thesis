@@ -4,9 +4,10 @@ import subprocess
 import os
 import csv
 import matplotlib.patches as mpatches
+import pandas as pd
 
 # Genes of interest
-genes = ["NACA", "NACAD", "NACA2"]
+genes = ["NACA", "NACAD", "NACA2", "BTF3", "BTF3L4"]
 server = "https://rest.ensembl.org"
 headers = {"Content-Type": "application/json"}
 
@@ -73,7 +74,7 @@ def run_interproscan(
     
 
 all_transcripts = []
-for gene in genes:
+'''for gene in genes:
     all_transcripts.extend(fetch_transcripts(gene))
 
 # Generate FASTA
@@ -91,7 +92,7 @@ print("Saved: naca_paralogues_proteins.fasta")
 
 fasta_input_path = "naca_paralogues_proteins.fasta"
 interpro_output_path = "naca_interpro.tsv"
-'''
+
 run_interproscan(
     fasta_input=fasta_input_path,
     output_file=interpro_output_path,
@@ -100,7 +101,8 @@ run_interproscan(
     output_format="tsv"
 )
 '''
-
+working_dir = "/home/abalzer/Documents/github_clone/bachelor_thesis/pipeline/output/output_20250617_183139_latest_ML/rna_isoforms"
+interpro_output_path = os.path.join(working_dir, "naca_interpro.tsv")
 
 domain_data = {}
 
@@ -108,34 +110,40 @@ with open(interpro_output_path) as f:
     reader = csv.reader(f, delimiter='\t')
     for row in reader:
         enst_id = row[0]
-        enst_id = enst_id.split('|')[2] + '|' + enst_id.split('|')[0]  # Extract ENST ID
+        enst_id = enst_id.split('|')[0]  # Extract ENST ID
         protein_length = int(row[2])
         start = int(row[6])
         end = int(row[7])
         domain_name = row[5]
         domain_data.setdefault(enst_id, []).append((start, end, domain_name, protein_length))
 
+isoform_list = pd.read_csv(os.path.join(working_dir, "isoform_list.txt"), header=None).squeeze().tolist()
+
+# use only isoforms that are in the isoform_list
+domain_data = {enst: domains for enst, domains in domain_data.items() if enst in isoform_list}
+# order the domain_data by the isoform_list
+domain_data = {enst: domain_data[enst] for enst in isoform_list if enst in domain_data}
+
 # Define colors for domains
 
 # Plotting
-fig, ax = plt.subplots(figsize=(12, len(domain_data) * 0.8))
-yticks = []
-ylabels = []
+fig, ax = plt.subplots(figsize=(len(domain_data) * 0.8, 9))  # Swap figsize
+
+xticks = []
+xlabels = []
 for i, (enst, domain_info) in enumerate(domain_data.items()):
     domains = domain_info
     protein_length = domains[0][3] if domains else 0
-    y = -i
-    yticks.append(y)
-    ylabels.append(enst)
+    x = i
+    xticks.append(x)
+    xlabels.append(enst)
     
-    # Full protein bar
-    ax.add_patch(mpatches.Rectangle((0, y - 0.2), protein_length, 0.4, color='lightgray'))
+    # Full protein bar (now vertical)
+    ax.add_patch(mpatches.Rectangle((x - 0.2, 0), 0.4, protein_length, color='lightgray'))
     
-
     displayed_domains = set()
-    # Domains
+    # Domains (now vertical)
     for start, end, name, _ in domains:
-        # if the name contains "Nascent polypeptide", skip it
         if "disorder" in name.lower():
             name = "Disordered"
             color = 'orange'
@@ -149,33 +157,36 @@ for i, (enst, domain_info) in enumerate(domain_data.items()):
             color = 'darkgreen'
         else:
             continue
-        ax.add_patch(mpatches.Rectangle((start, y - 0.2), end - start, 0.4,
-                                             color=color, label=name))
+        ax.add_patch(mpatches.Rectangle((x - 0.2, start), 0.4, end - start, color=color, label=name))
         if name not in displayed_domains:
             displayed_domains.add(name)
-            
         else:
             continue
-        
-        
-ax.set_yticks(yticks)
-ax.set_yticklabels(ylabels)
 
-# Shift y-tick labels a little higher
-for label in ax.get_yticklabels():
-    label.set_y(label.get_position()[1] + 0.2)  # Adjust as needed
+# Collect legend handles for unique domains
+legend_dict = {
+    "Disordered": 'orange',
+    "UBA": 'lightgreen',
+    "NAC": 'darkgreen'
+}
+handles = [mpatches.Patch(color=color, label=name) for name, color in legend_dict.items()]
+ax.legend(handles=handles, loc='lower right', title='Domain', fontsize='large')
 
-ax.set_xlabel("Amino Acid Position")
-ax.set_title("Protein Domain Architecture of NACA, NACAD, and NACA2 Isoforms")
-# Create a legend
-handles, labels = ax.get_legend_handles_labels()
-unique_labels = set(labels)
-handles = [handles[labels.index(label)] for label in unique_labels]
-ax.legend(handles, unique_labels, loc='upper right', title='Domains', fontsize='small')
-ax.set_xlim(0, 2225)
-ax.set_ylim(-len(domain_data) + 0.2, 1)
-plt.grid(True, axis='x', linestyle='--', alpha=0.4)
+ax.set_xticks(xticks)
+xlabels = "" * len(xticks)  # Initialize xlabels as empty strings
+ax.set_xticklabels(xlabels, rotation=45, ha='right')
+ax.set_xlabel("")
+ax.xaxis.set_ticks_position('top')
+ax.xaxis.set_label_position('top')
+
+ax.set_ylabel("Amino Acid Position")
+ax.set_title("")
+
+ax.set_xlim(-0.5, len(domain_data) - 0.5)
+ax.set_ylim(0, 2100)
+ax.invert_yaxis()  # Mirror the plot on the x-axis
+
+plt.grid(True, axis='y', linestyle='--', alpha=0.4)
 plt.tight_layout()
-output_path = '/home/abalzer/Documents/github_clone/bachelor_thesis/pipeline/output/output_20250617_183139_latest_ML/rna_isoforms/naca_paralogues_domains.png'
+output_path = os.path.join(working_dir, "domain_architecture_flipped_mirrored.png")
 plt.savefig(output_path, dpi=300, bbox_inches='tight')
-plt.show()
