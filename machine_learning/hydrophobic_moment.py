@@ -349,7 +349,7 @@ def run(sequence, verbose):
     data = []
     w_h = 0.944 #/ (0.944 + 0.33) # weight for hydrophobic vector
     w_q = 0.33 #/ (0.944 + 0.33) # weight for charge vector
-    for i in range(11, 30):
+    for i in range(10, 120):
         temp_data = analyze_sequence(sequence=sequence, verbose=verbose, window=i, w_h=w_h, w_q=w_q)
         data.extend(temp_data)
     # _t = [name, sequence, seq_range+1, w, seq_w, z, av_h, av_uH, av_uQ, alignment, d,

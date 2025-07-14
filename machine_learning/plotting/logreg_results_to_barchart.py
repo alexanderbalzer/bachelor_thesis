@@ -68,7 +68,7 @@ def run(organism_names, go_terms, working_dir):
         plt.xlabel("Feature")
         plt.ylabel("Coefficient")
         plt.axhline(y=0, color='black', linestyle='-', linewidth=0.8)
-        plt.xticks(rotation=0)
+        plt.xticks(rotation=45, ha='right')
         plt.tight_layout()
         barchart_folder = os.path.join(working_dir, "plots")
         os.makedirs(barchart_folder, exist_ok=True)

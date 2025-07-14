@@ -252,6 +252,7 @@ def run(name, go_dag, dir):
             plt.tight_layout()
             plt.savefig(os.path.join(output_dir, f"{go_term}_logreg_coefficients.png"))
             plt.close()'''
+            
             feature_importance_df = feature_importance_df.replace([np.inf, -np.inf], np.nan)
             feature_importance_df = feature_importance_df.dropna(subset=["Significance", "Coefficient"])
             feature_importance_df = feature_importance_df[feature_importance_df["Significance"] > 0]

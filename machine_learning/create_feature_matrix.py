@@ -169,6 +169,9 @@ Eisenberg_scale = {
     'V':  1.08   # Valine
 }
 
+aa_charge = {'E': -1, 'D': -1, 'K': 1, 'R': 1}
+
+
 def helix_score(seq):
     if len(seq) < 10:
         return 0  # Return 0 if the sequence is shorter than the frame length
@@ -323,10 +326,29 @@ def run(organism_names, input_dir, working_dir):
             if len(mod_mts_sequence) < 2:
                 invalid_count += 1
                 continue
-            first_two_aa = mod_mts_sequence[:2]
-            combined_hydrophobicity = sum(Eisenberg_scale.get(aa, 0) for aa in first_two_aa)
-            # add the combined hydrophobicity to the DataFrame
-            feature_matrix["H_first_two_aa_neo_N"] = combined_hydrophobicity
+            hyd_second_aa = Eisenberg_scale.get(mts_sequence[1], 0)
+            # add the hydrophobicity of the second, third and fourth amino acid to the DataFrame
+            feature_matrix["Hydrophobicity of the second amino acid"] = hyd_second_aa
+            # add the hydrophobicity of the third amino acid to the DataFrame
+            hyd_third_aa = Eisenberg_scale.get(mts_sequence[2], 0)
+            feature_matrix["Hydrophobicity of the third amino acid"] = hyd_third_aa
+            # add the hydrophobicity of the fourth amino acid to the DataFrame
+            hyd_fourth_aa = Eisenberg_scale.get(mts_sequence[3], 0)
+            feature_matrix["Hydrophobicity of the fourth amino acid"] = hyd_fourth_aa
+            # add the helix score of the second second, third and fourth amino acid to the DataFrame
+            helix_second_aa = helix_propensity.get(mts_sequence[1], 0)
+            feature_matrix["Helix score of the second amino acid"] = helix_second_aa
+            helix_third_aa = helix_propensity.get(mts_sequence[2], 0)
+            feature_matrix["Helix score of the third amino acid"] = helix_third_aa
+            helix_fourth_aa = helix_propensity.get(mts_sequence[3], 0)
+            feature_matrix["Helix score of the fourth amino acid"] = helix_fourth_aa
+
+            if mts_sequence[1] in ["A", "C", "T", "S", "V", "G", "P"] and mts_sequence[2] in ["A"]:
+                feature_matrix["iMet cleavage and third amino acid is A"] = 1
+            else:
+                feature_matrix["iMet cleavage and third amino acid is A"] = 0
+
+
 
             # calculate the hydrophobic moment of the mts sequence
             hydrophobic_moment_value_mod_mts, start_best_window, length_best_window, electrostatic_help, discrimination_factor, helix_score, charge = hydrophobic_moment.run(mod_mts_sequence, verbose=False)
