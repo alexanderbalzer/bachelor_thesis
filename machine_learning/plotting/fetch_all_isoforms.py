@@ -167,10 +167,11 @@ for i, (enst, domain_info) in enumerate(domain_data.items()):
 legend_dict = {
     "Disordered": 'orange',
     "UBA": 'lightgreen',
-    "NAC": 'darkgreen'
+    "NAC": 'darkgreen',
+    "Unannotated ": 'lightgray'
 }
 handles = [mpatches.Patch(color=color, label=name) for name, color in legend_dict.items()]
-ax.legend(handles=handles, loc='lower right', title='Domain', fontsize='large')
+ax.legend(handles=handles, loc='lower right', title='Domain', fontsize='x-large', title_fontsize='x-large')
 
 ax.set_xticks(xticks)
 xlabels = "" * len(xticks)  # Initialize xlabels as empty strings

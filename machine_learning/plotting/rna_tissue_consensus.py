@@ -48,10 +48,6 @@ expression_matrix.index = new_index'''
 
 # === 7. Clustermap zeichnen ===
 
-# Define your tissue groups
-brain = {"cerebral cortex", "cerebellum", "basal ganglia", "hippocampal formation", "hypothalamus", "midbrain", "amygdala", "choroid plexus", "spinal cord", "retina"}
-glands = {"thyroid gland", "pituitary gland", "adrenal gland", "parathyroid gland"}
-
 g = sns.clustermap(
     expression_matrix.T,
     cmap="PuBuGn",
@@ -67,6 +63,10 @@ g = sns.clustermap(
 plt.setp(g.ax_heatmap.get_xticklabels(), rotation=45, ha='right')  # Rotate and right-align
 plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0, ha='left')  # Rotate y-tick labels to horizontal
 g.ax_heatmap.set_ylabel("")
+
+# Define your tissue groups
+brain = {"cerebral cortex", "cerebellum", "basal ganglia", "hippocampal formation", "hypothalamus", "midbrain", "amygdala", "choroid plexus", "spinal cord", "retina"}
+glands = {"thyroid gland", "pituitary gland", "adrenal gland", "parathyroid gland"}
 
 # Color x-axis labels
 xticklabels = g.ax_heatmap.get_yticklabels()
@@ -120,9 +120,9 @@ for label in yticklabels:
 # Add grid lines to the heatmap
 ax = g.ax_heatmap
 num_y, num_x = expression_matrix.shape
-for x in range(num_x + 1):
+for x in range(num_y + 1):
     ax.axvline(x , color='black', linewidth=0.1)
-for y in range(num_y + 1):
+for y in range(num_x + 1):
     ax.axhline(y, color='black', linewidth=0.1)
 
 plt.savefig(os.path.join(working_dir, "clustermap_ntpm.png"), dpi=300)
