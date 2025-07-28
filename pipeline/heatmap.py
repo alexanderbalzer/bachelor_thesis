@@ -4,7 +4,10 @@ import pandas as pd
 from Bio import SeqIO
 from scipy.stats import hypergeom
 import os
-from init import transform_labels_to_names
+from matplotlib.colors import TwoSlopeNorm
+from scipy.cluster.hierarchy import dendrogram, linkage
+from scipy.spatial.distance import pdist, squareform
+from seaborn import clustermap
 
 def fasta_to_dataframe(fasta_file):
     data = []
@@ -13,56 +16,82 @@ def fasta_to_dataframe(fasta_file):
     return pd.DataFrame(data, columns=['sequence'])
 
 
+def format_species_name(name: str, amount_of_proteins) -> str:
+    # Teile den Namen anhand des Unterstrichs
+    parts = name.split("_")
+    if name == "Homo_sapiens_isoforms":
+        return "H. Sapiens with isoforms"
+    if len(parts) != 2:
+        raise ValueError("Name muss genau ein Unterstrich enthalten (Gattung_Art)")
+    genus, species = parts
+    # Kürze den Gattungsnamen auf den ersten Buchstaben + Punkt
+    short_genus = genus[0] + "."
+    amount = amount_of_proteins[name]
+    # Setze alles in kursiv (z. B. für Markdown oder HTML)
+    formatted = f"{short_genus} {species} (n= {amount})"
+    return formatted
 
 
-def run(organism_names, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, phylo_tree_type):
+def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, reference):
+    
+
 
     amino_acid = np.array(["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "A", "T", "C", "P", "G", "V"])
 
     if create_phylogenetic_tree:
-        if phylo_tree_type == "absolute":
-            save_subset_array_for_phylogenetic_tree = True
-            save_HGT_array_for_phylogenetic_tree = False
-        elif phylo_tree_type == "hgt":
-            save_subset_array_for_phylogenetic_tree = False
-            save_HGT_array_for_phylogenetic_tree = True
-        else:
-            raise ValueError("Invalid phylogenetic tree type. Choose 'absolute' or 'hgt'.")
+        save_HGT_array_for_phylogenetic_tree = True
+        save_subset_array_for_phylogenetic_tree = False
+    else:
+        save_subset_array_for_phylogenetic_tree = True
+        save_HGT_array_for_phylogenetic_tree = False
+
+    # Create the cache directory if it doesn't exist
+    os.makedirs(cache_dir, exist_ok=True)
 
     dictlist = []
+    amount_of_proteins = {}
     reference_array = np.zeros((len(organism_names), len(amino_acid)), dtype=float)
     subset_array = np.zeros((len(organism_names), len(amino_acid)), dtype=float)
     visual_array = np.zeros((len(organism_names), len(amino_acid)), dtype=float)
     for z, organism in enumerate(organism_names):
-        input = [
-            os.path.join(output_dir, f"{organism}_filtered_by_go_and_mts.fasta"),
-            os.path.join(cache_dir, f"filtered_proteins_by_GO_for_{organism}.fasta")
-            ]
+        output_dir_per_organism = output_dir + "/" + organism 
+        if reference == "subset":
+            input = [
+                output_dir_per_organism + "/" + organism + "_filtered_by_GO_cleavable_mts.fasta",
+                output_dir_per_organism + "/" + organism + f"/filtered_proteins_by_GO_for_{organism}.fasta"
+                ]
+        elif reference == "proteome":
+            input = [
+                output_dir_per_organism + "/" + organism + "_filtered_by_GO_cleavable_mts.fasta",
+                os.path.join(input_dir, f"{organism}.fasta")
+                ]
         y = 0
         for file in input:
-            panda_df = fasta_to_dataframe(file)
-            proteome = list(panda_df['sequence'])
-            amount_of_proteins = len(proteome)
-
-            proteome_as_array = np.zeros((amount_of_proteins, 20), dtype=object)
-            for i, amino_acids_in_proteome in enumerate(proteome):
-                sequence = amino_acids_in_proteome[1:20]
-                for j in range(19):
-                    if j < len(sequence):
-                        proteome_as_array[i, j] = sequence[j]
-                    else:
-                        proteome_as_array[i, j] = "X"
-                count_dict = {}
-                for row in range(amount_of_proteins):
-                    value = proteome_as_array[row, 0]
-                    if (value) in count_dict:
-                        count_dict[value] += 1
-                    else:
-                        count_dict[value] = 1
+            data = []
+            for line in SeqIO.parse(file, "fasta"):
+                data.append(list(str(line.seq)))
+            # get the amount of proteins in the file
+            amount_of_proteins_file = len(data)
+            data = list(data)
+            # limit the length of the sequences to 20 and cut the first
+            for i in range(len(data)):
+                data[i] = data[i][1:20]
+            df = pd.DataFrame(data, columns=[list(range(19))])
+            # count the instances of each amino acid per column
+            df_counts = df.apply(pd.Series.value_counts).fillna(0)
+            # Rearrange rows of df_counts to align with the order of amino_acid
+            df_counts = df_counts.reindex(amino_acid, fill_value=0)
+            # only use the first column of the dataframe
+            df_counts = df_counts.iloc[:, 0]
+            # transpose the dataframe
+            df_counts = df_counts.transpose()
+            # Convert the DataFrame to a dictionary
+            count_dict = df_counts.to_dict()   
             dictlist.append(count_dict)
             if y == 0:
                 for i in range(len(amino_acid)):
                     subset_array[z, i] = count_dict.get(amino_acid[i], 0)
+                amount_of_proteins[organism] = amount_of_proteins_file
             if y == 1:
                 for i in range(len(amino_acid)):
                     reference_array[z, i] = count_dict.get(amino_acid[i], 0)
@@ -76,14 +105,16 @@ def run(organism_names, cache_dir, output_dir, create_heatmap, heatmap_type, cre
             for j in range(len(amino_acid)):
                 x = subset_array[i, j]
                 n = reference_array[i, j]
-                p_value = hypergeom.pmf(x, M, n, N)
+                p_value_over = hypergeom.sf(x, M, n, N)
+                p_value_under = hypergeom.cdf(x, M, n, N)
+                p_value = min(p_value_over, p_value_under)
                 abs_log_val = abs(np.log10(p_value))
                 f_obs = x / N if N != 0 else 0
                 f_exp = n / M if M != 0 else 0
                 result = 0
                 if f_obs < f_exp:
                     result = -1 * abs_log_val
-                else:
+                elif f_obs > f_exp:
                     result = abs_log_val
                 visual_array[i, j] = result
     # Save the visual array to a file
@@ -101,8 +132,9 @@ def run(organism_names, cache_dir, output_dir, create_heatmap, heatmap_type, cre
     #print(subset_array)
     if save_subset_array_for_phylogenetic_tree:
         np.save(os.path.join(cache_dir, "phyl_tree_array.npy"), subset_array)
+    # Apply log2 transformation while conserving the sign
 
-
+    #visual_array = np.sign(visual_array) * np.abs(np.log2(np.abs(visual_array) + 1e-10))
     if create_heatmap:
         if heatmap_type == "absolute":
             visual_array = subset_array
@@ -110,22 +142,56 @@ def run(organism_names, cache_dir, output_dir, create_heatmap, heatmap_type, cre
             visual_array = visual_array
         else:
             raise ValueError("Invalid heatmap type. Choose 'absolute' or 'hgt'.")
-    fig, ax = plt.subplots()
+    for i in range(len(organism_names)):
+        for j in range(len(amino_acid)):
+            if visual_array[i, j] == 0:
+                visual_array[i, j] = 0.00001
+
+    # save the visual array as a csv file
+    np.savetxt(os.path.join(output_dir, "visual_array.csv"), visual_array, delimiter=",")
+
+    
+    # Create the heatmap and add the dendrogram to the plot
+    plt.figure(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=(12, 8))
     ax.set_xticks(np.arange(len(amino_acid)), amino_acid)
     ax.set_yticks(np.arange(len(organism_names)), organism_names)
     ax.set_xticklabels(amino_acid)
-    ax.set_yticklabels(transform_labels_to_names(organism_names), fontstyle="italic")
-    cmap = 'coolwarm'
-    pcm = ax.imshow(visual_array, cmap=cmap)
-    plt.colorbar(pcm, ax=ax, shrink=0.3)
-    plt.title("HGT scores")
+    formated_names = [format_species_name(name, amount_of_proteins) for name in organism_names]
+    ax.set_yticklabels(formated_names, fontstyle="italic")
+    cmap = 'RdBu_r'
+    max = np.max(visual_array)
+    max = np.round(max, decimals=0)
+    max = 10
+    norm = TwoSlopeNorm(vmin=-max, vcenter=0, vmax=max)
+    pcm = ax.imshow(visual_array, cmap=cmap, norm=norm)
+    cbar = plt.colorbar(pcm, ax=ax, shrink=0.3, aspect=10, pad=0.01)
+    cbar.set_ticks([-max, 0, max])
+    cbar.set_ticklabels(['<' + str(-max), "0", '>' + str(max)], fontsize=7)
+    cbar.ax.set_title('HGT', pad=5, fontsize=7)
+    # annotate the heatmap 
 
     # Adjust the layout to prevent labels from being cut off
     plt.subplots_adjust(left=0.3)  # Increase the left margin
     plt.tight_layout()
 
     if create_heatmap:
-        plt.savefig(os.path.join(output_dir, "heatmap.png"), dpi=300)
+        plt.savefig(os.path.join(output_dir, "heatmap.pdf"), dpi=300)
     # save the heatmap
     return
 
+if __name__ == "__main__":
+    # Example usage
+    organism_names = [
+    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Danio_rerio",
+    "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
+    "Saccharomyces_cerevisiae"]
+    input_dir = "pipeline/input"
+    cache_dir = "pipeline/cache/cache_20250617_183904/"
+    output_dir = "pipeline/output/output_20250617_183904"
+    create_heatmap = True
+    heatmap_type = "hgt"
+    create_phylogenetic_tree = False
+    phylo_tree_type = "hgt"
+    reference = "proteome"
+    run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, reference)

@@ -8,12 +8,18 @@ from scipy.spatial.distance import euclidean, cosine
 from io import StringIO
 from scipy.cluster.hierarchy import to_tree
 import os
-from init import transform_labels_to_names
+from utils import transform_labels_to_names
 from Bio.Phylo.TreeConstruction import DistanceTreeConstructor, DistanceMatrix
 from Bio import Phylo
 
 def calculate_similarity_matrix_with_pearson(data):
-    # Load the numpy array from the specified file
+    """
+    Calculate the similarity matrix using Pearson correlation.
+    Args:
+        data (numpy.ndarray): 2D array where each row is a sample and each column is a feature.
+    Returns:
+        numpy.ndarray: Similarity matrix.
+    """
     n = len(data)
     similarity_matrix = np.zeros((n, n))
 
@@ -29,6 +35,13 @@ def calculate_similarity_matrix_with_pearson(data):
     return similarity_matrix
 
 def calculate_similarity_matrix_with_euclidean(data):
+    """
+    Calculate the similarity matrix using euclidean correlation.
+    Args:
+        data (numpy.ndarray): 2D array where each row is a sample and each column is a feature.
+    Returns:
+        numpy.ndarray: Similarity matrix.
+    """
     n = len(data)
     similarity_matrix = np.zeros((n, n))
 
@@ -45,6 +58,13 @@ def calculate_similarity_matrix_with_euclidean(data):
     return similarity_matrix
 
 def calculate_similarity_matrix_with_cosine(data):
+    """
+    Calculate the similarity matrix using cosine correlation.
+    Args:
+        data (numpy.ndarray): 2D array where each row is a sample and each column is a feature.
+    Returns:
+        numpy.ndarray: Similarity matrix.
+    """
     n = len(data)
     similarity_matrix = np.zeros((n, n))
 
@@ -59,7 +79,15 @@ def calculate_similarity_matrix_with_cosine(data):
 
     return similarity_matrix
 
-def convert_to_newick(linkage_matrix, labels):
+def convert_to_newick(linkage_matrix, organism_names):
+    """
+    Convert the linkage matrix to Newick format.
+    Args:
+        linkage_matrix (numpy.ndarray): Linkage matrix from hierarchical clustering.
+        labels (list): List of labels for the leaves.
+    Returns:
+        str: Newick formatted string.
+    """
     def build_newick(node, parent_dist, leaf_names):
         if node.is_leaf():
             return f"{leaf_names[node.id]}:{parent_dist - node.dist:.6f}"
@@ -69,38 +97,43 @@ def convert_to_newick(linkage_matrix, labels):
         return f"({left},{right}):{parent_dist - node.dist:.6f}"
 
     tree = to_tree(linkage_matrix, rd=False)
-    return build_newick(tree, tree.dist, labels) + ";"
+    return build_newick(tree, tree.dist, organism_names) + ";"
 
 
 def run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_algorithm, save_newick):
-    method = phylo_tree_method
-    algorythm = phylo_tree_algorithm
+    """
+    Run the phylogenetic tree creation process.
+    Args:
+        organism_names (list): List of organism names.
+        cache_dir (str): Directory containing the cached data.
+        output_dir (str): Directory to save the output files.
+        phylo_tree_method (str): Method for calculating similarity ('pearson', 'euclidean', 'cosine').
+        phylo_tree_algorithm (str): Algorithm for constructing the tree ('UPGMA', 'nj').
+        save_newick (bool): Whether to save the Newick format tree.
+    """
+
     # Read the organisms list from the file
-    labels = organism_names
-    data = np.load(os.path.join(cache_dir, "phyl_tree_array.npy"))
+    organism_names = organism_names
+    data = np.load(os.path.join(cache_dir, "phyl_tree_array.npy"), allow_pickle=True)
     data = np.array(data)
 
-
-    if method == "pearson":
+    # calculate the similarity matrix based on the selected method
+    if phylo_tree_method == "pearson":
         similarity_matrix = calculate_similarity_matrix_with_pearson(data)
-    elif method == "euclidean":
+    elif phylo_tree_method == "euclidean":
         similarity_matrix = calculate_similarity_matrix_with_euclidean(data)
-    elif method == "cosine":
+    elif phylo_tree_method == "cosine":
         similarity_matrix = calculate_similarity_matrix_with_cosine(data)
-
-
 
     # Convert the similarity matrix to a distance matrix
     distance_matrix = 1 - similarity_matrix
 
-    if algorythm == "UPGMA":
+    if phylo_tree_algorithm == "UPGMA":
         # Perform hierarchical clustering using UPGMA (Unweighted Pair Group Method with Arithmetic Mean)
         linkage_matrix = linkage(squareform(distance_matrix), method='average')
 
 
-        newick_string = convert_to_newick(linkage_matrix, labels)
-
-
+        newick_string = convert_to_newick(linkage_matrix, organism_names)
         # Save the Newick string to a file
         if save_newick:
             with open(os.path.join(output_dir, "phylogenetic_tree.newick"), "w") as file:
@@ -110,14 +143,20 @@ def run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_alg
         # Plot the phylogenetic tree
         plt.figure(figsize=(10, 7))
 
-        italic_labels = [f"$\\mathit{{{name.replace(' ', '\\ ')}}}$" for name in transform_labels_to_names(labels)]
+        # transform the organism names to biologically correct names
+        # FIX: Avoid backslash in f-string expression by precomputing the replacement
+        def to_italic_label(name):
+            # Replace spaces with '\ ' for LaTeX mathit, then wrap in mathit
+            safe_name = name.replace(' ', r'\ ')
+            return f"$\\mathit{{{safe_name}}}$"
+        italic_labels = [to_italic_label(name) for name in transform_labels_to_names(organism_names)]
 
         dendrogram(
             linkage_matrix, 
-            labels= italic_labels, 
-            orientation = 'left', 
+            organism_names=italic_labels, 
+            orientation='left', 
             leaf_font_size=10
-            )
+        )
         plt.title("Phylogenetic Tree (UPGMA) - Pearson Correlation")
         plt.xlabel("Samples")
         plt.ylabel("Distance")
@@ -127,11 +166,9 @@ def run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_alg
         # Save the plot to a file
         plt.savefig(os.path.join(output_dir, "phylogenetic_tree.png"), dpi=300)
 
-        # delete the cache
-        os.remove(os.path.join(cache_dir, "phyl_tree_array.npy"))
         return
     
-    elif algorythm == "nj":
+    elif phylo_tree_algorithm == "nj":
         # Perform hierarchical clustering using Neighbor Joining (NJ)
         # Convert the similarity matrix to a distance matrix
         distance_matrix = [[1 - similarity_matrix[i][j] for j in range(len(similarity_matrix))] for i in range(len(similarity_matrix))]
@@ -139,8 +176,8 @@ def run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_alg
         lower_triangle = []
         for i in range(len(distance_matrix)):
             lower_triangle.append(distance_matrix[i][:i + 1])  # Include only elements up to the diagonal
-        italic_labels = [f"$\\mathit{{{name.replace(' ', '\\ ')}}}$" for name in transform_labels_to_names(labels)]
-        distance_matrix = DistanceMatrix(names=italic_labels, matrix=lower_triangle)
+        italic_labels = [f"$\\mathit{{{name.replace(' ', r'\ ')}}}$" for name in transform_labels_to_names(organism_names)]
+        distance_matrix = DistanceMatrix(names=organism_names, matrix=lower_triangle)
         tree = constructor.nj(distance_matrix)
 
         # Save the Newick string to a file
@@ -148,8 +185,11 @@ def run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_alg
             with open(os.path.join(output_dir, "phylogenetic_tree.newick"), "w") as file:
                 Phylo.write(tree, file, format="newick")
 
+        distance_matrix = DistanceMatrix(names=italic_labels, matrix=lower_triangle)
+        tree = constructor.nj(distance_matrix)
         # Plot the phylogenetic tree
-        Phylo.draw(tree)
+        plt.figure(figsize=(10, 7))
+        Phylo.draw(tree, do_show=False, label_func=lambda x: x.name)
 
         plt.title("Phylogenetic Tree")
         # Save the plot to a file
@@ -158,3 +198,19 @@ def run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_alg
         # delete the cache
         os.remove(os.path.join(cache_dir, "phyl_tree_array.npy"))
         return
+
+
+if __name__ == "__main__":
+    # Example usage
+    organism_names = [
+    "Homo_sapiens", "Homo_sapiens_isoforms", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
+    "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
+    "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
+    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
+    cache_dir = "pipeline/cache/cache_20250513_105122/"
+    output_dir = "pipeline/output/output_20250513_105122/"
+    phylo_tree_method = "pearson"  # or "euclidean" or "cosine"
+    phylo_tree_algorithm = "UPGMA"  # or "nj"
+    save_newick = True
+
+    run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_algorithm, save_newick)
