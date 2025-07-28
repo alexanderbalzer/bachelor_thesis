@@ -362,6 +362,7 @@ def run(sequence, verbose):
         electrostatic_help = 0
         discrimination_factor = 0
         helix_score = 0
+        charge = 0
     else:
         max_av_uH = max(av_uH)
         max_index = av_uH.index(max_av_uH)
@@ -395,8 +396,7 @@ def run_alternative(sequence, name='Unnamed', seq_range=0, w=18, verbose=False):
 '''_t = [name, sequence, seq_range+1, w, seq_w, z, av_h, av_uH, av_uQ, alignment, d,
     n_tot_pol, n_tot_apol, n_charged, n_aromatic, combined_magnitude, helix_score]'''
 if __name__ == '__main__':
-    print(run("XVGRNSAIAAGVCGALFIGYCIYFDRKRRRRRRRRRR", verbose=False))  # Example sequence
-    print(len("VGRNSAIAAGVCGALFIGYCIYFDRKRR"))  # Example sequence length
+    print(run("MLR", verbose=False))  # Example sequence
 
 
 '''

@@ -167,7 +167,8 @@ def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatma
     pcm = ax.imshow(visual_array, cmap=cmap, norm=norm)
     cbar = plt.colorbar(pcm, ax=ax, shrink=0.3, aspect=10, pad=0.01)
     cbar.set_ticks([-max, 0, max])
-    cbar.ax.set_title('HGT', fontsize=12)
+    cbar.set_ticklabels(['<' + str(-max), "0", '>' + str(max)], fontsize=7)
+    cbar.ax.set_title('HGT', pad=5, fontsize=7)
     # annotate the heatmap 
 
     # Adjust the layout to prevent labels from being cut off

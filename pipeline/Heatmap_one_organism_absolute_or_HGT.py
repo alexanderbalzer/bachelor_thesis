@@ -159,7 +159,7 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
         pcm2.set_norm(norm)
         cbar = plt.colorbar(pcm1, ax=ax, shrink=0.3, aspect=10, pad=0.01)
         cbar.set_ticks(np.linspace(-max, max, num=3))
-        cbar.set_ticklabels([str(-max), "0", str(max)], fontsize=7)
+        cbar.set_ticklabels(['<' + str(-max), "0", '>' + str(max)], fontsize=7)
         cbar.ax.set_title('HGT', pad=5, fontsize=7)
         plt.savefig(os.path.join(output_dir_per_organism, f"heatmap_{name}_{heatmap_type}.png"), dpi=300)
         plt.close(fig)
@@ -167,11 +167,11 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
 if __name__ == "__main__":
     # Define the names of the organisms
     organism_names = [
-    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Dario_rerio",
+    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Danio_rerio",
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
     "Saccharomyces_cerevisiae"]
     
-    output_dir = "pipeline/output/output_20250616_161709"
+    output_dir = "pipeline/output/output_20250617_183904"
     input_dir = "pipeline/input"
     heatmap_type = "hgt"  # or "hgt"
 

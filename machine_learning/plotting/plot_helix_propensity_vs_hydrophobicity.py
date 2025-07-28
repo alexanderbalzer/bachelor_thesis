@@ -274,8 +274,7 @@ plt.tight_layout()
 working_dir = 'pipeline/output/output_20250617_183904'
 output_dir = os.path.join(working_dir, 'plots')
 plt.savefig(os.path.join(output_dir, f'distribution_of_second_aa_in_cyto_nuclear_and_mito{organism}.pdf'), dpi=300)
-plt.show()
-exit()
+
 
 # Map the hydrophobicity values to the amino acids in value_counts2
 # Prepare data for 3D scatter plot
@@ -334,7 +333,7 @@ for organism in organism_names:
         ),
         coloraxis_colorbar=dict(
             tickvals=[-20, 0, 20],
-            ticktext=['-20', '0', '20'],
+            ticktext=['<-20', '0', '>20'],
             title='HGT',
             len=0.5
         )
