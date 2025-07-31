@@ -4,8 +4,6 @@ import go_filter
 import mts_filter
 import heatmap
 import logging
-#import phylogenetic_tree
-import Nat_GOterm_link
 import logoplot
 import Heatmap_one_organism_absolute_or_HGT
 from utils import log_message
@@ -16,6 +14,7 @@ import shutil
 def main():
     """
     Main function to run the pipeline.
+    loads the config file and performs analysis depending on settings
     """
     # Set up logging
     logging.basicConfig(level=logging.INFO)
@@ -64,14 +63,14 @@ def main():
     log_message(f"Organism names extracted: {', '.join(organism_names)}")
 
     # Read the last run timestamp from the file cache_of_last_run.txt
-    last_run_file = os.path.join(os.getcwd(), "cache_of_last_run.txt")
+    last_run_file = "pipeline/cache_of_last_run.txt"
     if os.path.exists(last_run_file):
         with open(last_run_file, "r") as file:
             last_run = file.read().strip()
         log_message(f"Last run timestamp loaded: {last_run}")
     else:
         # If the file does not exist run the pipeline from scratch
-        last_run = None
+        last_run = ""
         run_from_scratch = True
         log_message("No previous run timestamp found.")
 
@@ -156,12 +155,6 @@ def main():
         heatmap.run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, reference)
         if create_heatmap:
             log_message("Heatmap creation completed.")
-
-    '''# create a phylogenetic tree for all organisms
-    if create_phylogenetic_tree:
-        phylogenetic_tree.run(organism_names, cache_dir, output_dir, phylo_tree_method, phylo_tree_algorithm, save_newick)
-        log_message("Phylogenetic tree creation completed.")'''
-
 
 
     if not save_filtered_proteins:

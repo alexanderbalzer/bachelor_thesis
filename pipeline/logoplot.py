@@ -176,7 +176,7 @@ def run_MTS_and_start(organism_names, output_dir):
         logo_mts = Logo(frequency_matrix_mts, color_scheme=custom_color_scheme, ax=ax_mts)  # Limit to first 8 positions
         ax_mts.set_title(f"Logoplot of MTS Sequences for {format_species_name(name)}")
         ax_mts.set_xticks(range(9))  # Set x-axis ticks for positions 1 to 8
-        ax_mts.set_xticklabels(range(1, 10))  # Set x-axis labels for positions 1 to 8
+        ax_mts.set_xticklabels(range(2, 11))  # Set x-axis labels for positions 1 to 8
 
         # Create the beginning sequence logoplot
         ax_beginning = axes[1]
@@ -232,8 +232,7 @@ def run_start(organism_names, output_dir):
 
 if __name__ == "__main__":
     # Define the names of the organisms
-    organism_names = [
-         "Zygosaccharomyces_rouxii", "Saccharomyces_cerevisiae", "Candida_glabrata",
+    organism_names = [ "Saccharomyces_cerevisiae", "Candida_glabrata",
         "Chlamydomonas_reinhardtii", "Physcomitrium_patens", "Arabidopsis_thaliana", "Drosophila_Melanogaster",
         "Caenorhabditis_elegans", "Daphnia_magna", "Dario_rerio", "Mus_musculus", "Homo_sapiens", "Homo_sapiens_isoforms"]
     output_dir = "pipeline/output/output_20250519_114531"

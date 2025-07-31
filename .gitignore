@@ -1,4 +1,3 @@
-pipeline/input
 pipeline/output
 pipeline/cache
 pipeline/test.py
