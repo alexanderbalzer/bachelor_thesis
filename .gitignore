@@ -6,3 +6,4 @@ README.md
 pipeline/create_logoplot.py
 pipeline/grouping_of_proteins_with_same_n_terminus
 pipeline/input all genes
+pipeline/MitoFates
