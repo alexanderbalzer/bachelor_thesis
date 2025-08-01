@@ -26,10 +26,12 @@ def parse_probability_of_mts (mts_file):
     """
     probability = {}
     with open(mts_file, "r") as file:
-        file_without_header = file.readlines()[1:]   # skip the first line as it is a header
-        for line in file_without_header:
+        next(file)   # skip the first line as it is a header
+        for line in file:
             fields = line.strip().split("\t")
             if len(fields) < 3:
+                continue
+            if fields[1] == "Probability of presequence":
                 continue
             protein_id = fields[0]
             probability[protein_id] = float(fields[1])  
@@ -71,7 +73,7 @@ import subprocess
 from Bio import SeqIO
 import tempfile
 
-def run_perl_script_batched(mitofates_path, input_file, flag, output_file, batch_size=1000):
+def run_perl_script_batched(mitofates_path, input_file, flag, output_file, batch_size=2000):
     """
     Run the MitoFates Perl script in batches of N sequences.
     

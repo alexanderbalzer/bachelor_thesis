@@ -33,7 +33,9 @@ def format_species_name(name: str, amount_of_proteins) -> str:
 
 
 def run(organism_names, input_dir, cache_dir, output_dir, create_heatmap, heatmap_type, create_phylogenetic_tree, reference):
+    """
     
+    """
 
 
     amino_acid = np.array(["D", "E", "N", "Q", "Y", "H", "K", "R", "M", "L", "F", "I", "W", "S", "A", "T", "C", "P", "G", "V"])

@@ -34,6 +34,12 @@ def run_signalp(fasta_file, output_dir, signalp_path="signalp6"):
 
 # Example usage
 if __name__ == "__main__":
-    fasta_file = "/home/abalzer/Documents/github_clone/bachelor_thesis/pipeline/input/Homo_sapiens.fasta" 
-    output_dir = "/home/abalzer/Documents/github_clone/bachelor_thesis/pipeline/output/output_20250519_142700_machine_learning_human/Homo_sapiens" 
-    run_signalp(fasta_file, output_dir)
+    organism_names = [
+    "Homo_sapiens", "Homo_sapiens_isoforms", "Mus_musculus", "Dario_rerio", "Daphnia_magna", 
+    "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
+    "Physcomitrium_patens", "Chlamydomonas_reinhardtii", 
+    "Candida_glabrata", "Saccharomyces_cerevisiae", "Zygosaccharomyces_rouxii"]
+    for organism in organism_names:
+        fasta_file = f"/home/abalzer/Documents/github_clone/bachelor_thesis/pipeline/input/{organism}.fasta" 
+        output_dir = f"/home/abalzer/Documents/github_clone/bachelor_thesis/pipeline/output/output_20250519_142700_machine_learning_human/{organism}/signalP_output" 
+        run_signalp(fasta_file, output_dir)

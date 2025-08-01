@@ -54,16 +54,16 @@ def main():
     fasta_files = [f for f in os.listdir(input_dir) if f.endswith(".fasta")]
     organism_names = [os.path.splitext(f)[0] for f in fasta_files]
     
-    organism_names = [
+    '''organism_names = [
     "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Danio_rerio",
     "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
-    "Saccharomyces_cerevisiae"]
+    "Saccharomyces_cerevisiae"]'''
     
     #organism_names = ["Saccharomyces_cerevisiae"]
     log_message(f"Organism names extracted: {', '.join(organism_names)}")
 
     # Read the last run timestamp from the file cache_of_last_run.txt
-    last_run_file = "pipeline/cache_of_last_run.txt"
+    last_run_file = "cache_of_last_run.txt"
     if os.path.exists(last_run_file):
         with open(last_run_file, "r") as file:
             last_run = file.read().strip()
@@ -110,7 +110,7 @@ def main():
         for line in file:
             key, value = line.strip().split(":")
             flaglist[key.strip()] = value.strip()
-    log_message(f"Flaglist loaded: {flaglist}")
+    log_message(f"Flaglist loaded")
 
     # Filter proteins by the existence of an MTS, but only if the GO term is mitochondrial
     mitochondrial_go_terms = ["GO:0005759", "GO:0005741", "GO:0005758", "GO:0005743", "GO:0005739", "False"]

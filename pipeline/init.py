@@ -32,8 +32,8 @@ def check_config():
         
         # check if the perl script path exists
         perl_script_path = config[section]['mitofates_path']
-        if not os.path.isabs(perl_script_path) or not os.path.exists(perl_script_path):
-            print(f"Error: Perl script '{perl_script_path}' not found or the path is not absolute.")
+        if not  os.path.exists(perl_script_path):
+            print(f"Error: Perl script '{perl_script_path}' not found")
             return False
         #check if the output_dir and cache_dir exist and if not create them
         if not os.path.exists(config[section]['output_dir']):

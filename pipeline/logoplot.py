@@ -84,7 +84,10 @@ def generate_frequency_matrix(name, start, output_dir_per_organism):
                 for i, line in enumerate(lines):
                     if line.startswith("!") or i == 0:  # Skip header line
                         continue
+                    
                     fields = line.strip().split("\t")
+                    if fields[1] == "Probability of presequence":
+                        continue
                     protein_id = fields[0]
                     probability_of_MTS = fields[1]
                     position_of_MTS = fields[6]
