@@ -187,7 +187,7 @@ def run_MTS_and_start(organism_names, output_dir):
         logo_beginning = Logo(frequency_matrix_beginning, color_scheme=custom_color_scheme, ax=ax_beginning)  # Limit to first 9 positions
         ax_beginning.set_title(f"Logoplot of Beginning Sequences for {format_species_name(name)}")
         ax_beginning.set_xticks(range(9))  # Set x-axis ticks for positions 1 to 8
-        ax_beginning.set_xticklabels(range(1, 10))  # Set x-axis labels for positions 1 to 8
+        ax_beginning.set_xticklabels(range(2, 11))  # Set x-axis labels for positions 1 to 8
 
         # Add a legend to the first subplot
         ax_mts.legend(handles=legend_elements, title="Amino Acid Properties", loc='upper right')

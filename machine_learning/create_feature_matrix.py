@@ -196,7 +196,7 @@ def run(organism_names, input_dir, working_dir):
                     child_dict[child] = go_id
 
         # Parse GO annotations
-        annotation_file = f"pipeline/input/{organism}.goa"
+        annotation_file = input_dir +  f"/{organism}.goa"
         go_annotations = parse_go_annotations(annotation_file)
 
         # check if the file exists
@@ -307,7 +307,7 @@ def run(organism_names, input_dir, working_dir):
             feature_matrix['Molecular Weight'] = feature_matrix['Molecular Weight']/ cut
 
             # add the GO terms to the feature matrix
-
+            terms = []
             # Add filtered GO terms rowwise to the feature matrix
             filtered_terms = []
             if protein_id in go_annotations:

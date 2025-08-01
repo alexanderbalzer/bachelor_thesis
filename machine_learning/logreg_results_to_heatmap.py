@@ -70,21 +70,6 @@ def run(organism_names, go_term, dir):
     pivot_df = pivot_df.loc[rows_with_significance]
     significance_mask = significance_mask.loc[rows_with_significance]
 
-    '''plt.figure(figsize=(len(pivot_df.columns)*0.7+4, len(pivot_df.index)*0.5+4))
-    ax = sns.heatmap(pivot_df, cmap='vlag', annot=False, cbar=True)
-
-    # Add asterisks for significant values
-    for y, organism in enumerate(pivot_df.index):
-        for x, feature in enumerate(pivot_df.columns):
-            if significance_mask.loc[organism, feature]:
-                ax.text(x + 0.5, y + 0.5, '*', ha='center', va='center', color='black', fontsize=12)
-
-    plt.xlabel("Feature")
-    plt.ylabel("Organism")
-    plt.title(f"LogReg Coefficient Heatmap for GO Term: {go_term}")
-    plt.tight_layout()
-    plt.savefig(os.path.join(logreg_coefficients_path, f"{go_term}_heatmap.png"), dpi=300)
-    plt.show()'''
     # Create a clustermap (features=y, organisms=x, coefficients=values)
     g = sns.clustermap(
         pivot_df, 
@@ -143,6 +128,6 @@ if __name__ == "__main__":
     # Read organism names from FASTA file names
     fasta_files = [f for f in os.listdir(input_dir) if f.endswith(".fasta")]
     organism_names = [os.path.splitext(f)[0] for f in fasta_files]
-    go_terms = ['GO:0005739','GO:0005783', 'Multiple']
+    go_terms = ['GO:0005739','GO:0005783']
     for go_term in go_terms:
         run(organism_names=organism_names, go_term=go_term, dir=working_dir)

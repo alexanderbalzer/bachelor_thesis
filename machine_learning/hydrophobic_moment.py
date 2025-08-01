@@ -381,11 +381,11 @@ def run(sequence, verbose):
                                        'No. Polar AA', 'No. Apolar AA',
                                        'No. Charged AA', 'No. Aromatic AA',
                                        'Combined Magnitude', 'Helix Score'])
-    with open('hydrophobicity_results.csv', 'w', newline='') as csvfile:
+    '''with open('hydrophobicity_results.csv', 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(df.columns)
         writer.writerows(df.values)
-    return max_av_uH, start_best_window, length_best_window, electrostatic_help, discrimination_factor, helix_score, charge
+    return max_av_uH, start_best_window, length_best_window, electrostatic_help, discrimination_factor, helix_score, charge'''
 
 def run_alternative(sequence, name='Unnamed', seq_range=0, w=18, verbose=False):
     data = analyze_sequence_with_set_parameters(name=name, sequence=sequence, seq_range=seq_range, w=w, verbose=verbose)

@@ -10,6 +10,7 @@ import pandas as pd
 """
 This script uses InterPro domain annotations as input and plots the domain architecture of the isoforms in a horizontal bar chart.
 It also filters the isoforms based on a predefined list and visualizes the domain architecture.
+Input is a TSV file with InterPro annotations and a list of isoforms.
 """
 
 # Genes of interest
@@ -20,8 +21,8 @@ headers = {"Content-Type": "application/json"}
     
 
 all_transcripts = []
-working_dir = "/home/abalzer/Documents/github_clone/bachelor_thesis/pipeline/output/output_20250617_183139_latest_ML/rna_isoforms"
-interpro_output_path = os.path.join(working_dir, "naca_interpro.tsv")
+working_dir = os.getcwd()  # Use current working directory
+interpro_output_path = os.path.join(working_dir, "Isoform plotting", "naca_interpro.tsv")
 
 domain_data = {}
 
@@ -36,7 +37,7 @@ with open(interpro_output_path) as f:
         domain_name = row[5]
         domain_data.setdefault(enst_id, []).append((start, end, domain_name, protein_length))
 
-isoform_list = pd.read_csv(os.path.join(working_dir, "isoform_list.txt"), header=None).squeeze().tolist()
+isoform_list = pd.read_csv(os.path.join(working_dir, "Isoform plotting", "isoform_list.txt"), header=None).squeeze().tolist()
 
 # use only isoforms that are in the isoform_list
 domain_data = {enst: domains for enst, domains in domain_data.items() if enst in isoform_list}
