@@ -77,7 +77,7 @@ def drop_one_hot_collinear(X):
 def run(name, go_dag, dir):
 
     # Set the working directory
-    working_dir = os.path.dirname(dir + name + "/")
+    working_dir = os.path.dirname( dir + "/"+ name + "/")
 
     # Read the feature matrix from the CSV file
     feature_matrix_path = working_dir + "/feature_matrix_with_go_terms.csv"
@@ -90,35 +90,9 @@ def run(name, go_dag, dir):
         df = df.drop(columns=["protein_id_human"])
 
     # Create output directory for results
-    general_output_dir = os.path.join(working_dir, "go_term_rf_results_mito_and_ER_2")
+    general_output_dir = os.path.join(working_dir, "go_term_rf_results_mito_and_ER_")
     os.makedirs(general_output_dir, exist_ok=True)
-    '''
-    go_ids = [
-            #Go terms for: ER, Golgi, Ribosome, Mitochondria, Nucleus, Lysosome, Cell membrane, Cytoplasm
-            "GO:0005783",
-            "GO:0005794",
-            "GO:0005840",
-            "GO:0005739_no_cleavable_mts",
-            "GO:0005739_cleavable_mts",
-            "GO:0005634",
-            "GO:0005764",
-            "GO:0005886",
-            "GO:0005737",
-            "Multiple",
-            "no_GO_term_found"
-        ]
-    valid_go_terms = [
-            "GO:0005740",
-            "GO:0005743",
-            "GO:0005741",
-            "GO:0005758",
-            "GO:0005759",
-            "GO:0005746",
-            "GO:0031966",
-            "Multiple"
-        ]
-    #valid_go_terms = go_ids
-    '''
+    
     valid_go_terms = ['GO:0005783', 'GO:0005739']
     for go_term in tqdm(valid_go_terms, position=2, desc=f"Processing GO terms for {name}", leave=False):
         output_dir_go = os.path.join(general_output_dir, sanitize_filename(get_go_aspect(go_term, go_dag)))
@@ -349,14 +323,29 @@ def run(name, go_dag, dir):
                 print(f"Deleted empty directory: {dir_path}")
 
 if __name__ == "__main__":
-    organism_names = [
-    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Danio_rerio",
-    "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
-    "Saccharomyces_cerevisiae"]
-    working_dir = 'pipeline/output/output_20250617_183139_latest_ML/'
-    #  "Homo_sapiens_isoforms", 
-    #organism_names = ["Homo_sapiens"]
-    # Load the GO DAG
+    # Get the absolute path to the folder this script is in
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Build the relative path to the data file
+    pipeline_output_path = os.path.join(script_dir, '..', 'pipeline', 'output')
+    pipeline_input_path = os.path.join(script_dir, '..', 'pipeline', 'input')
+
+    dirs = [d for d in os.listdir(pipeline_output_path) if os.path.isdir(os.path.join(pipeline_output_path, d))]
+
+    # Sort alphabetically and get the last one
+    if dirs:
+        last_dir = sorted(dirs)[-1]
+        last_output_dir = os.path.join(pipeline_output_path, last_dir)
+        print("Last directory:", last_output_dir)
+    else:
+        print("No directories found.")
+
+    # Normalize the path (optional but good practice)
+    working_dir = os.path.normpath(last_output_dir)
+    input_dir = pipeline_input_path
+    # Read organism names from FASTA file names
+    fasta_files = [f for f in os.listdir(input_dir) if f.endswith(".fasta")]
+    organism_names = [os.path.splitext(f)[0] for f in fasta_files]
     go_dag = load_obo()
     for name in tqdm(organism_names, position=1, desc= "pipeline progress", leave=False):
         run(name, go_dag, dir=working_dir)

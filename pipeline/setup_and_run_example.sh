@@ -34,3 +34,17 @@ fi
 
 # Run the script
 python "$PYTHON_SCRIPT"
+
+
+# Determine directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Navigate to target folder: parent of script dir, then into a child folder (e.g., "analysis")
+TARGET_DIR="$SCRIPT_DIR/../machine_learning"
+cd "$TARGET_DIR" || { echo "Target directory not found: $TARGET_DIR"; exit 1; }
+
+# Run four Python scripts
+python create_feature_matrix.py
+python supervised_machine_learning_per_GO_term.py
+python logreg_results_to_barchart.py
+python logreg_results_to_heatmap.py

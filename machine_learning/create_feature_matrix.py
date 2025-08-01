@@ -216,23 +216,6 @@ def run(organism_names, input_dir, working_dir):
             feature_matrix["protein_id"] = [protein_id]
             feature_matrix["protein_id_human"] = protein_id_human
             feature_matrix["length"] = len(protein_sequence)
-            '''protein_id = row["protein_id"]
-            start_of_alpha_helix, length_of_alpha_helix, mpp_cleavage_pos, mitofates_cleavage_probability, tom20_motive = get_mitoFates_infos(working_dir, organism, protein_id)
-            if mpp_cleavage_pos is None:
-                mpp_cleavage_pos = 30
-            feature_matrix["MPP_cleavage_position"] = mpp_cleavage_pos
-            feature_matrix["mitofates_cleavage_probability"] = mitofates_cleavage_probability
-            feature_matrix["tom20_motive"] = tom20_motive
-            # get the signalP information
-            spi_cleavage_pos, signalP_cleavage_probability = get_signalP_infos(working_dir, organism, protein_id)
-            if spi_cleavage_pos == None:
-                signalP_cleavage_probability = 0
-            else:
-                signalP_cleavage_probability = 1
-            feature_matrix["signalP_cleavage_probability"] = signalP_cleavage_probability
-            # mts sequence is the sequence specified by start and length of alpha helix
-            start_of_alpha_helix = int(start_of_alpha_helix) -1
-            length_of_alpha_helix = int(length_of_alpha_helix)'''
             if not protein_sequence.startswith("M"):
                 invalid_count += 1
                 continue
@@ -252,7 +235,6 @@ def run(organism_names, input_dir, working_dir):
             amino_acids = "ACDEFGHIKLMNPQRSTVWY"
             one_hot_encoded_second_amino_acid = {f"Second_AA_{aa}": 1 if second_amino_acid == aa else 0 for aa in amino_acids}
             feature_matrix = feature_matrix.assign(**one_hot_encoded_second_amino_acid)
-
 
             # cut the protein sequence to the length of the MTS
             cut = 40
@@ -306,8 +288,6 @@ def run(organism_names, input_dir, working_dir):
 
             # calculate the hydrophobic moment of the mts sequence
             hydrophobic_moment_value_mod_mts, start_best_window, length_best_window, electrostatic_help, discrimination_factor, helix_score, charge = hydrophobic_moment.run(mod_mts_sequence, verbose=False)
-            '''unused, unused, unused, electrostatic_help_diff_nat, unused, unused = hydrophobic_moment.run(alternative_mts_sequence, verbose=False)
-            unused, unused, unused, electrostatic_help_huntington, unused, unused, = hydrophobic_moment.run(mts_when_huntington, verbose=False)'''
             # add the hydrophobic moment to the DataFrame
             feature_matrix["Hydrophobic Moment"] = hydrophobic_moment_value_mod_mts
             feature_matrix["Charge"] = charge

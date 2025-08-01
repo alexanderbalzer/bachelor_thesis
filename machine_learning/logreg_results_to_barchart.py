@@ -75,12 +75,28 @@ def run(organism_names, go_terms, working_dir):
         plt.savefig(os.path.join(barchart_folder, f"{go_term}_logreg_coefficients_{name}.pdf"), dpi=300)
 
 if __name__ == "__main__":
-    # Define the organism names and GO term
-    organism_names = [
-    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Danio_rerio",
-    "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
-    "Saccharomyces_cerevisiae"]
-    working_dir = 'pipeline/output/output_20250617_183139_latest_ML/'
-    #organism_names = ['Homo_sapiens']
+    # Get the absolute path to the folder this script is in
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Build the relative path to the data file
+    pipeline_output_path = os.path.join(script_dir, '..', 'pipeline', 'output')
+    pipeline_input_path = os.path.join(script_dir, '..', 'pipeline', 'input')
+
+    dirs = [d for d in os.listdir(pipeline_output_path) if os.path.isdir(os.path.join(pipeline_output_path, d))]
+
+    # Sort alphabetically and get the last one
+    if dirs:
+        last_dir = sorted(dirs)[-1]
+        last_output_dir = os.path.join(pipeline_output_path, last_dir)
+        print("Last directory:", last_output_dir)
+    else:
+        print("No directories found.")
+
+    # Normalize the path (optional but good practice)
+    working_dir = os.path.normpath(last_output_dir)
+    input_dir = pipeline_input_path
+    # Read organism names from FASTA file names
+    fasta_files = [f for f in os.listdir(input_dir) if f.endswith(".fasta")]
+    organism_names = [os.path.splitext(f)[0] for f in fasta_files]
     go_terms = ['GO:0005739','GO:0005783']
     run(organism_names=organism_names, go_terms=go_terms, working_dir=working_dir)

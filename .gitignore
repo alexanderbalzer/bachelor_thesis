@@ -1,6 +1,5 @@
 pipeline/output
 pipeline/cache
-pipeline/test.py
 extra_stuff
 README.md
 pipeline/create_logoplot.py
