@@ -5,18 +5,13 @@ from Bio import SeqIO
 import hydrophobic_moment
 from datetime import datetime
 from tqdm import tqdm
-from goatools.obo_parser import GODag
-from goatools.base import download_go_basic_obo
-import numpy as np
-import re
 import warnings
-from sklearn.preprocessing import OneHotEncoder
 warnings.filterwarnings("ignore", category=UserWarning, module='Bio.SeqUtils.ProtParam')
 
 
 def feature_matrix_per_protein(protein_sequence):
     '''
-    creates a Feature Matrix for the given Protein
+    creates a simple Feature Matrix for the given Protein
     '''
     X = ProteinAnalysis(protein_sequence)
     # create a dictionary with the features
@@ -70,7 +65,7 @@ def fasta_to_dataframe(fasta_file):
 
 def get_mitoFates_infos(working_dir, name, wanted_id):
     '''
-    get the length of the MTS sequence from the MitoFates output
+    get information about the MTS sequence from the MitoFates output file
     '''
     with open(working_dir + "/"+ name + "/mitofates_for_" + name + ".cgi", "r") as file:
         lines = file.readlines()
@@ -98,6 +93,9 @@ def get_mitoFates_infos(working_dir, name, wanted_id):
             return float(start_of_alpha_helix), float(length_of_alpha_helix), length_of_MTS, float(mitofates_cleavage_probability), float(tom20_motive)
         
 def get_signalP_infos(working_dir, name, wanted_id):
+    '''
+    get the cleavage position and propbability from the signalP output file
+    '''
     with open(working_dir + "/"+ name + "/processed_signalp_results.txt", "r") as file:
         lines = file.readlines()
         for i, line in enumerate(lines):
@@ -172,26 +170,6 @@ Eisenberg_scale = {
 aa_charge = {'E': -1, 'D': -1, 'K': 1, 'R': 1}
 
 
-def helix_score(seq):
-    if len(seq) < 10:
-        return 0  # Return 0 if the sequence is shorter than the frame length
-    max_score = 0
-    for i in range(len(seq) - 9):  # Iterate over all possible frames of length 10
-        frame = seq[i:i + 10]
-        frame_score = sum(helix_propensity.get(res.upper(), 0) for res in frame) / len(frame)
-        max_score = max(max_score, frame_score)
-    return max_score
-
-def classify_natc_substrate(second_as):
-    if second_as in ["A", "C", "T", "S", "V", "G"]:
-        return "NatA/D"
-    elif second_as in ["D", "E", "N", "Q"]:
-        return "NatB"
-    elif second_as in ["L", "I", "F", "Y", "K"]:
-        return "NatC/E"
-    else:
-        return "Other"
-    
 
 
 def run(organism_names, input_dir, working_dir):
@@ -200,25 +178,14 @@ def run(organism_names, input_dir, working_dir):
     '''
     # create a list of all the proteins in the input directory
     protein_list = []
-    go_ids2 = [
-            #Go terms for: ER, Golgi, Ribosome, Mitochondria, Nucleus, Lysosome, Cell membrane, Cytoplasm
-            "GO:0005783",
-            "GO:0005794",
-            "GO:0005840",
-            "GO:0005739",
-            "GO:0005634",
-            "GO:0005764",
-            "GO:0005886",
-            "GO:0005829"
-            ]
     go_ids = ["GO:0005739", "GO:0005783"]
 
     for organism in tqdm(organism_names, desc="Processing organisms", position=0, leave=False):
         invalid_count = 0
         working_dir_per_organism = working_dir + "/" + organism 
-        fasta = working_dir_per_organism + "/" + "filtered_proteins_by_GO_for_" + organism + ".fasta"
+        fasta = input_dir + "/" + organism + ".fasta"
         fasta_file = os.path.join(fasta)
-        go_child_dir = working_dir + "/go_childs_reduced/"
+        go_child_dir = input_dir + "/go_childs_reduced/"
         # load the go_ids
         child_dict = {}
         for go_id in go_ids:
@@ -286,20 +253,6 @@ def run(organism_names, input_dir, working_dir):
             feature_matrix = feature_matrix.assign(**one_hot_encoded_second_amino_acid)
 
 
-            # Classify the NAT substrate
-            '''if second_amino_acid in ["A", "C", "T", "S", "V", "G", "P", "D", "E", "N", "Q", "L", "I", "F"]:
-                acetylated = 1
-            else:
-                acetylated = 0
-            feature_matrix["Acetylated"] = acetylated'''
-            '''
-            natc_substrate = classify_natc_substrate(second_amino_acid)
-            #feature_matrix["NAT_Substrate"] = natc_substrate
-
-            # One-hot encode the NAT substrate classification
-            natc_classes = ["NatA/D", "NatB", "NatC/E", "Other"]
-            one_hot_encoded_natc = {f"NAT_{cls}": 1 if natc_substrate == cls else 0 for cls in natc_classes}
-            feature_matrix = feature_matrix.assign(**one_hot_encoded_natc)'''
             # cut the protein sequence to the length of the MTS
             cut = 40
             mts_sequence = protein_sequence[:cut]
@@ -411,22 +364,29 @@ def run(organism_names, input_dir, working_dir):
 
     
 if __name__ == "__main__":
-    '''# Example usage
-    organism_names = ["Homo_sapiens"]
-    working_dir = "pipeline/output/output_20250519_142700_machine_learning_human"
-    input_dir = "pipeline/input"
-    start_time = datetime.now()
-    run(organism_names, input_dir, working_dir)
-    end_time = datetime.now()
-    run_time = end_time - start_time
-    print(f"finished in: {run_time}")'''
+    # Get the absolute path to the folder this script is in
+    script_dir = os.path.dirname(os.path.abspath(__file__))
 
-    organism_names = [
-    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Danio_rerio",
-    "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
-    "Saccharomyces_cerevisiae"]
-    working_dir = 'pipeline/output/output_20250617_183139_latest_ML'
-    input_dir = "pipeline/input"
+    # Build the relative path to the data file
+    pipeline_output_path = os.path.join(script_dir, '..', 'pipeline', 'output')
+    pipeline_input_path = os.path.join(script_dir, '..', 'pipeline', 'input')
+
+    dirs = [d for d in os.listdir(pipeline_output_path) if os.path.isdir(os.path.join(pipeline_output_path, d))]
+
+    # Sort alphabetically and get the last one
+    if dirs:
+        last_dir = sorted(dirs)[-1]
+        last_output_dir = os.path.join(pipeline_output_path, last_dir)
+        print("Last directory:", last_output_dir)
+    else:
+        print("No directories found.")
+
+    # Normalize the path (optional but good practice)
+    working_dir = os.path.normpath(last_output_dir)
+    input_dir = pipeline_input_path
+    # Read organism names from FASTA file names
+    fasta_files = [f for f in os.listdir(input_dir) if f.endswith(".fasta")]
+    organism_names = [os.path.splitext(f)[0] for f in fasta_files]
     start_time = datetime.now()
     run(organism_names, input_dir, working_dir)
     end_time = datetime.now()

@@ -1,0 +1,24 @@
+GO:0005790_smooth endoplasmic reticulum
+GO:0005791_rough endoplasmic reticulum
+GO:0009511_plasmodesmatal endoplasmic reticulum
+GO:0016529_sarcoplasmic reticulum
+GO:1990007_membrane stack
+GO:0005783_endoplasmic reticulum
+GO:0005766_primary lysosome
+GO:0005767_secondary lysosome
+GO:0020020_food vacuole
+GO:0032010_phagolysosome
+GO:0036019_endolysosome
+GO:0042582_azurophil granule
+GO:0042629_mast cell granule
+GO:0043246_megasome
+GO:0044194_cytolytic granule
+GO:0044754_autolysosome
+GO:0005764_lysosome
+GO:0150051_postsynaptic Golgi apparatus
+GO:0005794_Golgi apparatus
+GO:0001533_cornified envelope
+GO:0042383_sarcolemma
+GO:0097524_sperm plasma membrane
+GO:0120001_apical plasma membrane urothelial plaque
+GO:0005886_plasma membrane

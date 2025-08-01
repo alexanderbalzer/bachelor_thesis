@@ -30,8 +30,8 @@ def classify_location(go_terms):
 
 def batch_query_uniprot(uniprot_ids, batch_size=500):
     """
-    Holt Subcellular GO-Terms für eine Liste von UniProt-IDs in Batches.
-    Gibt ein Dict mit ID → Set[GO-Terms] zurück.
+    Query UniProt in batches to retrieve GO terms for a list of UniProt IDs.
+    Returns a dictionary mapping UniProt IDs to their GO terms.
     """
     base_url = "https://rest.uniprot.org/uniprotkb/search"
     headers = {"Accept": "application/json"}
@@ -68,6 +68,11 @@ def batch_query_uniprot(uniprot_ids, batch_size=500):
     return result
 
 def annotate_file(input_file, output_file):
+    """ Annotate a CSV file with GO terms and classify the location of each protein.
+    Args:
+        input_file (str): Path to the input CSV file with a 'ProteinID' column.
+        output_file (str): Path to save the annotated CSV file.
+    """
     df = pd.read_csv(input_file)
     if 'ProteinID' not in df.columns:
         raise ValueError("Die CSV-Datei muss eine Spalte 'ProteinID' enthalten.")
@@ -84,6 +89,11 @@ def annotate_file(input_file, output_file):
     print(f"✅ Datei gespeichert unter: {output_file}")
 
 if __name__ == "__main__":
+    """ 
+    Main function to run the annotation script.
+    This script reads a CSV file with protein IDs, queries UniProt for GO terms,
+    classifies the location of each protein, and saves the results to a new CSV file.
+    """
     general_working_dir = "pipeline/output/output_20250616_165204"
     organism_names = [
     "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Dario_rerio",

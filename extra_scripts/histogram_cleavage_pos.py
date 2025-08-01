@@ -1,6 +1,11 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
+"""
+This script reads a CSV file containing cleavage positions, SignalP cleavage probabilities, and MitoFates cleavable MTS data.
+It filters the data based on specific conditions and generates histograms for the cleavage positions from SignalP and MitoFates.
+"""
+
 # Specify the path to your CSV file
 csv_file_path = 'pipeline/output/output_20250519_142700_machine_learning_human/Homo_sapiens/feature_matrix.csv'
 output_file = 'pipeline/output/output_20250519_142700_machine_learning_human/Homo_sapiens/'

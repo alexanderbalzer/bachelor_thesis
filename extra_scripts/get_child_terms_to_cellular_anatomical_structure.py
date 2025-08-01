@@ -1,6 +1,16 @@
 from goatools.obo_parser import GODag
 import os
 
+
+"""
+This script retrieves all child terms of cellular anatomical structures from the GO DAG.
+It includes terms that are part of the cellular component namespace and checks for 'part_of' relationships
+to ensure comprehensive coverage of related terms.
+It also handles the 'occurs_in' relationships and intersection_of entries that may indicate part_of relationships.
+The results are saved in a specified directory, with each term's children listed in a separate file
+"""
+
+
 # Load the GO DAG (Gene Ontology terms)
 go_dag = GODag("pipeline/go.obo")  # Adjust the path to the correct OBO file
 def get_part_of_children(go_id, go_dag, visited=None):

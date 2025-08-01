@@ -1,0 +1,8 @@
+GO:0005740_mitochondrial envelope
+GO:0005743_mitochondrial inner membrane
+GO:0005741_mitochondrial outer membrane
+GO:0005758_mitochondrial intermembrane space
+GO:0005759_mitochondrial matrix
+GO:0005746_mitochondrial respiratory chain
+GO:0031966_mitochondrial membrane
+GO:0005739_mitochondrion
