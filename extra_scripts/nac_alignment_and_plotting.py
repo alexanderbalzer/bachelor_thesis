@@ -1,12 +1,14 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from Bio import SeqIO
-# Removed unused import: SequenceMatcher
 import os
 from Bio import SeqIO, pairwise2
-# Removed unused import: format_alignment
 import subprocess
 
+"""
+This script processes FASTA files to align sequences, simplify them to biochemical properties, and plot the results as a heatmap.
+It also includes functions to run IUPred for disorder prediction and find conserved MoRFs (Molecular Recognition Features) across sequences.
+"""
 
 def simplify_sequence_to_properties(seq):
     acidic = set("ED")

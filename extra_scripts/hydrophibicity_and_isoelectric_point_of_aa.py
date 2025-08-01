@@ -2,6 +2,12 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from adjustText import adjust_text
 
+
+"""
+This script generates scatter plots of amino acids based on their hydrophobicity, isoelectric point, and helix propensity.
+It also categorizes amino acids into different groups based on their properties and visualizes them with distinct colors and markers.   
+"""
+
 # Data for amino acids
 amino_acids = [
     'A', 'R', 'N', 'D', 'C', 'E', 'Q', 'G', 'H', 'I',

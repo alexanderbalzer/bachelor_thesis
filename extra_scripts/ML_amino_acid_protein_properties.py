@@ -14,6 +14,12 @@ from statsmodels.stats.multitest import multipletests
 from datetime import datetime
 from tqdm import tqdm
 
+"""
+This script processes protein sequences, extracts features, and performs logistic regression analysis
+to identify significant amino acid properties associated with mitochondrial targeting signals (MTS).
+It includes functions to load GO terms, compute variance inflation factor (VIF), and handle one-hot encoded features.
+"""
+
 def load_obo():
     '''
     load the latest obo file to exchange the GO terms with their aspects

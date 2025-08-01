@@ -7,6 +7,11 @@ from Bio import Entrez
 import requests
 import mygene
 
+"""
+This script retrieves functional and disease-related information from UniProt for proteins with broken MTS when Huntington.
+It uses the UniProt REST API to fetch data based on UniProt IDs.
+"""
+
 def get_uniprot_disease_annotation(uniprot_id):
     """
     Get disease-related information from UniProt for a given UniProt ID.
@@ -83,49 +88,6 @@ sequence = df['Sequence']
 second_aa = sequence.str[1]
 diff_if_not_that_nat_substrate = df['electrostatic help diff if diff nat']
 diff_if_huntington = df['electrostatic help diff if huntington']
-
-'''
-start_of_alpha_helix = df['start_of_alpha_helix']
-length_of_alpha_helix = df['length_of_alpha_helix']
-end_of_alpha_helix = start_of_alpha_helix + length_of_alpha_helix - 1
-df['end_of_alpha_helix'] = end_of_alpha_helix
-# Count how often each position is part of an alpha helix
-sequence_length = sequence.str.len().max()
-position_counts = [0] * sequence_length
-start_counts = [0] * sequence_length
-end_counts = [0] * sequence_length
-
-for start, end in zip(start_of_alpha_helix, end_of_alpha_helix):
-    for pos in range(start, end + 1):
-        if pos < sequence_length:
-            position_counts[pos] += 1
-    if start < sequence_length:
-        start_counts[start] += 1
-    if end < sequence_length:
-        end_counts[end] += 1
-
-# Plot the data
-plt.figure(figsize=(12, 6))
-positions = range(sequence_length)
-
-# Blue histogram for positions part of an alpha helix
-plt.bar(positions, position_counts, color='blue', alpha=0.6, label='Part of Alpha Helix')
-
-# Green scatter plot for start of alpha helix
-plt.scatter(positions, start_counts, color='green', label='Start of Alpha Helix')
-
-# Red scatter plot for end of alpha helix
-plt.scatter(positions, end_counts, color='red', label='End of Alpha Helix')
-
-plt.xlabel('Position in Sequence')
-plt.ylabel('Frequency')
-plt.title('Alpha Helix Position Analysis')
-plt.legend()
-plt.tight_layout()
-plt.show()
-
-
-import sys; sys.exit()'''
 
 # Extract the second amino acid from each sequence
 second_aa = sequence.str[1]

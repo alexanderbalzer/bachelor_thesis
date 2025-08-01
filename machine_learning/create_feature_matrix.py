@@ -180,6 +180,7 @@ def run(organism_names, input_dir, working_dir):
     protein_list = []
     go_ids = ["GO:0005739", "GO:0005783"]
 
+
     for organism in tqdm(organism_names, desc="Processing organisms", position=0, leave=False):
         invalid_count = 0
         working_dir_per_organism = working_dir + "/" + organism 
