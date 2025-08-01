@@ -241,23 +241,16 @@ def run(organism_names, input_dir, working_dir):
             mts_sequence = protein_sequence[:cut]
             # if the second amino acid is A, C, T, S, V, P or G, delete the first amino acid
             if second_amino_acid in ["A", "C", "T", "S", "V", "G", "P"]:
-                mts_when_huntington = mts_sequence[1:]
                 # if the new first amino acid is A, C, T, S, V or G, add X as first amino acid
                 if second_amino_acid in ["A", "C", "T", "S", "V", "G"]:
                     mod_mts_sequence = "X" + mts_sequence[1:]
-                    alternative_mts_sequence = "XML" + mts_sequence[2:]
                 else: 
                     mod_mts_sequence = mts_sequence[1:]
-                    alternative_mts_sequence = mts_sequence[1:]
             # if the second amino acid is D, E, N or Q, L, I, F, Y, add X as first amino acid
             elif second_amino_acid in ["D", "E", "N", "Q", "L", "I", "F", "Y"]:
                 mod_mts_sequence = "X" + mts_sequence
-                alternative_mts_sequence = "XA" + mts_sequence[2:]
-                mts_when_huntington = mod_mts_sequence
             else:
                 mod_mts_sequence = mts_sequence
-                alternative_mts_sequence = mts_sequence
-                mts_when_huntington = mts_sequence
             # get the combined hydrophobicity of the first 2 amino acids of the neo n terminus
             if len(mod_mts_sequence) < 2:
                 invalid_count += 1
@@ -287,7 +280,12 @@ def run(organism_names, input_dir, working_dir):
 
 
             # calculate the hydrophobic moment of the mts sequence
-            hydrophobic_moment_value_mod_mts, start_best_window, length_best_window, electrostatic_help, discrimination_factor, helix_score, charge = hydrophobic_moment.run(mod_mts_sequence, verbose=False)
+            result = hydrophobic_moment.run(mod_mts_sequence, verbose=False)
+            if result is None:
+                print(f"hydrophobic_moment.run returned None for sequence: {mod_mts_sequence}")
+                invalid_count += 1
+                continue
+            hydrophobic_moment_value_mod_mts, start_best_window, length_best_window, electrostatic_help, discrimination_factor, helix_score, charge = result
             # add the hydrophobic moment to the DataFrame
             feature_matrix["Hydrophobic Moment"] = hydrophobic_moment_value_mod_mts
             feature_matrix["Charge"] = charge

@@ -166,12 +166,9 @@ def run(organism_names, input_dir, output_dir, heatmap_type):
 
 if __name__ == "__main__":
     # Define the names of the organisms
-    organism_names = [
-    "Homo_sapiens","Mus_musculus", "Rattus_norvegicus", "Danio_rerio",
-    "Caenorhabditis_elegans", "Drosophila_Melanogaster", "Arabidopsis_thaliana", 
-    "Saccharomyces_cerevisiae"]
+    organism_names = ["Saccharomyces_cerevisiae"]
     
-    output_dir = "pipeline/output/output_20250617_183904"
+    output_dir = "pipeline/output/output_20250801_204453"
     input_dir = "pipeline/input"
     heatmap_type = "hgt"  # or "hgt"
 

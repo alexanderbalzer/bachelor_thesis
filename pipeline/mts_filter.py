@@ -73,7 +73,7 @@ import subprocess
 from Bio import SeqIO
 import tempfile
 
-def run_perl_script_batched(mitofates_path, input_file, flag, output_file, batch_size=2000):
+def run_perl_script_batched(mitofates_path, input_file, flag, output_file, batch_size=10000):
     """
     Run the MitoFates Perl script in batches of N sequences.
     

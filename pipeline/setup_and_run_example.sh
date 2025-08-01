@@ -23,6 +23,18 @@ echo "Activating environment '$ENV_NAME' and running '$PYTHON_SCRIPT'..."
 source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate "$ENV_NAME"
 
+echo "Installing cpanminus and required Perl modules..."
+
+# Check if cpanm is already available
+if ! command -v cpanm &> /dev/null; then
+    echo "cpanminus not found, installing..."
+    yes | cpan App::cpanminus
+fi
+
+# Install required Perl modules using cpanm
+cpanm --quiet --notest Perl6::Slurp Inline::C
+cpanm --force Math::Cephes 
+
 # Unpack MitoFates
 if [ ! -d "$EXTRACT_DIR" ]; then
     echo "Extracting $TAR_FILE..."
